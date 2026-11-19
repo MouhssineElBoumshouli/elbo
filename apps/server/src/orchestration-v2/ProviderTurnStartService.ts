@@ -1749,7 +1749,10 @@ export const layer: Layer.Layer<
             .filter((part) => part !== "")
             .join("\n\n");
           const { restartContinuationOfRunId: _resumedRunId, ...promptedInput } = turnInput;
-          const text = goalCommand ? userText : withInlineContext(context, userText);
+          // team-layer: build on the text RunExecutionService passed, which carries the team's
+          // turn note and briefing; the stored userText does not.
+          const promptText = turnInput.message.text;
+          const text = goalCommand ? promptText : withInlineContext(context, promptText);
           const startInput = noteContinuation ? promptedInput : turnInput;
           const { resume: _resume, ...contextInput } = startInput;
           const { message: resumeMessage, resume: _resumeIntent, ...resumeInput } = startInput;
@@ -1762,9 +1765,9 @@ export const layer: Layer.Layer<
                     ...turnInput.message,
                     text,
                   },
-                  ...(text === userText
+                  ...(text === promptText
                     ? {}
-                    : { inlineContextLength: text.length - userText.length }),
+                    : { inlineContextLength: text.length - promptText.length }),
                 });
           yield* operation.pipe(
             // Clear pending handoff markers for refused prompts so the next turn retains the native session.

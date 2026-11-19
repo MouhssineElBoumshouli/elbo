@@ -438,6 +438,8 @@ function makeLocalCommandHarness(input: {
     readonly switchedProvider?: boolean;
     readonly threadRuntimeMode?: OrchestrationV2ThreadProjection["thread"]["runtimeMode"];
   };
+  /** team-layer: stands in for RunExecutionService adding the team's turn text. */
+  readonly runTurnText?: (text: string) => string;
 }) {
   const settledRuns: Array<string> = [];
   const now = DateTime.makeUnsafe("2026-09-04T12:00:00Z");
@@ -1119,8 +1121,16 @@ function makeLocalCommandHarness(input: {
     (
       input: RunExecutionService.RunExecutionServiceV2StartRootRunInput,
     ) => Effect.Effect<void, RunExecutionService.RunExecutionServiceV2Error>
-  >((runInput) =>
-    input.sideChat !== undefined
+  >((startInput) => {
+    // team-layer: what RunExecutionService passes on to the session.
+    const runInput =
+      input.runTurnText === undefined
+        ? startInput
+        : {
+            ...startInput,
+            message: { ...startInput.message, text: input.runTurnText(startInput.message.text) },
+          };
+    return input.sideChat !== undefined
       ? (runInput.resume
           ? runInput.session.resumeTurn!({
               ...runInput,
@@ -1132,8 +1142,8 @@ function makeLocalCommandHarness(input: {
         ? Effect.suspend(() =>
             providerBusy ? Effect.die("The previous provider turn is still running.") : Effect.void,
           )
-        : Effect.die("A local command must not start a native turn."),
-  );
+        : Effect.die("A local command must not start a native turn.");
+  });
   const failReadIfRunning = Effect.suspend(() =>
     input.failReadsAfterRunning === true &&
     projection.runs.find((candidate) => candidate.id === runId)?.status === "running"
@@ -2210,6 +2220,21 @@ effectIt.effect.each([
         },
       ]);
     }),
+);
+
+// team-layer: a turn that carries side chat context keeps the team's turn note.
+effectIt.effect("keeps the text RunExecutionService passed when it adds side chat context", () =>
+  Effect.gen(function* () {
+    const harness = makeLocalCommandHarness({
+      text: "Go",
+      sideChat: { contextRun: "current" },
+      runTurnText: (text) => `${text}\n\n<team_changes/>`,
+    });
+    yield* harness.start;
+    expect(harness.startTurn.mock.calls.map(([turn]) => turn.message.text)).toEqual([
+      withInlineContext("SIDE_CHAT_CONTEXT", "Go\n\n<team_changes/>"),
+    ]);
+  }),
 );
 
 effectIt.effect.each([

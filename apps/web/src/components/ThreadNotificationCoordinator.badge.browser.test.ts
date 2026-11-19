@@ -1,5 +1,5 @@
 import type { AnyRouter } from "@tanstack/react-router";
-import { EnvironmentId } from "@t3tools/contracts";
+import { EnvironmentId, TEAM_CHOICE_ACTIVITY_KIND } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 import { Atom, AtomRegistry } from "effect/reactivity";
@@ -84,6 +84,22 @@ vi.mock(import("../threadNotifications"), async (original) => ({
   setNotificationBadge: state.badge,
 }));
 
+// team-layer: the team feed's cards, read through the registry (state/teamFeed.ts).
+vi.mock(import("../state/teamFeed"), async () => {
+  const { countOpenTeamChoices } = await import("@t3tools/contracts");
+  return {
+    readTeamThreadCards: ((registry: AtomRegistry.AtomRegistry, environmentId: string) =>
+      registry.get(teamCardsAtom(environmentId))) as never,
+    subscribeTeamThreadCards: ((
+      registry: AtomRegistry.AtomRegistry,
+      environmentId: string,
+      onChange: () => void,
+    ) => registry.subscribe(teamCardsAtom(environmentId), onChange)) as never,
+    teamAwaitsUser: ((entries: ReadonlyArray<never> | undefined, latestRunId: string | null) =>
+      entries !== undefined && countOpenTeamChoices(entries, latestRunId) > 0) as never,
+  };
+});
+
 import { startThreadNotifications } from "./ThreadNotificationCoordinator";
 
 let registry: AtomRegistry.AtomRegistry;
@@ -91,6 +107,7 @@ const shellAtom = Atom.family((_id: string) => Atom.make<unknown>(null));
 const environmentIdsAtom = Atom.make<ReadonlyArray<string>>([]);
 const noRequestsAtom = Atom.make(new Map());
 const noDelegatedAtom = Atom.make<ReadonlySet<string>>(new Set<string>());
+const teamCardsAtom = Atom.family((_id: string) => Atom.make(new Map<string, unknown>())); // team-layer
 state.shells = { set: (id, value) => registry.set(shellAtom(id), value) };
 
 class TestNotification extends EventTarget {
@@ -452,4 +469,23 @@ it("opening a thread or removing its environment closes only its in-app toasts, 
   state.inApp = false;
   app.changeSettings();
   expect(state.closeToast.mock.calls.slice(3)).toEqual([["one-other"]]);
+});
+
+// team-layer: a team warning card that waits on the user counts as input (team/V2_PORT_PLAN.md D4).
+it("notifies and badges when a team warning card waits on the user", async () => {
+  await using app = setup();
+  app.start();
+  const card = {
+    kind: TEAM_CHOICE_ACTIVITY_KIND,
+    runId: "turn",
+    payload: {
+      choiceId: "c1",
+      threadId: "thread",
+      solo: true,
+      files: [{ path: "src/a.ts", holders: [] }],
+    },
+  };
+  registry.set(teamCardsAtom("one"), new Map([["thread", [card]]]));
+  expect(TestNotification.sent.map(({ title }) => title)).toEqual(["Input needed"]);
+  expect(state.badge).toHaveBeenLastCalledWith(1);
 });

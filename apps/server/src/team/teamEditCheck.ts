@@ -1,8 +1,9 @@
 /**
  * The edit check adapters call before an agent's file write lands (fork-only,
- * team/PREVENTION_PLAN.md section 3): Claude's PreToolUse hook and
- * Antigravity's client writes. `TeamGuard` installs it, the way the briefing
- * resolver is installed, so adapters need no team layer.
+ * team/PREVENTION_PLAN.md section 3): Claude's PreToolUse hook. Other
+ * providers write files themselves; the after-the-turn check catches those.
+ * `TeamGuard` installs it, the way the briefing resolver is installed, so
+ * adapters need no team layer.
  *
  * @module teamEditCheck
  */

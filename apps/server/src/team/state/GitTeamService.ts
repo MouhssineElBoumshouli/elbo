@@ -568,6 +568,8 @@ export const make = Effect.fn("GitTeamService.make")(function* (options: GitTeam
             operation: "GitTeamService.load",
             cwd: path.join(options.stateDirectory, name),
             args: ["config", "--get", "remote.origin.url"],
+            // Named, not found from cwd: upstream runs Git with safe.bareRepository=explicit.
+            env: { GIT_DIR: path.join(options.stateDirectory, name) },
             allowNonZeroExit: true,
           })
           .pipe(

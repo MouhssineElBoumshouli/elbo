@@ -5,7 +5,7 @@
  * that its chat did not plan or claim.
  *
  * - Before the write, where a provider lets T3 see it: Claude's PreToolUse
- *   hook and Antigravity's client writes call {@link checkTeamEdit}. The write
+ *   hook calls {@link checkTeamEdit}. The write
  *   is refused with a reason that sends the agent to `team_plan`, which shows
  *   the warning card.
  * - After the turn, for every provider: edits made through a shell (`sed`, a

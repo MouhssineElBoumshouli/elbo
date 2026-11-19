@@ -129,7 +129,8 @@ export const make = Effect.fn("TeamStateRepo.make")(function* (options: TeamStat
         operation: `TeamStateRepo.${operation}`,
         cwd: directory,
         args,
-        env: { ...GIT_ENV, ...extra?.env },
+        // Named, not found from cwd: upstream runs Git with safe.bareRepository=explicit.
+        env: { GIT_DIR: directory, ...GIT_ENV, ...extra?.env },
         ...(extra?.stdin === undefined ? {} : { stdin: extra.stdin }),
         timeoutMs: LOCAL_TIMEOUT_MS,
       })
@@ -145,7 +146,7 @@ export const make = Effect.fn("TeamStateRepo.make")(function* (options: TeamStat
         operation: `TeamStateRepo.${operation}`,
         cwd: directory,
         args,
-        env: NETWORK_GIT_ENV,
+        env: { GIT_DIR: directory, ...NETWORK_GIT_ENV },
         allowNonZeroExit: true,
         timeoutMs: timeoutMs ?? NETWORK_TIMEOUT_MS,
       })
@@ -170,7 +171,7 @@ export const make = Effect.fn("TeamStateRepo.make")(function* (options: TeamStat
       operation: "TeamStateRepo.localTip",
       cwd: directory,
       args: ["rev-parse", "--verify", "--quiet", `${TEAM_STATE_REF}^{commit}`],
-      env: GIT_ENV,
+      env: { GIT_DIR: directory, ...GIT_ENV },
       allowNonZeroExit: true,
       timeoutMs: LOCAL_TIMEOUT_MS,
     })
@@ -262,7 +263,7 @@ export const make = Effect.fn("TeamStateRepo.make")(function* (options: TeamStat
               operation: "TeamStateRepo.read",
               cwd: directory,
               args: ["cat-file", "blob", oid],
-              env: GIT_ENV,
+              env: { GIT_DIR: directory, ...GIT_ENV },
               timeoutMs: LOCAL_TIMEOUT_MS,
               maxOutputBytes: MAX_FILE_BYTES,
             })

@@ -5,6 +5,7 @@
  */
 import { OrchestratorMcpFailure, TeamTaskStatus } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
+import * as McpSchema from "effect/ai/McpSchema";
 import * as Tool from "effect/ai/Tool";
 import * as Toolkit from "effect/ai/Toolkit";
 
@@ -161,7 +162,9 @@ const TeamStatusTool = Tool.make("team_status", {
   .annotate(Tool.Readonly, true)
   .annotate(Tool.Destructive, false)
   .annotate(Tool.Idempotent, true)
-  .annotate(Tool.OpenWorld, false);
+  .annotate(Tool.OpenWorld, false)
+  // Acts as the calling thread: outside MCP clients are not offered it.
+  .annotate(McpSchema.EnabledWhen, McpInvocationContext.hiddenFromOutsideClients);
 
 const TeamPlanTool = Tool.make("team_plan", {
   description:
@@ -178,7 +181,9 @@ const TeamPlanTool = Tool.make("team_plan", {
   .annotate(Tool.Readonly, false)
   .annotate(Tool.Destructive, false)
   .annotate(Tool.Idempotent, false)
-  .annotate(Tool.OpenWorld, false);
+  .annotate(Tool.OpenWorld, false)
+  // Acts as the calling thread: outside MCP clients are not offered it.
+  .annotate(McpSchema.EnabledWhen, McpInvocationContext.hiddenFromOutsideClients);
 
 const TeamClaimTool = Tool.make("team_claim", {
   description:
@@ -200,7 +205,9 @@ const TeamClaimTool = Tool.make("team_claim", {
   .annotate(Tool.Readonly, false)
   .annotate(Tool.Destructive, false)
   .annotate(Tool.Idempotent, false)
-  .annotate(Tool.OpenWorld, false);
+  .annotate(Tool.OpenWorld, false)
+  // Acts as the calling thread: outside MCP clients are not offered it.
+  .annotate(McpSchema.EnabledWhen, McpInvocationContext.hiddenFromOutsideClients);
 
 const TeamTaskTool = Tool.make("team_task", {
   description:
@@ -218,7 +225,9 @@ const TeamTaskTool = Tool.make("team_task", {
   .annotate(Tool.Readonly, false)
   .annotate(Tool.Destructive, false)
   .annotate(Tool.Idempotent, false)
-  .annotate(Tool.OpenWorld, false);
+  .annotate(Tool.OpenWorld, false)
+  // Acts as the calling thread: outside MCP clients are not offered it.
+  .annotate(McpSchema.EnabledWhen, McpInvocationContext.hiddenFromOutsideClients);
 
 const TeamHandoffTool = Tool.make("team_handoff", {
   description:
@@ -239,7 +248,9 @@ const TeamHandoffTool = Tool.make("team_handoff", {
   .annotate(Tool.Readonly, false)
   .annotate(Tool.Destructive, false)
   .annotate(Tool.Idempotent, false)
-  .annotate(Tool.OpenWorld, false);
+  .annotate(Tool.OpenWorld, false)
+  // Acts as the calling thread: outside MCP clients are not offered it.
+  .annotate(McpSchema.EnabledWhen, McpInvocationContext.hiddenFromOutsideClients);
 
 const TeamMemorySearchTool = Tool.make("team_memory_search", {
   description:
@@ -255,7 +266,9 @@ const TeamMemorySearchTool = Tool.make("team_memory_search", {
   .annotate(Tool.Readonly, true)
   .annotate(Tool.Destructive, false)
   .annotate(Tool.Idempotent, true)
-  .annotate(Tool.OpenWorld, false);
+  .annotate(Tool.OpenWorld, false)
+  // Acts as the calling thread: outside MCP clients are not offered it.
+  .annotate(McpSchema.EnabledWhen, McpInvocationContext.hiddenFromOutsideClients);
 
 export const TeamToolkit = Toolkit.make(
   TeamStatusTool,
