@@ -362,6 +362,7 @@ function checkLine(
   const command = check.command === undefined ? "the check" : code(check.command);
   switch (check.status) {
     case "running":
+      if (check.installing === true) return `${lead}: installing packages…`;
       // The command is known only once the combined result is in the copy.
       return check.command === undefined
         ? `${lead}: checking…`
@@ -432,11 +433,13 @@ export function mergeFixSentence(
   const subject = mergePairSubject(team, fix);
   const where =
     fix.files.length === 0 ? "" : ` in ${fileList(fix.files, fix.files.length, pathPrefix)}`;
+  // No files: Git merged cleanly, so the fix is for what the combined check found.
+  const what = fix.files.length === 0 ? "the break" : `the clash${where}`;
   switch (fix.status) {
     case "working":
-      return `${subject}: the agent is resolving the clash${where}.`;
+      return `${subject}: the agent is ${fix.files.length === 0 ? "fixing" : "resolving"} ${what}.`;
     case "asking":
-      return `${subject}: the agent is waiting for your answer about the clash${where}. Reply in the chat.`;
+      return `${subject}: the agent is waiting for your answer about ${what}. Reply in the chat.`;
     case "ready":
       return `${subject}: the agent's fix${where} is ready. Read the diff in the chat, then approve or undo.`;
   }

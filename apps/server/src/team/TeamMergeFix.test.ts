@@ -143,6 +143,7 @@ const makeHarness = Effect.fn("makeTeamMergeFixHarness")(
       start: () => Effect.void,
       checkResult: (request) =>
         Deferred.succeed(resultRequested, request).pipe(
+          Effect.andThen(request.onInstall ?? Effect.void),
           Effect.andThen(Deferred.await(resultRelease)),
           Effect.as<TeamCombinedCheck>({
             mineCommit: request.mineCommit,
@@ -563,8 +564,15 @@ describe("TeamMergeFix", () => {
         assert.notEqual(git(h.worktree, "ls-files", "--unmerged"), "");
         git(h.worktree, "rev-parse", "--verify", "MERGE_HEAD");
 
-        yield* h.releaseResult;
+        // The copy installs the packages first, and the line says so.
         let shown = ready?.check;
+        while (shown?.installing !== true) {
+          yield* PubSub.take(changes);
+          shown = (yield* h.fixes.forTeam(TEAM_ID))[0]?.check;
+        }
+        assert.equal(shown.status, "running");
+
+        yield* h.releaseResult;
         while (shown?.status === "running") {
           yield* PubSub.take(changes);
           shown = (yield* h.fixes.forTeam(TEAM_ID))[0]?.check;

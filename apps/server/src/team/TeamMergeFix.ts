@@ -672,6 +672,13 @@ export const make = Effect.gen(function* () {
                 projectId: fix.projectId as ProjectId,
                 tree,
                 ...sides,
+                onInstall: Effect.suspend(() => {
+                  if (resultChecks.get(fix.threadId) !== entry || entry.check === undefined) {
+                    return Effect.void;
+                  }
+                  entry.check = { ...entry.check, installing: true };
+                  return PubSub.publish(changes, fix.teamId as TeamId).pipe(Effect.asVoid);
+                }),
               });
         if (resultChecks.get(fix.threadId) !== entry) return;
         entry.check = done;

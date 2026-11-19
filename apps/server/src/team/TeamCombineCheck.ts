@@ -97,6 +97,8 @@ export interface ResultRequest {
   readonly tree: string;
   readonly mineCommit: string;
   readonly otherCommit: string;
+  /** Runs once the gates passed, just before the packages are installed. */
+  readonly onInstall?: Effect.Effect<void>;
 }
 
 export class TeamCombineCheck extends Context.Service<
@@ -313,7 +315,11 @@ export const make = Effect.gen(function* () {
   /** The check itself, once the gates let it start. */
   const check = (
     sides: Sides,
-    request: { readonly projectId: ProjectId; readonly install: boolean },
+    request: {
+      readonly projectId: ProjectId;
+      readonly install: boolean;
+      readonly onInstall?: Effect.Effect<void> | undefined;
+    },
   ) =>
     Effect.gen(function* () {
       const startedAt = yield* Clock.currentTimeMillis;
@@ -363,6 +369,7 @@ export const make = Effect.gen(function* () {
           : result(sides, "skipped", { skip: "failed", command });
 
       if (commands.install !== undefined && installed !== wanted) {
+        if (request.onInstall !== undefined) yield* request.onInstall;
         const ran = yield* timed(commands.install);
         if (ran === undefined || ran.timedOut || ran.exitCode !== 0) {
           yield* Effect.logWarning("Team combined check: installing dependencies failed.", {
@@ -530,7 +537,11 @@ export const make = Effect.gen(function* () {
         const skip = yield* gate(request.projectId);
         if (skip !== undefined) return yield* result(sides, "skipped", { skip });
         busy = true;
-        return yield* check(sides, { projectId: request.projectId, install: true }).pipe(
+        return yield* check(sides, {
+          projectId: request.projectId,
+          install: true,
+          onInstall: request.onInstall,
+        }).pipe(
           Effect.tap((done) =>
             Effect.logInfo("Team check on a fix's result done.", {
               status: done.status,

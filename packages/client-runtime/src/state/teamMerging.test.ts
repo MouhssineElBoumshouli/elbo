@@ -200,6 +200,13 @@ describe("teamMerging", () => {
     expect(mergeFixSentence(team([]), { ...fix, status: "asking" }, "app")).toBe(
       'Your "login" chat and Sara\'s `search` branch: the agent is waiting for your answer about the clash in `src/api/routes.ts`. Reply in the chat.',
     );
+    // No Git clash: the fix is for what the combined check found.
+    expect(mergeFixSentence(team([]), { ...fix, files: [] }, "app")).toBe(
+      'Your "login" chat and Sara\'s `search` branch: the agent is fixing the break.',
+    );
+    expect(mergeFixSentence(team([]), { ...fix, files: [], status: "asking" }, "app")).toBe(
+      'Your "login" chat and Sara\'s `search` branch: the agent is waiting for your answer about the break. Reply in the chat.',
+    );
     expect(mergeFixBlocked(pair())).toBeNull();
     expect(mergeFixBlocked(pair({ mine: { ...pair().mine, worktree: false } }))).toContain(
       "shared checkout",
@@ -393,6 +400,13 @@ describe("teamMerging", () => {
     expect(
       fixCheckSentence(team([]), { ...fix, check: { ...check, status: "running" } }, "app"),
     ).toBe("On the fix: checking…");
+    expect(
+      fixCheckSentence(
+        team([]),
+        { ...fix, check: { ...check, status: "running", installing: true } },
+        "app",
+      ),
+    ).toBe("On the fix: installing packages…");
     expect(
       fixCheckSentence(
         team([]),

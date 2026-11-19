@@ -138,6 +138,8 @@ export const TeamCombinedCheck = Schema.Struct({
   otherCommit: TrimmedNonEmptyString,
   status: Schema.Literals(["running", "clean", "broken", "skipped"]),
   skip: Schema.optionalKey(TeamCombinedSkip),
+  /** `running` only: the project's packages are being installed first. */
+  installing: Schema.optionalKey(Schema.Boolean),
   /** What ran, e.g. `npm run typecheck`. */
   command: Schema.optionalKey(Schema.String),
   /** New errors, capped. */
