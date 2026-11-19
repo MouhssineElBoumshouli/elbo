@@ -10,7 +10,7 @@ import {
   type TeamFeedTeam,
   type ThreadId,
 } from "@t3tools/contracts";
-import { useMemo } from "react";
+import { AsyncResult, type AtomRegistry } from "effect/reactivity";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 import { useEnvironmentQuery } from "./query";
@@ -37,7 +37,7 @@ export function useTeamThreadCards(
   threadId: ThreadId | null,
 ): ReadonlyArray<TeamCardRow> {
   const entries = useTeamFeedState(environmentId).threadCards.get(threadId ?? "");
-  return useMemo(() => (entries === undefined ? NO_CARDS : teamCardRows(entries)), [entries]);
+  return entries === undefined ? NO_CARDS : teamCardRows(entries);
 }
 
 /** Every chat's card records on one environment, by thread id. */
@@ -64,5 +64,27 @@ export function useTeamAwaitsUser(
   latestRunId: string | null,
 ): boolean {
   const entries = useTeamThreadCardsByThread(environmentId).get(threadId);
-  return useMemo(() => teamAwaitsUser(entries, latestRunId), [entries, latestRunId]);
+  return teamAwaitsUser(entries, latestRunId);
+}
+
+const teamFeedAtom = (environmentId: EnvironmentId) => teamFeed.feed({ environmentId, input: {} });
+
+/** One environment's card records, by thread id, for code outside React (the notification service). */
+export function readTeamThreadCards(
+  registry: AtomRegistry.AtomRegistry,
+  environmentId: EnvironmentId,
+): TeamFeedState["threadCards"] {
+  return AsyncResult.getOrElse(
+    registry.get(teamFeedAtom(environmentId)),
+    () => EMPTY_TEAM_FEED_STATE,
+  ).threadCards;
+}
+
+/** Keeps the environment's feed open and calls `onChange` on each push; returns the unsubscribe. */
+export function subscribeTeamThreadCards(
+  registry: AtomRegistry.AtomRegistry,
+  environmentId: EnvironmentId,
+  onChange: () => void,
+): () => void {
+  return registry.subscribe(teamFeedAtom(environmentId), onChange);
 }

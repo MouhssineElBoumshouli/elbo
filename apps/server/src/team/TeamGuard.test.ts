@@ -4,6 +4,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   type MessageId,
@@ -65,149 +66,157 @@ afterEach(() => NodeFS.rmSync(originRoot, { recursive: true, force: true }));
 const decodeChoice = Schema.decodeUnknownOption(TeamChoiceActivityPayload);
 
 /** One team project folder on this test's origin; this server is a member, Omar is a teammate. */
-const makeHarness = Effect.fn("makeTeamGuardHarness")(function* () {
-  const fs = yield* FileSystem.FileSystem;
-  const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-guard-" });
-  yield* fs.makeDirectory(NodePath.join(root, ".team"), { recursive: true });
-  yield* fs.writeFileString(
-    NodePath.join(root, ".team", "team.json"),
-    `{ "teamId": "${TEAM_ID}", "name": "Core" }`,
-  );
-  useTeamOrigin(root, originUrl);
+const makeHarness = Effect.fn("makeTeamGuardHarness")(
+  function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-guard-" });
+    yield* fs.makeDirectory(NodePath.join(root, ".team"), { recursive: true });
+    yield* fs.writeFileString(
+      NodePath.join(root, ".team", "team.json"),
+      `{ "teamId": "${TEAM_ID}", "name": "Core" }`,
+    );
+    useTeamOrigin(root, originUrl);
 
-  // The real v2 orchestrator: chat A (in a run from minute 10) and chat B, same checkout.
-  const orchestration = yield* Layer.build(TeamOrchestrator.layer);
-  for (const threadId of [THREAD_A, THREAD_B]) {
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId,
-      workspaceRoot: root,
-    }).pipe(Effect.provide(orchestration));
-  }
-  const ordinals = new Map<ThreadId, number>();
-  /** A run of the chat, from `start` to `end` (minutes; null while it goes). */
-  const run = (
-    threadId: ThreadId,
-    runId: string,
-    start: number,
-    end: number | null,
-    userMessageId?: MessageId,
-  ) => {
-    const ordinal = (ordinals.get(threadId) ?? 0) + 1;
-    ordinals.set(threadId, ordinal);
-    return TeamOrchestrator.setRun({
-      threadId,
-      runId: RunId.make(runId),
-      ordinal,
-      status: end === null ? "running" : "completed",
-      startedAt: at(start),
-      ...(end === null ? {} : { completedAt: at(end) }),
-      ...(userMessageId === undefined ? {} : { userMessageId }),
-    }).pipe(Effect.provide(orchestration));
-  };
-  yield* run(THREAD_A, "turn-a", 10, null);
-
-  const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
-  const dependencies = Layer.mergeAll(
-    testTeamServiceLayer({
-      environmentId: ENVIRONMENT_ID,
-      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-guard-state-" }),
-    }),
-    TestTeamGitLayer,
-    TeamCards.layer.pipe(Layer.provide(Layer.succeedContext(orchestration))),
-    Layer.succeedContext(orchestration),
-    // After the orchestration's own: the team's turns stop at the recorded dispatch.
-    TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
-    Layer.mock(ServerEnvironment.ServerEnvironment)({
-      getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
-      getDescriptor: Effect.succeed({
-        environmentId: ENVIRONMENT_ID,
-        label: TEST_TEAM_LOGIN,
-        platform: { os: "linux" as const, arch: "x64" as const },
-        serverVersion: "0.0.0-test",
-        capabilities: { repositoryIdentity: true },
-      }),
-    }),
-  ).pipe(Layer.provideMerge(NodeServices.layer));
-  const context = yield* Layer.build(TeamChoices.layer.pipe(Layer.provideMerge(dependencies)));
-  const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
-  yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root });
-  const choices = yield* TeamChoices.TeamChoices.pipe(Effect.provide(context));
-  const guard = yield* TeamGuard.make.pipe(Effect.provide(context));
-
-  const omar = yield* Layer.build(
-    testTeamServiceLayer({
-      environmentId: EnvironmentId.make("omar-server"),
-      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-guard-omar-" }),
-      host: fakeTeamHost("Omar"),
-    }),
-  ).pipe(Effect.flatMap((built) => TeamService.TeamService.pipe(Effect.provide(built))));
-  yield* omar.openTeam({ teamFile: TEAM_FILE, checkout: root });
-  // Omar claims; this server reads it on its next poll.
-  const omarClaims = (paths: ReadonlyArray<string>) =>
-    omar
-      .claimPaths({
-        teamId: TEAM_ID,
-        memberId: TeamMemberId.make("Omar"),
-        thread: { environmentId: EnvironmentId.make("omar-server"), threadId: THREAD_B },
-        paths: paths as ReadonlyArray<TeamPath>,
-      })
-      .pipe(Effect.andThen(teams.refresh(TEAM_ID)));
-  const claimAs = (threadId: ThreadId, paths: ReadonlyArray<string>) =>
-    teams.claimPaths({
-      teamId: TEAM_ID,
-      memberId: ME,
-      thread: { environmentId: ENVIRONMENT_ID, threadId },
-      paths: paths as ReadonlyArray<TeamPath>,
-    });
-  const teamCards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
-  const cards = teamCards.forThread(THREAD_A).pipe(
-    Effect.map((entries) =>
-      entries.flatMap((entry) =>
-        entry.kind === TEAM_CHOICE_ACTIVITY_KIND
-          ? Option.toArray(decodeChoice(entry.payload)).map((card) => ({
-              ...card,
-              runId: entry.runId,
-            }))
-          : [],
-      ),
-    ),
-  );
-  /** The run's checkpoint: what it changed, at minute `end`. */
-  const turnDiff = (threadId: ThreadId, runId: string, files: ReadonlyArray<string>, end: number) =>
-    guard.afterTurn({
-      threadId,
-      runId: RunId.make(runId),
-      files: files.map((path) => ({ path })),
-      completedAt: DateTime.makeUnsafe(at(end)),
-    });
-  /** The click's turn starts: its run starts with the click's message. */
-  const startClickTurn = (threadId: ThreadId, runId: string, start: number) =>
-    Effect.gen(function* () {
-      const started = (yield* Ref.get(dispatched)).findLast(
-        (command) => command.type === "message.dispatch" && command.threadId === threadId,
-      );
-      yield* run(
+    // The real v2 orchestrator: chat A (in a run from minute 10) and chat B, same checkout.
+    const orchestration = yield* Layer.build(TeamOrchestrator.layer);
+    for (const threadId of [THREAD_A, THREAD_B]) {
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
         threadId,
-        runId,
-        start,
-        null,
-        started?.type === "message.dispatch" ? started.messageId : undefined,
-      );
-    });
-  return {
-    root,
-    guard,
-    choices,
-    cards,
-    dispatched,
-    run,
-    omarClaims,
-    claimAs,
-    turnDiff,
-    startClickTurn,
-  };
-}, Effect.provide(NodeServices.layer));
+        workspaceRoot: root,
+      }).pipe(Effect.provide(orchestration));
+    }
+    const ordinals = new Map<ThreadId, number>();
+    /** A run of the chat, from `start` to `end` (minutes; null while it goes). */
+    const run = (
+      threadId: ThreadId,
+      runId: string,
+      start: number,
+      end: number | null,
+      userMessageId?: MessageId,
+    ) => {
+      const ordinal = (ordinals.get(threadId) ?? 0) + 1;
+      ordinals.set(threadId, ordinal);
+      return TeamOrchestrator.setRun({
+        threadId,
+        runId: RunId.make(runId),
+        ordinal,
+        status: end === null ? "running" : "completed",
+        startedAt: at(start),
+        ...(end === null ? {} : { completedAt: at(end) }),
+        ...(userMessageId === undefined ? {} : { userMessageId }),
+      }).pipe(Effect.provide(orchestration));
+    };
+    yield* run(THREAD_A, "turn-a", 10, null);
+
+    const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
+    const dependencies = Layer.mergeAll(
+      testTeamServiceLayer({
+        environmentId: ENVIRONMENT_ID,
+        stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-guard-state-" }),
+      }),
+      TestTeamGitLayer,
+      TeamCards.layer.pipe(Layer.provide(Layer.succeedContext(orchestration))),
+      Layer.succeedContext(orchestration),
+      // After the orchestration's own: the team's turns stop at the recorded dispatch.
+      TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
+      Layer.mock(ServerEnvironment.ServerEnvironment)({
+        getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
+        getDescriptor: Effect.succeed({
+          environmentId: ENVIRONMENT_ID,
+          label: TEST_TEAM_LOGIN,
+          platform: { os: "linux" as const, arch: "x64" as const },
+          serverVersion: "0.0.0-test",
+          capabilities: { repositoryIdentity: true },
+        }),
+      }),
+    ).pipe(Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
+    const context = yield* Layer.build(TeamChoices.layer.pipe(Layer.provideMerge(dependencies)));
+    const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
+    yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root });
+    const choices = yield* TeamChoices.TeamChoices.pipe(Effect.provide(context));
+    const guard = yield* TeamGuard.make.pipe(Effect.provide(context));
+
+    const omar = yield* Layer.build(
+      testTeamServiceLayer({
+        environmentId: EnvironmentId.make("omar-server"),
+        stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-guard-omar-" }),
+        host: fakeTeamHost("Omar"),
+      }),
+    ).pipe(Effect.flatMap((built) => TeamService.TeamService.pipe(Effect.provide(built))));
+    yield* omar.openTeam({ teamFile: TEAM_FILE, checkout: root });
+    // Omar claims; this server reads it on its next poll.
+    const omarClaims = (paths: ReadonlyArray<string>) =>
+      omar
+        .claimPaths({
+          teamId: TEAM_ID,
+          memberId: TeamMemberId.make("Omar"),
+          thread: { environmentId: EnvironmentId.make("omar-server"), threadId: THREAD_B },
+          paths: paths as ReadonlyArray<TeamPath>,
+        })
+        .pipe(Effect.andThen(teams.refresh(TEAM_ID)));
+    const claimAs = (threadId: ThreadId, paths: ReadonlyArray<string>) =>
+      teams.claimPaths({
+        teamId: TEAM_ID,
+        memberId: ME,
+        thread: { environmentId: ENVIRONMENT_ID, threadId },
+        paths: paths as ReadonlyArray<TeamPath>,
+      });
+    const teamCards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
+    const cards = teamCards.forThread(THREAD_A).pipe(
+      Effect.map((entries) =>
+        entries.flatMap((entry) =>
+          entry.kind === TEAM_CHOICE_ACTIVITY_KIND
+            ? Option.toArray(decodeChoice(entry.payload)).map((card) => ({
+                ...card,
+                runId: entry.runId,
+              }))
+            : [],
+        ),
+      ),
+    );
+    /** The run's checkpoint: what it changed, at minute `end`. */
+    const turnDiff = (
+      threadId: ThreadId,
+      runId: string,
+      files: ReadonlyArray<string>,
+      end: number,
+    ) =>
+      guard.afterTurn({
+        threadId,
+        runId: RunId.make(runId),
+        files: files.map((path) => ({ path })),
+        completedAt: DateTime.makeUnsafe(at(end)),
+      });
+    /** The click's turn starts: its run starts with the click's message. */
+    const startClickTurn = (threadId: ThreadId, runId: string, start: number) =>
+      Effect.gen(function* () {
+        const started = (yield* Ref.get(dispatched)).findLast(
+          (command) => command.type === "message.dispatch" && command.threadId === threadId,
+        );
+        yield* run(
+          threadId,
+          runId,
+          start,
+          null,
+          started?.type === "message.dispatch" ? started.messageId : undefined,
+        );
+      });
+    return {
+      root,
+      guard,
+      choices,
+      cards,
+      dispatched,
+      run,
+      omarClaims,
+      claimAs,
+      turnDiff,
+      startClickTurn,
+    };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 describe("heldElsewhere", () => {
   const mine = { environmentId: ENVIRONMENT_ID, threadId: THREAD_A };
@@ -268,6 +277,7 @@ describe("TeamGuard", () => {
 
       // Claude's hook refuses with the same reason, and lets other writes through undecided.
       const hook = claudeTeamEditHooks(THREAD_A, Effect.runPromise).PreToolUse![0]!.hooks[0]!;
+      // @effect-diagnostics-next-line abortControllerInEffect:off - the Claude SDK hook API takes a plain AbortSignal.
       const signal = new AbortController().signal;
       const hookInput = (file: string) =>
         ({

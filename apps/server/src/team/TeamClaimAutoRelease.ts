@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Claim lifetime (fork-only, see team/DESIGN.md D5): a claim lasts until the
  * thread's work is merged or dropped, not until a turn ends. Agents are told
@@ -59,7 +60,7 @@ type PullRequestMatch = (pullRequest: ThreadLinkedPullRequest | ThreadPullReques
  * The thread's work is merged when one of its pull requests is the merged one
  * and no other linked one is still open (a stack, or a follow-up pull request).
  */
-export function isThreadWorkMerged(
+function isThreadWorkMerged(
   thread: Pick<OrchestrationV2AppThread, "pullRequests" | "branchPullRequest">,
   isMergedPullRequest: PullRequestMatch,
 ): boolean {
@@ -70,7 +71,7 @@ export function isThreadWorkMerged(
   return touched && !links.some((link) => !isMergedPullRequest(link) && isOpen(link));
 }
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const teams = yield* TeamService.TeamService;
   const orchestrator = yield* Orchestrator.OrchestratorV2;
   const eventSink = yield* EventSink.EventSinkV2;

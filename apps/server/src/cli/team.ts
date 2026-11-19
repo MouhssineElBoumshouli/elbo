@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * `t3 team` commands (fork-only, see team/DESIGN.md and team/STORAGE_PLAN.md).
  *
@@ -58,7 +59,7 @@ export class TeamCliError extends Schema.TaggedError<TeamCliError>()("TeamCliErr
 }
 
 /** For now every `t3 team` command needs `--base-dir`, so a test never lands in the real install. */
-export const missingBaseDirMessage = (command: string) =>
+const missingBaseDirMessage = (command: string) =>
   `t3 team ${command} needs --base-dir: the T3 home of the server to use, the same folder as its --home-dir (for example --base-dir ~/.t3-dev). Without it, it would use your real T3 install.`;
 
 const requireBaseDir = (command: string, baseDir: Option.Option<string>) =>
@@ -100,7 +101,7 @@ type RemotePlan =
       readonly isPublic: boolean;
     };
 
-export function formatTeamInitResult(result: TeamProjectInitResult): string {
+function formatTeamInitResult(result: TeamProjectInitResult): string {
   const changed = result.files.some((file) => file.status !== "unchanged");
   const lines = [
     `Team "${result.teamFile.name}" (teamId ${result.teamFile.teamId}) in ${result.repoRoot}`,
@@ -115,7 +116,7 @@ export function formatTeamInitResult(result: TeamProjectInitResult): string {
 }
 
 /** What `init` will create on the remote, shown before it asks. */
-export function formatTeamStatePreview(input: {
+function formatTeamStatePreview(input: {
   readonly remoteUrl: string;
   readonly teamName: string;
   readonly teamId: string;

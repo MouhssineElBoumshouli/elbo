@@ -14,7 +14,7 @@ import {
 } from "@t3tools/client-runtime/state/teamMarkers";
 import { projectMergePairs } from "@t3tools/client-runtime/state/teamMerging";
 import type { EnvironmentId, ProjectId, TeamFeedTeam } from "@t3tools/contracts";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 
 import { cn } from "~/lib/utils";
 import { useTeamFeed } from "~/state/teamFeed";
@@ -63,20 +63,14 @@ export const TeamPresenceChip = memo(function TeamPresenceChip(props: {
   readonly projectId: ProjectId | null;
 }) {
   const teams = useTeamFeed(props.environmentId);
-  const projectTeam = useMemo(
-    () => findProjectTeam(teams, props.projectId),
-    [teams, props.projectId],
-  );
+  const projectTeam = findProjectTeam(teams, props.projectId);
   const team = projectTeam?.team ?? null;
-  const teammates = useMemo(() => (team === null ? [] : teammatesOf(team)), [team]);
+  const teammates = team === null ? [] : teammatesOf(team);
   // team-layer: merge checks with each teammate's pushed branches (MERGE_HELP_PLAN.md slice 1).
-  const branchPairs = useMemo(
-    () =>
-      team === null
-        ? []
-        : projectMergePairs(team, props.projectId).filter((pair) => pair.other._tag === "branch"),
-    [team, props.projectId],
-  );
+  const branchPairs =
+    team === null
+      ? []
+      : projectMergePairs(team, props.projectId).filter((pair) => pair.other._tag === "branch");
   // Solo: no faces, no empty team UI.
   if (team === null || team.solo) return null;
   const label = syncLabel(team.sync);

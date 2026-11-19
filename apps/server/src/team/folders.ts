@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Comparing folders the way the OS does (team/WINDOWS_AND_SOLO.md W8): two
  * spellings of one folder (`C:\Code\x` and `c:/code/x/`, or a link and its

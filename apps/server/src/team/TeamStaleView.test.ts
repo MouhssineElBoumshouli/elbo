@@ -4,6 +4,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   CheckpointId,
   CheckpointRef,
@@ -63,103 +64,111 @@ afterEach(() => NodeFS.rmSync(originRoot, { recursive: true, force: true }));
 const blobOf = (root: string, file: string) => git(root, "hash-object", file);
 
 /** A project folder with four files; `team` adds `.team/team.json`, else it is solo. */
-const makeHarness = Effect.fn("makeStaleViewHarness")(function* (team: boolean) {
-  const fs = yield* FileSystem.FileSystem;
-  const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-stale-view-" });
-  initRepo(root, {
-    "src/a.ts": "a1\n",
-    "src/b.ts": "b1\n",
-    "src/c.ts": "c1\n",
-    "src/d.ts": "d1\n",
-    ...(team ? { ".team/team.json": `{ "teamId": "${TEAM_ID}", "name": "Core" }` } : {}),
-  });
-  if (team) useTeamOrigin(root, originUrl);
+const makeHarness = Effect.fn("makeStaleViewHarness")(
+  function* (team: boolean) {
+    const fs = yield* FileSystem.FileSystem;
+    const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-stale-view-" });
+    initRepo(root, {
+      "src/a.ts": "a1\n",
+      "src/b.ts": "b1\n",
+      "src/c.ts": "c1\n",
+      "src/d.ts": "d1\n",
+      ...(team ? { ".team/team.json": `{ "teamId": "${TEAM_ID}", "name": "Core" }` } : {}),
+    });
+    if (team) useTeamOrigin(root, originUrl);
 
-  const orchestration = yield* Layer.build(TeamOrchestrator.layer);
-  for (const threadId of [THREAD_A, THREAD_B]) {
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId,
-      workspaceRoot: root,
-    }).pipe(Effect.provide(orchestration));
-  }
-  const dependencies = Layer.mergeAll(
-    testTeamServiceLayer({
-      environmentId: ENVIRONMENT_ID,
-      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-stale-view-state-" }),
-    }),
-    TestTeamGitLayer,
-    Layer.succeedContext(orchestration),
-    Layer.mock(ServerEnvironment.ServerEnvironment)({
-      getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
-    }),
-  ).pipe(Layer.provideMerge(NodeServices.layer));
-  const context = yield* Layer.build(TeamNotes.layer.pipe(Layer.provideMerge(dependencies)));
-  const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
-  const membership = team
-    ? (yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root })).membership
-    : yield* teams.openSolo({ projectRoot: root, name: "Project" });
-  if (membership.status !== "member") return yield* Effect.die("not a member");
-  const teamId = membership.team.teamId;
-  const memberId = membership.member.memberId;
-  const { read } = yield* TeamStaleView.make.pipe(Effect.provide(context));
+    const orchestration = yield* Layer.build(TeamOrchestrator.layer);
+    for (const threadId of [THREAD_A, THREAD_B]) {
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
+        threadId,
+        workspaceRoot: root,
+      }).pipe(Effect.provide(orchestration));
+    }
+    const dependencies = Layer.mergeAll(
+      testTeamServiceLayer({
+        environmentId: ENVIRONMENT_ID,
+        stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-stale-view-state-" }),
+      }),
+      TestTeamGitLayer,
+      Layer.succeedContext(orchestration),
+      Layer.mock(ServerEnvironment.ServerEnvironment)({
+        getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
+      }),
+    ).pipe(Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
+    const context = yield* Layer.build(TeamNotes.layer.pipe(Layer.provideMerge(dependencies)));
+    const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
+    const membership = team
+      ? (yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root })).membership
+      : yield* teams.openSolo({ projectRoot: root, name: "Project" });
+    if (membership.status !== "member") return yield* Effect.die("not a member");
+    const teamId = membership.team.teamId;
+    const memberId = membership.member.memberId;
+    const { read } = yield* TeamStaleView.make.pipe(Effect.provide(context));
 
-  /** Thread A's run ends now (test clock): its checkpoint is the folder as it is. */
-  let runs = 0;
-  const endTurnOfA = (files: ReadonlyArray<string>) =>
-    Effect.gen(function* () {
-      writeFile(root, `.checkpoint-${runs}`, "");
-      runs += 1;
-      const ref = commitAll(root, `checkpoint ${runs}`);
-      const now = yield* DateTime.now;
-      const nodeId = NodeId.make(`node:stale-view-${runs}`);
-      const runId = RunId.make(`run:stale-view-${runs}`);
-      const eventSink = yield* EventSink.EventSinkV2;
-      yield* eventSink.write({
-        commandId: CommandId.make(`command:stale-view-${runs}`),
-        events: [
-          {
-            id: EventId.make(`event:stale-view-${runs}`),
-            type: "checkpoint.captured",
-            threadId: THREAD_A,
-            runId,
-            nodeId,
-            occurredAt: now,
-            payload: {
-              id: CheckpointId.make(`checkpoint:stale-view-${runs}`),
+    /** Thread A's run ends now (test clock): its checkpoint is the folder as it is. */
+    let runs = 0;
+    const endTurnOfA = (files: ReadonlyArray<string>) =>
+      Effect.gen(function* () {
+        writeFile(root, `.checkpoint-${runs}`, "");
+        runs += 1;
+        const ref = commitAll(root, `checkpoint ${runs}`);
+        const now = yield* DateTime.now;
+        const nodeId = NodeId.make(`node:stale-view-${runs}`);
+        const runId = RunId.make(`run:stale-view-${runs}`);
+        const eventSink = yield* EventSink.EventSinkV2;
+        yield* eventSink.write({
+          commandId: CommandId.make(`command:stale-view-${runs}`),
+          events: [
+            {
+              id: EventId.make(`event:stale-view-${runs}`),
+              type: "checkpoint.captured",
               threadId: THREAD_A,
-              scopeId: CheckpointScopeId.make("scope:stale-view"),
               runId,
               nodeId,
-              parentCheckpointId: null,
-              ordinalWithinScope: runs,
-              appRunOrdinal: runs,
-              ref: CheckpointRef.make(ref),
-              status: "ready",
-              files: files.map((path) => ({ path, kind: "modified", additions: 1, deletions: 1 })),
-              capturedAt: now,
+              occurredAt: now,
+              payload: {
+                id: CheckpointId.make(`checkpoint:stale-view-${runs}`),
+                threadId: THREAD_A,
+                scopeId: CheckpointScopeId.make("scope:stale-view"),
+                runId,
+                nodeId,
+                parentCheckpointId: null,
+                ordinalWithinScope: runs,
+                appRunOrdinal: runs,
+                ref: CheckpointRef.make(ref),
+                status: "ready",
+                files: files.map((path) => ({
+                  path,
+                  kind: "modified",
+                  additions: 1,
+                  deletions: 1,
+                })),
+                capturedAt: now,
+              },
             },
-          },
-        ],
+          ],
+        });
+      }).pipe(Effect.provide(orchestration));
+    /** Another thread's automatic note on `file` as it is now in `folder`. */
+    const noteBy = (
+      service: TeamService.TeamService["Service"],
+      memberId: string,
+      thread: { readonly environmentId: EnvironmentId; readonly threadId: ThreadId },
+      file: string,
+      hash: string,
+    ) =>
+      service.saveAutomaticNote({
+        teamId,
+        memberId: TeamMemberId.make(memberId),
+        thread,
+        files: [file],
+        fileHashes: { [file]: hash },
       });
-    }).pipe(Effect.provide(orchestration));
-  /** Another thread's automatic note on `file` as it is now in `folder`. */
-  const noteBy = (
-    service: TeamService.TeamService["Service"],
-    memberId: string,
-    thread: { readonly environmentId: EnvironmentId; readonly threadId: ThreadId },
-    file: string,
-    hash: string,
-  ) =>
-    service.saveAutomaticNote({
-      teamId,
-      memberId: TeamMemberId.make(memberId),
-      thread,
-      files: [file],
-      fileHashes: { [file]: hash },
-    });
-  return { root, teams, teamId, memberId, read, endTurnOfA, noteBy };
-}, Effect.provide(NodeServices.layer));
+    return { root, teams, teamId, memberId, read, endTurnOfA, noteBy };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 describe("renderStaleView", () => {
   it("names each file once, who changed it and whether it is in this copy", () => {

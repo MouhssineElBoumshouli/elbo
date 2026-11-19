@@ -4,6 +4,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   type OrchestrationV2ServerCommand,
@@ -69,195 +70,198 @@ const decodeMade = Schema.decodeUnknownOption(TeamChoiceMadePayload);
  * A team project on this test's origin (`team`), or a solo one. Thread A runs
  * in its own worktree in team mode, in the project folder when solo.
  */
-const makeHarness = Effect.fn("makeTeamWaitHarness")(function* (team: boolean) {
-  const fs = yield* FileSystem.FileSystem;
-  const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-wait-" });
-  initRepo(root, {
-    [LOGIN]: "export const login = 1;\n",
-    "src/format.ts": "export const format = 1;\n",
-    ...(team ? { ".team/team.json": `{ "teamId": "${TEAM_ID}", "name": "Core" }` } : {}),
-  });
-  let worktree: string | null = null;
-  if (team) {
-    useTeamOrigin(root, originUrl);
-    git(root, "push", "--quiet", "origin", "main");
-    worktree = NodePath.join(originRoot, "worktree-a");
-    git(root, "worktree", "add", "--quiet", "-b", "t3/a", worktree, "main");
-  }
+const makeHarness = Effect.fn("makeTeamWaitHarness")(
+  function* (team: boolean) {
+    const fs = yield* FileSystem.FileSystem;
+    const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-wait-" });
+    initRepo(root, {
+      [LOGIN]: "export const login = 1;\n",
+      "src/format.ts": "export const format = 1;\n",
+      ...(team ? { ".team/team.json": `{ "teamId": "${TEAM_ID}", "name": "Core" }` } : {}),
+    });
+    let worktree: string | null = null;
+    if (team) {
+      useTeamOrigin(root, originUrl);
+      git(root, "push", "--quiet", "origin", "main");
+      worktree = NodePath.join(originRoot, "worktree-a");
+      git(root, "worktree", "add", "--quiet", "-b", "t3/a", worktree, "main");
+    }
 
-  // The real v2 orchestrator; thread A is in a run while it plans.
-  const orchestration = yield* Layer.build(TeamOrchestrator.layer);
-  yield* Effect.gen(function* () {
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId: THREAD_A,
-      workspaceRoot: root,
-      worktreePath: worktree,
-    });
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId: THREAD_B,
-      workspaceRoot: root,
-    });
-    yield* TeamOrchestrator.setRun({
+    // The real v2 orchestrator; thread A is in a run while it plans.
+    const orchestration = yield* Layer.build(TeamOrchestrator.layer);
+    yield* Effect.gen(function* () {
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
+        threadId: THREAD_A,
+        workspaceRoot: root,
+        worktreePath: worktree,
+      });
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
+        threadId: THREAD_B,
+        workspaceRoot: root,
+      });
+      yield* TeamOrchestrator.setRun({
+        threadId: THREAD_A,
+        runId: RUN_A,
+        ordinal: 1,
+        status: "running",
+      });
+    }).pipe(Effect.provide(orchestration));
+
+    const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
+    const dependencies = Layer.mergeAll(
+      testTeamServiceLayer({
+        environmentId: ENVIRONMENT_ID,
+        stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-wait-state-" }),
+      }),
+      TestTeamGitLayer,
+      TeamCards.layer.pipe(Layer.provide(Layer.succeedContext(orchestration))),
+      Layer.succeedContext(orchestration),
+      // After the orchestration's own: the team's turns stop at the recorded dispatch.
+      TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
+      Layer.mock(ServerEnvironment.ServerEnvironment)({
+        getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
+      }),
+    ).pipe(Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
+    const context = yield* Layer.build(TeamChoices.layer.pipe(Layer.provideMerge(dependencies)));
+    const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
+    const membership = team
+      ? (yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root })).membership
+      : yield* teams.openSolo({ projectRoot: root, name: "Project" });
+    if (membership.status !== "member") return yield* Effect.die("not a member");
+    const teamId = membership.team.teamId;
+    const choices = yield* TeamChoices.TeamChoices.pipe(Effect.provide(context));
+    const { checkWaits } = yield* TeamWait.make.pipe(Effect.provide(context));
+    const holds = yield* choices.subscribeHolds;
+
+    /** Thread A's `team_plan` call on `files`. */
+    const ask = (files: ReadonlyArray<TeamPlanFile>) =>
+      choices.ask({
+        context: {
+          teamFile: { teamId, name: "Core" },
+          solo: !team,
+          member: membership.member,
+          thread: { environmentId: ENVIRONMENT_ID, threadId: THREAD_A },
+          teamRoot: worktree ?? root,
+          workingFolder: worktree ?? root,
+        },
+        files,
+        providerInstanceId: ProviderInstanceId.make("codex"),
+      });
+    /** Thread A plans `files`: shows the card and returns the held call once it waits. */
+    const plan = (files: ReadonlyArray<TeamPlanFile>) =>
+      Effect.gen(function* () {
+        const call = yield* ask(files).pipe(Effect.forkChild({ startImmediately: true }));
+        const choiceId = yield* PubSub.take(holds);
+        return { call, choiceId };
+      });
+    const cards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
+    const made = (choiceId: string) =>
+      cards
+        .forThread(THREAD_A)
+        .pipe(
+          Effect.map((entries) =>
+            entries.flatMap((entry) =>
+              entry.kind === TEAM_CHOICE_MADE_ACTIVITY_KIND
+                ? Option.toArray(decodeMade(entry.payload)).filter(
+                    (payload) => payload.choiceId === choiceId,
+                  )
+                : [],
+            ),
+          ),
+        );
+    const turnStarts = Ref.get(dispatched).pipe(
+      Effect.map((commands) =>
+        commands.flatMap((command) => (command.type === "message.dispatch" ? [command.text] : [])),
+      ),
+    );
+    /** Every turn T3 started is T3 Code's own message (a `system` notification, D2). */
+    const turnsFromApp = Ref.get(dispatched).pipe(
+      Effect.map((commands) =>
+        commands.every(
+          (command) =>
+            command.type !== "message.dispatch" || command.notification?.source.kind === "system",
+        ),
+      ),
+    );
+    const cardCount = cards
+      .forThread(THREAD_A)
+      .pipe(
+        Effect.map(
+          (entries) => entries.filter((entry) => entry.kind === TEAM_CHOICE_ACTIVITY_KIND).length,
+        ),
+      );
+    const endTurn = TeamOrchestrator.setRun({
       threadId: THREAD_A,
       runId: RUN_A,
       ordinal: 1,
-      status: "running",
-    });
-  }).pipe(Effect.provide(orchestration));
-
-  const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
-  const dependencies = Layer.mergeAll(
-    testTeamServiceLayer({
-      environmentId: ENVIRONMENT_ID,
-      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-wait-state-" }),
-    }),
-    TestTeamGitLayer,
-    TeamCards.layer.pipe(Layer.provide(Layer.succeedContext(orchestration))),
-    Layer.succeedContext(orchestration),
-    // After the orchestration's own: the team's turns stop at the recorded dispatch.
-    TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
-    Layer.mock(ServerEnvironment.ServerEnvironment)({
-      getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
-    }),
-  ).pipe(Layer.provideMerge(NodeServices.layer));
-  const context = yield* Layer.build(TeamChoices.layer.pipe(Layer.provideMerge(dependencies)));
-  const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
-  const membership = team
-    ? (yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root })).membership
-    : yield* teams.openSolo({ projectRoot: root, name: "Project" });
-  if (membership.status !== "member") return yield* Effect.die("not a member");
-  const teamId = membership.team.teamId;
-  const choices = yield* TeamChoices.TeamChoices.pipe(Effect.provide(context));
-  const { checkWaits } = yield* TeamWait.make.pipe(Effect.provide(context));
-  const holds = yield* choices.subscribeHolds;
-
-  /** Thread A's `team_plan` call on `files`. */
-  const ask = (files: ReadonlyArray<TeamPlanFile>) =>
-    choices.ask({
-      context: {
-        teamFile: { teamId, name: "Core" },
-        solo: !team,
-        member: membership.member,
-        thread: { environmentId: ENVIRONMENT_ID, threadId: THREAD_A },
-        teamRoot: worktree ?? root,
-        workingFolder: worktree ?? root,
-      },
-      files,
-      providerInstanceId: ProviderInstanceId.make("codex"),
-    });
-  /** Thread A plans `files`: shows the card and returns the held call once it waits. */
-  const plan = (files: ReadonlyArray<TeamPlanFile>) =>
-    Effect.gen(function* () {
-      const call = yield* ask(files).pipe(Effect.forkChild({ startImmediately: true }));
-      const choiceId = yield* PubSub.take(holds);
-      return { call, choiceId };
-    });
-  const cards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
-  const made = (choiceId: string) =>
-    cards
-      .forThread(THREAD_A)
-      .pipe(
-        Effect.map((entries) =>
-          entries.flatMap((entry) =>
-            entry.kind === TEAM_CHOICE_MADE_ACTIVITY_KIND
-              ? Option.toArray(decodeMade(entry.payload)).filter(
-                  (payload) => payload.choiceId === choiceId,
-                )
-              : [],
-          ),
-        ),
-      );
-  const turnStarts = Ref.get(dispatched).pipe(
-    Effect.map((commands) =>
-      commands.flatMap((command) => (command.type === "message.dispatch" ? [command.text] : [])),
-    ),
-  );
-  /** Every turn T3 started is T3 Code's own message (a `system` notification, D2). */
-  const turnsFromApp = Ref.get(dispatched).pipe(
-    Effect.map((commands) =>
-      commands.every(
-        (command) =>
-          command.type !== "message.dispatch" || command.notification?.source.kind === "system",
-      ),
-    ),
-  );
-  const cardCount = cards
-    .forThread(THREAD_A)
-    .pipe(
-      Effect.map(
-        (entries) => entries.filter((entry) => entry.kind === TEAM_CHOICE_ACTIVITY_KIND).length,
-      ),
-    );
-  const endTurn = TeamOrchestrator.setRun({
-    threadId: THREAD_A,
-    runId: RUN_A,
-    ordinal: 1,
-    status: "completed",
-  }).pipe(Effect.provide(orchestration));
-  return {
-    root,
-    worktree,
-    teams,
-    teamId,
-    memberId: membership.member.memberId,
-    choices,
-    checkWaits,
-    ask,
-    plan,
-    made,
-    turnStarts,
-    turnsFromApp,
-    cardCount,
-    endTurn,
-  };
-}, Effect.provide(NodeServices.layer));
+      status: "completed",
+    }).pipe(Effect.provide(orchestration));
+    return {
+      root,
+      worktree,
+      teams,
+      teamId,
+      memberId: membership.member.memberId,
+      choices,
+      checkWaits,
+      ask,
+      plan,
+      made,
+      turnStarts,
+      turnsFromApp,
+      cardCount,
+      endTurn,
+    };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 /** Omar, on his own server, holding `paths`. */
-const omarHolding = Effect.fn("omarHolding")(function* (
-  root: string,
-  paths: ReadonlyArray<string>,
-) {
-  const fs = yield* FileSystem.FileSystem;
-  const omar = yield* Layer.build(
-    testTeamServiceLayer({
-      environmentId: OMAR_SERVER,
-      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-wait-omar-" }),
-      host: fakeTeamHost("Omar"),
-    }),
-  ).pipe(Effect.flatMap((built) => TeamService.TeamService.pipe(Effect.provide(built))));
-  yield* omar.openTeam({ teamFile: TEAM_FILE, checkout: root });
-  const thread = { environmentId: OMAR_SERVER, threadId: ThreadId.make("omar-1") };
-  yield* omar.claimPaths({
-    teamId: TEAM_ID,
-    memberId: TeamMemberId.make("Omar"),
-    thread,
-    paths: paths as ReadonlyArray<TeamPath>,
-  });
-  /** His work merges into `main` on the origin, and he lets go of the files. */
-  const mergeAndRelease = (contents: string) =>
-    Effect.gen(function* () {
-      const clone = NodePath.join(originRoot, "omar-clone");
-      git(originRoot, "clone", "--quiet", originUrl, clone);
-      writeFile(clone, LOGIN, contents);
-      commitAll(clone, "Omar: login");
-      git(clone, "push", "--quiet", "origin", "main");
-      yield* omar.releasePaths({
-        teamId: TEAM_ID,
-        memberId: TeamMemberId.make("Omar"),
-        thread,
-        paths: paths as ReadonlyArray<TeamPath>,
-      });
-      // His poller would push it within 15 s.
-      yield* omar.sync(TEAM_ID);
+const omarHolding = Effect.fn("omarHolding")(
+  function* (root: string, paths: ReadonlyArray<string>) {
+    const fs = yield* FileSystem.FileSystem;
+    const omar = yield* Layer.build(
+      testTeamServiceLayer({
+        environmentId: OMAR_SERVER,
+        stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-wait-omar-" }),
+        host: fakeTeamHost("Omar"),
+      }),
+    ).pipe(Effect.flatMap((built) => TeamService.TeamService.pipe(Effect.provide(built))));
+    yield* omar.openTeam({ teamFile: TEAM_FILE, checkout: root });
+    const thread = { environmentId: OMAR_SERVER, threadId: ThreadId.make("omar-1") };
+    yield* omar.claimPaths({
+      teamId: TEAM_ID,
+      memberId: TeamMemberId.make("Omar"),
+      thread,
+      paths: paths as ReadonlyArray<TeamPath>,
     });
-  /** He archives his chat without merging: his claim is released, nothing lands on `main`. */
-  const releaseOnly = omar
-    .releaseThreadClaims({ thread, reason: "its chat was archived" })
-    .pipe(Effect.andThen(omar.sync(TEAM_ID)));
-  return { mergeAndRelease, releaseOnly };
-}, Effect.provide(NodeServices.layer));
+    /** His work merges into `main` on the origin, and he lets go of the files. */
+    const mergeAndRelease = (contents: string) =>
+      Effect.gen(function* () {
+        const clone = NodePath.join(originRoot, "omar-clone");
+        git(originRoot, "clone", "--quiet", originUrl, clone);
+        writeFile(clone, LOGIN, contents);
+        commitAll(clone, "Omar: login");
+        git(clone, "push", "--quiet", "origin", "main");
+        yield* omar.releasePaths({
+          teamId: TEAM_ID,
+          memberId: TeamMemberId.make("Omar"),
+          thread,
+          paths: paths as ReadonlyArray<TeamPath>,
+        });
+        // His poller would push it within 15 s.
+        yield* omar.sync(TEAM_ID);
+      });
+    /** He archives his chat without merging: his claim is released, nothing lands on `main`. */
+    const releaseOnly = omar
+      .releaseThreadClaims({ thread, reason: "its chat was archived" })
+      .pipe(Effect.andThen(omar.sync(TEAM_ID)));
+    return { mergeAndRelease, releaseOnly };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 const omarHolds = (path: string): TeamPlanFile => ({
   path: path as TeamPath,

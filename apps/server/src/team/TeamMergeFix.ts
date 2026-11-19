@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * "Fix it" for a merge clash (fork-only, team/MERGE_HELP_PLAN.md section 5).
  *
@@ -133,7 +134,7 @@ export class TeamMergeFix extends Context.Service<
 const fail = (detail: string) => Effect.fail(new TeamMergeFixError({ detail }));
 
 /** How the other side is named: in the prompt, the commit message and the chat. */
-export const otherSideWords = (other: TeamMergeOther, nameOf: (memberId: string) => string) => {
+const otherSideWords = (other: TeamMergeOther, nameOf: (memberId: string) => string) => {
   switch (other._tag) {
     case "branch": {
       const name = nameOf(other.memberId);

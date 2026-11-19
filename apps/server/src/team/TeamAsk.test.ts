@@ -9,6 +9,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   type OrchestrationV2ServerCommand,
@@ -80,65 +81,68 @@ const RUN_A = RunId.make("run-a");
  * One T3 server: its team service, warning cards and questions, with its
  * threads (id to worktree and branch) and what it dispatched.
  */
-const makeServer = Effect.fn("makeTeamAskServer")(function* (input: {
-  readonly environmentId: EnvironmentId;
-  readonly login: string;
-  readonly checkout: string;
-  readonly threads: Readonly<
-    Record<string, { readonly worktree: string; readonly branch: string }>
-  >;
-}) {
-  const fs = yield* FileSystem.FileSystem;
-  // This server's own v2 orchestrator, with its threads in the project.
-  const orchestration = yield* Layer.build(TeamOrchestrator.layer);
-  for (const [threadId, thread] of Object.entries(input.threads)) {
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId: ThreadId.make(threadId),
-      workspaceRoot: input.checkout,
-      worktreePath: thread.worktree,
-      branch: thread.branch,
-    }).pipe(Effect.provide(orchestration));
-  }
-  const setRunOfA = (status: "running" | "completed") =>
-    TeamOrchestrator.setRun({ threadId: THREAD_A, runId: RUN_A, ordinal: 1, status }).pipe(
-      Effect.provide(orchestration),
-    );
-  const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
-  const dependencies = Layer.mergeAll(
-    testTeamServiceLayer({
-      environmentId: input.environmentId,
-      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-ask-state-" }),
-      host: fakeTeamHost(input.login),
-    }),
-    TestTeamGitLayer,
-    TeamCards.layer.pipe(Layer.provide(Layer.succeedContext(orchestration))),
-    Layer.succeedContext(orchestration),
-    // After the orchestration's own: the team's turns stop at the recorded dispatch.
-    TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
-    Layer.mock(ServerEnvironment.ServerEnvironment)({
-      getEnvironmentId: Effect.succeed(input.environmentId),
-    }),
-  ).pipe(Layer.provideMerge(NodeServices.layer));
-  const context = yield* Layer.build(TeamChoices.layer.pipe(Layer.provideMerge(dependencies)));
-  const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
-  const choices = yield* TeamChoices.TeamChoices.pipe(Effect.provide(context));
-  const questions = yield* TeamQuestions.make.pipe(Effect.provide(context));
-  const pushed = yield* TeamPushedBranches.make.pipe(Effect.provide(context));
+const makeServer = Effect.fn("makeTeamAskServer")(
+  function* (input: {
+    readonly environmentId: EnvironmentId;
+    readonly login: string;
+    readonly checkout: string;
+    readonly threads: Readonly<
+      Record<string, { readonly worktree: string; readonly branch: string }>
+    >;
+  }) {
+    const fs = yield* FileSystem.FileSystem;
+    // This server's own v2 orchestrator, with its threads in the project.
+    const orchestration = yield* Layer.build(TeamOrchestrator.layer);
+    for (const [threadId, thread] of Object.entries(input.threads)) {
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
+        threadId: ThreadId.make(threadId),
+        workspaceRoot: input.checkout,
+        worktreePath: thread.worktree,
+        branch: thread.branch,
+      }).pipe(Effect.provide(orchestration));
+    }
+    const setRunOfA = (status: "running" | "completed") =>
+      TeamOrchestrator.setRun({ threadId: THREAD_A, runId: RUN_A, ordinal: 1, status }).pipe(
+        Effect.provide(orchestration),
+      );
+    const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
+    const dependencies = Layer.mergeAll(
+      testTeamServiceLayer({
+        environmentId: input.environmentId,
+        stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-ask-state-" }),
+        host: fakeTeamHost(input.login),
+      }),
+      TestTeamGitLayer,
+      TeamCards.layer.pipe(Layer.provide(Layer.succeedContext(orchestration))),
+      Layer.succeedContext(orchestration),
+      // After the orchestration's own: the team's turns stop at the recorded dispatch.
+      TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
+      Layer.mock(ServerEnvironment.ServerEnvironment)({
+        getEnvironmentId: Effect.succeed(input.environmentId),
+      }),
+    ).pipe(Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
+    const context = yield* Layer.build(TeamChoices.layer.pipe(Layer.provideMerge(dependencies)));
+    const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
+    const choices = yield* TeamChoices.TeamChoices.pipe(Effect.provide(context));
+    const questions = yield* TeamQuestions.make.pipe(Effect.provide(context));
+    const pushed = yield* TeamPushedBranches.make.pipe(Effect.provide(context));
 
-  const cards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
-  // The test reads back what it wrote; each kind's payload schema is the card's own.
-  const activities = <A>(kind: TeamCardKind) =>
-    cards
-      .listByKind(kind)
-      .pipe(Effect.map((entries) => entries.map(({ entry }) => entry.payload as A)));
-  const turnStarts = Ref.get(dispatched).pipe(
-    Effect.map((commands) =>
-      commands.flatMap((command) => (command.type === "message.dispatch" ? [command] : [])),
-    ),
-  );
-  return { teams, choices, questions, pushed, setRunOfA, activities, turnStarts };
-}, Effect.provide(NodeServices.layer));
+    const cards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
+    // The test reads back what it wrote; each kind's payload schema is the card's own.
+    const activities = <A>(kind: TeamCardKind) =>
+      cards
+        .listByKind(kind)
+        .pipe(Effect.map((entries) => entries.map(({ entry }) => entry.payload as A)));
+    const turnStarts = Ref.get(dispatched).pipe(
+      Effect.map((commands) =>
+        commands.flatMap((command) => (command.type === "message.dispatch" ? [command] : [])),
+      ),
+    );
+    return { teams, choices, questions, pushed, setRunOfA, activities, turnStarts };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 const omarHolds = (path: string): TeamPlanFile => ({
   path: path as TeamPath,
@@ -146,78 +150,81 @@ const omarHolds = (path: string): TeamPlanFile => ({
 });
 
 /** The team project, this server with thread A in its worktree, and Omar's server holding LOGIN. */
-const makeHarness = Effect.fn("makeTeamAskHarness")(function* () {
-  const fs = yield* FileSystem.FileSystem;
-  const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-ask-" });
-  initRepo(root, {
-    [LOGIN]: "export const login = 1;\n",
-    ".team/team.json": `{ "teamId": "${TEAM_ID}", "name": "Core" }`,
-  });
-  useTeamOrigin(root, originUrl);
-  git(root, "push", "--quiet", "origin", "main");
-  const worktree = NodePath.join(originRoot, "worktree-a");
-  git(root, "worktree", "add", "--quiet", "-b", "t3/a", worktree, "main");
-  const omarClone = NodePath.join(originRoot, "omar-clone");
-  git(originRoot, "clone", "--quiet", originUrl, omarClone);
-  git(omarClone, "checkout", "--quiet", "-b", "t3/omar");
+const makeHarness = Effect.fn("makeTeamAskHarness")(
+  function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-ask-" });
+    initRepo(root, {
+      [LOGIN]: "export const login = 1;\n",
+      ".team/team.json": `{ "teamId": "${TEAM_ID}", "name": "Core" }`,
+    });
+    useTeamOrigin(root, originUrl);
+    git(root, "push", "--quiet", "origin", "main");
+    const worktree = NodePath.join(originRoot, "worktree-a");
+    git(root, "worktree", "add", "--quiet", "-b", "t3/a", worktree, "main");
+    const omarClone = NodePath.join(originRoot, "omar-clone");
+    git(originRoot, "clone", "--quiet", originUrl, omarClone);
+    git(omarClone, "checkout", "--quiet", "-b", "t3/omar");
 
-  const me = yield* makeServer({
-    environmentId: MY_SERVER,
-    login: TEST_TEAM_LOGIN,
-    checkout: root,
-    threads: { [THREAD_A]: { worktree, branch: "t3/a" } },
-  });
-  yield* me.setRunOfA("running");
-  const membership = (yield* me.teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root }))
-    .membership;
-  if (membership.status !== "member") return yield* Effect.die("not a member");
+    const me = yield* makeServer({
+      environmentId: MY_SERVER,
+      login: TEST_TEAM_LOGIN,
+      checkout: root,
+      threads: { [THREAD_A]: { worktree, branch: "t3/a" } },
+    });
+    yield* me.setRunOfA("running");
+    const membership = (yield* me.teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root }))
+      .membership;
+    if (membership.status !== "member") return yield* Effect.die("not a member");
 
-  const omar = yield* makeServer({
-    environmentId: OMAR_SERVER,
-    login: "Omar",
-    checkout: omarClone,
-    threads: { [OMAR_THREAD]: { worktree: omarClone, branch: "t3/omar" } },
-  });
-  yield* omar.teams.openTeam({ teamFile: TEAM_FILE, checkout: omarClone });
-  yield* omar.teams.claimPaths({
-    teamId: TEAM_ID,
-    memberId: OMAR,
-    thread: { environmentId: OMAR_SERVER, threadId: OMAR_THREAD },
-    paths: [LOGIN],
-    branch: "t3/omar",
-  });
-  yield* me.teams.refresh(TEAM_ID);
+    const omar = yield* makeServer({
+      environmentId: OMAR_SERVER,
+      login: "Omar",
+      checkout: omarClone,
+      threads: { [OMAR_THREAD]: { worktree: omarClone, branch: "t3/omar" } },
+    });
+    yield* omar.teams.openTeam({ teamFile: TEAM_FILE, checkout: omarClone });
+    yield* omar.teams.claimPaths({
+      teamId: TEAM_ID,
+      memberId: OMAR,
+      thread: { environmentId: OMAR_SERVER, threadId: OMAR_THREAD },
+      paths: [LOGIN],
+      branch: "t3/omar",
+    });
+    yield* me.teams.refresh(TEAM_ID);
 
-  const holds = yield* me.choices.subscribeHolds;
-  /** Thread A plans LOGIN: the card shows and the call is held. */
-  const plan = Effect.gen(function* () {
-    const call = yield* me.choices
-      .ask({
-        context: {
-          teamFile: TEAM_FILE,
-          solo: false,
-          member: membership.member,
-          thread: { environmentId: MY_SERVER, threadId: THREAD_A },
-          teamRoot: worktree,
-          workingFolder: worktree,
-        },
-        files: [omarHolds(LOGIN)],
-        providerInstanceId: ProviderInstanceId.make("codex"),
-      })
-      .pipe(Effect.forkChild({ startImmediately: true }));
-    const choiceId = yield* PubSub.take(holds);
-    return { call, choiceId };
-  });
-  const made = (choiceId: string) =>
-    me
-      .activities<TeamChoiceMadePayload>(TEAM_CHOICE_MADE_ACTIVITY_KIND)
-      .pipe(Effect.map((records) => records.filter((record) => record.choiceId === choiceId)));
-  /** Shares this server's writes, then Omar's server reads them (their pollers would). */
-  const toOmar = me.teams.sync(TEAM_ID).pipe(Effect.andThen(omar.teams.refresh(TEAM_ID)));
-  const fromOmar = omar.teams.sync(TEAM_ID).pipe(Effect.andThen(me.teams.refresh(TEAM_ID)));
-  const endTurn = me.setRunOfA("completed");
-  return { root, worktree, omarClone, me, omar, plan, made, toOmar, fromOmar, endTurn };
-}, Effect.provide(NodeServices.layer));
+    const holds = yield* me.choices.subscribeHolds;
+    /** Thread A plans LOGIN: the card shows and the call is held. */
+    const plan = Effect.gen(function* () {
+      const call = yield* me.choices
+        .ask({
+          context: {
+            teamFile: TEAM_FILE,
+            solo: false,
+            member: membership.member,
+            thread: { environmentId: MY_SERVER, threadId: THREAD_A },
+            teamRoot: worktree,
+            workingFolder: worktree,
+          },
+          files: [omarHolds(LOGIN)],
+          providerInstanceId: ProviderInstanceId.make("codex"),
+        })
+        .pipe(Effect.forkChild({ startImmediately: true }));
+      const choiceId = yield* PubSub.take(holds);
+      return { call, choiceId };
+    });
+    const made = (choiceId: string) =>
+      me
+        .activities<TeamChoiceMadePayload>(TEAM_CHOICE_MADE_ACTIVITY_KIND)
+        .pipe(Effect.map((records) => records.filter((record) => record.choiceId === choiceId)));
+    /** Shares this server's writes, then Omar's server reads them (their pollers would). */
+    const toOmar = me.teams.sync(TEAM_ID).pipe(Effect.andThen(omar.teams.refresh(TEAM_ID)));
+    const fromOmar = omar.teams.sync(TEAM_ID).pipe(Effect.andThen(me.teams.refresh(TEAM_ID)));
+    const endTurn = me.setRunOfA("completed");
+    return { root, worktree, omarClone, me, omar, plan, made, toOmar, fromOmar, endTurn };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 describe("Ask", () => {
   it.effect("Omar sees the question on his chat, says yes, and this chat goes on, agreed", () =>

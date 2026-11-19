@@ -4,6 +4,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   type OrchestrationProjectShell,
@@ -77,7 +78,7 @@ const harness = (workspaceRoot: string) =>
         }),
         TeamCards.layer.pipe(
           Layer.provide(ServerConfig.layerTest(process.cwd(), { prefix: "t3-team-feed-home-" })),
-          Layer.provide(NodeServices.layer),
+          Layer.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
         ),
         Layer.succeed(
           TeamMergeCheck.TeamMergeCheck,
@@ -85,12 +86,12 @@ const harness = (workspaceRoot: string) =>
             forTeam: (teamId) => Effect.sync(() => merging.get(teamId)),
             subscribeChanges: PubSub.subscribe(mergeChanges),
             request: () => Effect.void,
-            findPair: () => Effect.succeed(undefined),
+            findPair: () => Effect.undefined,
             useCommitUntilNextTurn: () => Effect.void,
-            takeClashLine: () => Effect.succeed(undefined),
+            takeClashLine: () => Effect.undefined,
             placeOf: () => Effect.succeedNone,
             setCombined: () => Effect.void,
-            combinedOf: () => Effect.succeed(undefined),
+            combinedOf: () => Effect.undefined,
           }),
         ),
         Layer.succeed(
@@ -101,7 +102,7 @@ const harness = (workspaceRoot: string) =>
             subscribeChanges: PubSub.subscribe(fixChanges),
           }),
         ),
-        NodeServices.layer,
+        Layer.mergeAll(NodeServices.layer, NodeCrypto.layer),
       ),
     );
     const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));

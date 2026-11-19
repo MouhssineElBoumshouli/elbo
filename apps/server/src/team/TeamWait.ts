@@ -35,7 +35,7 @@ import * as TeamChoices from "./TeamChoices.ts";
 import { type CopyMove, moveCopyOnto } from "./teamCopy.ts";
 import * as TeamService from "./TeamService.ts";
 
-export const WAIT_CHECK_INTERVAL = "15 seconds";
+const WAIT_CHECK_INTERVAL = "15 seconds";
 
 const sameHolder = (a: TeamPlanHolder, b: TeamPlanHolder) =>
   a.kind === "member"

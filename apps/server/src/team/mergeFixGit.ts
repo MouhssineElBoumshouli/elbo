@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * The Git steps of "Fix it" (fork-only, team/MERGE_HELP_PLAN.md section 5),
  * in a chat's own worktree. The other side is only read: its commit is merged
@@ -14,7 +15,7 @@
  * @module mergeFixGit
  */
 import type { GitCommandError } from "@t3tools/contracts";
-import * as Data from "effect/Data";
+import * as Schema from "effect/Schema";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 
@@ -24,9 +25,9 @@ const GIT_TIMEOUT_MS = 120_000;
 
 type Git = GitVcsDriver.GitVcsDriver["Service"];
 
-export class MergeFixGitError extends Data.TaggedError("MergeFixGitError")<{
-  readonly detail: string;
-}> {}
+class MergeFixGitError extends Schema.TaggedError<MergeFixGitError>()("MergeFixGitError", {
+  detail: Schema.String,
+}) {}
 
 export interface StartedMerge {
   /** HEAD before the fix. */

@@ -7,7 +7,7 @@
 import { planHolders } from "@t3tools/client-runtime/state/teamMarkers";
 import type { TeamPlanActivityPayload } from "@t3tools/contracts";
 import { teamPlanSummary } from "@t3tools/contracts";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 
 import { PierreEntryIcon } from "~/components/chat/PierreEntryIcon";
 import { MiddleTruncate } from "~/components/ui/middle-truncate";
@@ -18,10 +18,10 @@ export const TeamPlanCard = memo(function TeamPlanCard(props: {
   readonly plan: TeamPlanActivityPayload;
   readonly resolvedTheme: "light" | "dark";
 }) {
-  const files = useMemo(
-    () => props.plan.files.map((file) => ({ path: file.path, holders: planHolders(file.holders) })),
-    [props.plan],
-  );
+  const files = props.plan.files.map((file) => ({
+    path: file.path,
+    holders: planHolders(file.holders),
+  }));
   const held = files.filter((file) => file.holders.length > 0).length;
   return (
     <section

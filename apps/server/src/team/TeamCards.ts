@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Team cards kept per chat (fork-only, team/V2_PORT_PLAN.md D1): the plan
  * card, the warning card and its choice, a teammate's question and its answer.

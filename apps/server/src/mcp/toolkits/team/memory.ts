@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * `team_memory_search` (team/DESIGN.md D5, D7): keyword search over handoff
  * notes (written and automatic) and `.team/decisions/*.md`, with a freshness
@@ -62,7 +63,7 @@ interface LineCounts {
 const linesLabel = (lines: LineCounts) => `+${lines.added} -${lines.removed} lines`;
 
 /** "content of src/a.ts changed since this note was written (+1 -0 lines)", and the like. */
-export const describeChanges = (changes: ReadonlyArray<FileChange>, since: string) => {
+const describeChanges = (changes: ReadonlyArray<FileChange>, since: string) => {
   const [only] = changes;
   if (changes.length === 1 && only !== undefined) {
     if (only.change !== "edited") {

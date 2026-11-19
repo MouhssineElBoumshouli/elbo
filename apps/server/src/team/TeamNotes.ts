@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Notes (fork-only, team/UI_PLAN.md slice 4): what a client does with them
  * (`team.note` in `ws.ts`), and which notes an agent is told.
@@ -90,7 +91,7 @@ export class TeamNotes extends Context.Service<
   }
 >()("t3/team/TeamNotes") {}
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const teams = yield* TeamService.TeamService;
   /** Note ids told to each chat on this server. */
   const told = new Map<ThreadId, Set<string>>();

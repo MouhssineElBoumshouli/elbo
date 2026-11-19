@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * GitTeamService - the team service on the Git team state (team/STORAGE_PLAN.md
  * 3.1 to 3.4): the same reads and writes M1's tools use, kept in this server's
@@ -59,7 +60,7 @@ import {
   type ThreadId,
   type TeamWriterFile,
 } from "@t3tools/contracts";
-import * as Crypto from "effect/Crypto";
+import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -105,18 +106,18 @@ import * as Model from "./TeamStateModel.ts";
 import * as TeamStateRepo from "./TeamStateRepo.ts";
 
 /** Push access and the login are checked again after this long (upstream's viewer cache time). */
-export const TEAM_MEMBERSHIP_TTL = Duration.minutes(10);
+const TEAM_MEMBERSHIP_TTL = Duration.minutes(10);
 /** Writes other than claims wait this long, so writes close together share one push. */
 export const TEAM_SYNC_DELAY = Duration.seconds(2);
 /** A claim's fetch and push each get this long (STORAGE_PLAN.md Q4). */
-export const TEAM_CLAIM_NETWORK_TIMEOUT_MS = 3_000;
+const TEAM_CLAIM_NETWORK_TIMEOUT_MS = 3_000;
 /** The poller's ETag check: free on GitHub when nothing changed (STORAGE_PLAN.md Q2). */
-export const TEAM_POLL_INTERVAL = Duration.seconds(15);
+const TEAM_POLL_INTERVAL = Duration.seconds(15);
 /** Without gh (or a remote on no Git host), `git ls-remote`, which GitHub does count. */
-export const TEAM_POLL_FALLBACK_INTERVAL = Duration.seconds(60);
+const TEAM_POLL_FALLBACK_INTERVAL = Duration.seconds(60);
 /** After a failed check the wait doubles from this, up to the max (upstream's SourceControlRateLimit). */
-export const TEAM_POLL_BACKOFF = Duration.seconds(30);
-export const TEAM_POLL_MAX_BACKOFF = Duration.minutes(15);
+const TEAM_POLL_BACKOFF = Duration.seconds(30);
+const TEAM_POLL_MAX_BACKOFF = Duration.minutes(15);
 
 export type TeamPollMode = "etag" | "lsRemote";
 
@@ -277,11 +278,11 @@ export const make = Effect.fn("GitTeamService.make")(function* (options: GitTeam
   const host = yield* TeamHost.TeamHost;
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const crypto = yield* Crypto.Crypto;
+  const random = yield* SecureRandom.SecureRandom;
   const scope = yield* Scope.Scope;
   const environmentId = options.environmentId;
 
-  const newId = crypto.randomUUIDv4().pipe(Effect.orDie);
+  const newId = random.uuidV4().pipe(Effect.orDie);
   const nowIso = DateTime.now.pipe(Effect.map(DateTime.formatIso));
   const nowMillis = DateTime.now.pipe(Effect.map(DateTime.toEpochMillis));
   const storage =
@@ -567,6 +568,8 @@ export const make = Effect.fn("GitTeamService.make")(function* (options: GitTeam
             operation: "GitTeamService.load",
             cwd: path.join(options.stateDirectory, name),
             args: ["config", "--get", "remote.origin.url"],
+            // Named, not found from cwd: upstream runs Git with safe.bareRepository=explicit.
+            env: { GIT_DIR: path.join(options.stateDirectory, name) },
             allowNonZeroExit: true,
           })
           .pipe(

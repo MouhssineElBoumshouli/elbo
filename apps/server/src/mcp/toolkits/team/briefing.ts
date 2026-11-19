@@ -71,7 +71,7 @@ export const makeTeamBriefingResolver = Effect.gen(function* () {
         }
         if (briefing.value === undefined) {
           lastBriefing.delete(threadId);
-          return Effect.succeed(undefined);
+          return Effect.undefined;
         }
         lastBriefing.set(threadId, briefing.value);
         return Effect.logInfo("Team briefing added.", { threadId }).pipe(Effect.as(briefing.value));

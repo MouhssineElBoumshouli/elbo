@@ -31,7 +31,7 @@ import {
   type TeamNoteInput,
 } from "@t3tools/contracts";
 import { BotIcon, FileIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -57,22 +57,19 @@ const EVERYONE = "everyone";
 /** One note action; a failure shows as a toast. Resolves true when it was saved. */
 function useNoteAction(environmentId: EnvironmentId) {
   const note = useAtomCommand(teamFeed.note, { reportFailure: false });
-  return useCallback(
-    (input: TeamNoteInput, failedTitle: string | null) =>
-      note({ environmentId, input }).then((result) => {
-        if (result._tag !== "Failure") return true;
-        if (failedTitle !== null && !isAtomCommandInterrupted(result)) {
-          const error = squashAtomCommandFailure(result);
-          toastManager.add({
-            type: "error",
-            title: failedTitle,
-            description: error instanceof Error ? error.message : "Try again.",
-          });
-        }
-        return false;
-      }),
-    [note, environmentId],
-  );
+  return (input: TeamNoteInput, failedTitle: string | null) =>
+    note({ environmentId, input }).then((result) => {
+      if (result._tag !== "Failure") return true;
+      if (failedTitle !== null && !isAtomCommandInterrupted(result)) {
+        const error = squashAtomCommandFailure(result);
+        toastManager.add({
+          type: "error",
+          title: failedTitle,
+          description: error instanceof Error ? error.message : "Try again.",
+        });
+      }
+      return false;
+    });
 }
 
 const nameOf = (team: TeamFeedTeam, memberId: TeamMemberId) => teamMemberName(team, memberId);
@@ -92,6 +89,7 @@ export function TeamNotes(props: {
   const sentSeen = useRef(new Set<string>());
   const teamId = team.teamId;
   const unseenKey = lists.unseen.map((note) => note.noteId).join(",");
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- tells the server which shown notes this person has now seen.
   useEffect(() => {
     const noteIds = unseenKey
       .split(",")

@@ -3,6 +3,7 @@
  * SQLite, a temp T3 home, and a Codex instance whose sessions are never
  * opened. Built like upstream's `orchestration-v2/DelegatedCompletionDelivery.test.ts`.
  */
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import {
   CommandId,
@@ -54,8 +55,9 @@ export const modelSelection = {
 
 const driver = ProviderDriverKind.make("codex");
 
-const layerPlatform = Layer.merge(
+const layerPlatform = Layer.mergeAll(
   NodeServices.layer,
+  NodeCrypto.layer,
   Layer.mock(SourceControlProviderRegistry.SourceControlProviderRegistry)({
     resolveLink: () => Effect.die("unused title link"),
   }),
@@ -124,7 +126,9 @@ export const layer = Layer.mergeAll(RuntimeLayer.layer, RuntimeLayer.layerEventS
       peek: () => Effect.succeed(noEnrichment),
       request: () => Effect.void,
       getAvailable: () => Effect.succeed(noEnrichment),
+      readRepositoryIdentity: () => Effect.succeed(null),
       invalidate: () => Effect.void,
+      refreshRepositoryIdentity: () => Effect.void,
       subscribeChanges: Effect.never,
     }),
   ),

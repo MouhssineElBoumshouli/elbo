@@ -31,7 +31,8 @@ import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as NodeSocket from "@effect/platform-node/NodeSocket";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
+import * as NodeWS from "@effect/platform-node/NodeWS";
 import { assert, it } from "@effect/vitest";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -151,6 +152,7 @@ const start = Effect.gen(function* () {
 
   const client = yield* HttpClient.HttpClient;
   yield* Effect.gen(function* () {
+    // oxlint-disable-next-line t3code/no-polling-loop-in-tests -- waits on a separate server process to answer HTTP; no in-process event exists.
     while (true) {
       if (child.exitCode !== null) {
         return yield* Effect.die(new Error(`server exited with ${child.exitCode}`));
@@ -161,6 +163,7 @@ const start = Effect.gen(function* () {
         Effect.orElseSucceed(() => false),
       );
       if (ready) return;
+      // oxlint-disable-next-line t3code/no-real-time-wait-in-tests -- the server is a real child process on the real clock.
       yield* Effect.sleep("500 millis");
     }
   }).pipe(
@@ -218,7 +221,13 @@ const start = Effect.gen(function* () {
 });
 
 const ReadOnlySocketLive = Layer.effect(ReadOnlySocket, start).pipe(
-  Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NetService.layer, FetchHttpClient.layer)),
+  Layer.provideMerge(
+    Layer.mergeAll(
+      Layer.mergeAll(NodeServices.layer, NodeCrypto.layer),
+      NetService.layer,
+      FetchHttpClient.layer,
+    ),
+  ),
 );
 
 const rpcProtocolLayer = (url: string) =>
@@ -229,7 +238,7 @@ const rpcProtocolLayer = (url: string) =>
           Layer.succeed(
             Socket.WebSocketConstructor,
             (socketUrl, protocols) =>
-              new NodeSocket.NodeWS.WebSocket(
+              new NodeWS.WebSocket(
                 socketUrl,
                 protocols as string | Array<string> | undefined,
               ) as unknown as globalThis.WebSocket,
@@ -281,6 +290,7 @@ const failureOf = (exit: Exit.Exit<unknown, unknown>) => {
     : undefined;
 };
 
+// oxlint-disable-next-line t3code/no-test-timeout-or-unreasoned-skip -- the layer starts a real server process, which takes longer than the project timeout.
 it.layer(ReadOnlySocketLive, { timeout: STARTUP_TIMEOUT_MS + 30_000, excludeTestServices: true })(
   "ChatGPT RPCs need orchestration:operate",
   (it) => {

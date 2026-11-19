@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Solo mode (team/WINDOWS_AND_SOLO.md S1, S5): a project without
  * `.team/team.json` still gets memory, notes, claims between the person's own
@@ -26,10 +27,10 @@ import { folderKey, realFolder } from "../folders.ts";
 export const SOLO_LOGIN = Schema.decodeSync(TeamLogin)("me");
 /** How the person shows in their own solo state ("who" in `team_status`). */
 export const SOLO_DISPLAY_NAME = "You";
-export const SOLO_TEAM_ID_PREFIX = "solo-";
+const SOLO_TEAM_ID_PREFIX = "solo-";
 
 /** The solo team id of a project folder (links already resolved). */
-export const soloTeamId = (folder: string, platform: NodeJS.Platform) =>
+const soloTeamId = (folder: string, platform: NodeJS.Platform) =>
   TeamId.make(
     `${SOLO_TEAM_ID_PREFIX}${NodeCrypto.createHash("sha256")
       .update(folderKey(folder, platform))

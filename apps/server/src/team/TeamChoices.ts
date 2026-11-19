@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * The warning card's hold and click (fork-only, team/PREVENTION_PLAN.md, slice 3a).
  *
@@ -43,7 +44,7 @@ import {
   type ThreadId,
 } from "@t3tools/contracts";
 import * as Context from "effect/Context";
-import * as Crypto from "effect/Crypto";
+import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
@@ -183,7 +184,7 @@ export const holderWords = (files: ReadonlyArray<TeamPlanFile>) => {
 };
 
 /** Who a wait is for: "Omar", "Sara and Omar", or "the other chat". */
-export const waiteeWords = (files: ReadonlyArray<TeamPlanFile>) =>
+const waiteeWords = (files: ReadonlyArray<TeamPlanFile>) =>
   files.some((file) => file.holders.some((holder) => holder.kind === "member"))
     ? holderWords(
         files.map((file) => ({
@@ -231,7 +232,7 @@ const answerLine = (answer: TeamChoiceAnswer) =>
   answer.text === null ? "" : ` (${answer.by}: "${answer.text}")`;
 
 /** What the agent is told: as the held call's answer, or as the user's next message. */
-export const choiceInstruction = (
+const choiceInstruction = (
   choice: TeamChoice,
   files: ReadonlyArray<TeamPlanFile>,
   voice: "tool" | "message",
@@ -275,19 +276,19 @@ export const choiceInstruction = (
 };
 
 /** For an edit or a plan that touches files the user chose to wait on. */
-export const waitingInstruction = (files: ReadonlyArray<TeamPlanFile>) => {
+const waitingInstruction = (files: ReadonlyArray<TeamPlanFile>) => {
   const waitee = waiteeWords(files);
   const it = itOrThem(files);
   return `The user chose to wait for ${waitee} on ${quoted(files.map((file) => file.path))}. Do not edit ${it}; end your turn. T3 starts your next turn when ${waitee} ${waitee.includes(" and ") ? "let" : "lets"} go of ${it}.`;
 };
 
-export const notYetInstruction = (files: ReadonlyArray<TeamPlanFile>) => {
+const notYetInstruction = (files: ReadonlyArray<TeamPlanFile>) => {
   const paths = files.map((file) => file.path);
   return `Paused: ${quoted(paths)} ${paths.length === 1 ? "is" : "are"} held by ${holderWords(files)}, and the user has not chosen yet. Do not edit ${paths.length === 1 ? "it" : "them"}. End your turn now; the user's choice comes as the next message.`;
 };
 
 /** The message a click's new turn starts with; its turn is the one that carries the choice. */
-export const choiceTurnMessageId = (choiceId: string) => MessageId.make(`${choiceId}:message`);
+const choiceTurnMessageId = (choiceId: string) => MessageId.make(`${choiceId}:message`);
 
 export interface UndoRequest {
   readonly messageId: MessageId;
@@ -307,13 +308,13 @@ interface Waiter {
   readonly deferred: Deferred.Deferred<Option.Option<Delivered>>;
 }
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const teams = yield* TeamService.TeamService;
   const orchestrator = yield* Orchestrator.OrchestratorV2;
   const threads = yield* ThreadManagementService.ThreadManagementService;
   const providers = yield* ProviderInstanceRegistry.ProviderInstanceRegistry;
   const cards = yield* TeamCards.TeamCards;
-  const crypto = yield* Crypto.Crypto;
+  const random = yield* SecureRandom.SecureRandom;
   const git = yield* GitVcsDriver.GitVcsDriver;
   const environmentId = yield* (yield* ServerEnvironment.ServerEnvironment).getEnvironmentId;
   const { resolve } = yield* makeTeamResolver;
@@ -427,7 +428,7 @@ export const make = Effect.gen(function* () {
         return { _tag: "NotYet", instruction: waitingInstruction(waitingCard.files) } as const;
       }
       const reused = yield* openCardFor(threadId, input.files);
-      const choiceId = reused ?? `team-choice:${yield* crypto.randomUUIDv4()}`;
+      const choiceId = reused ?? `team-choice:${yield* random.uuidV4()}`;
       const cap = yield* capFor(threadId, input.providerInstanceId);
       const waiter: Waiter = {
         threadId,
@@ -664,9 +665,7 @@ export const make = Effect.gen(function* () {
         kind: TEAM_CHOICE_MADE_ACTIVITY_KIND,
         summary: teamChoiceMadeSummary(made),
         payload: made,
-        id: first
-          ? `${made.choiceId}:made`
-          : `${made.choiceId}:made:${yield* crypto.randomUUIDv4()}`,
+        id: first ? `${made.choiceId}:made` : `${made.choiceId}:made:${yield* random.uuidV4()}`,
       });
     });
 
@@ -725,14 +724,13 @@ export const make = Effect.gen(function* () {
   const choose = (input: TeamChooseInput) =>
     clicks.withPermits(1)(
       Effect.gen(function* () {
-        const unreadable = failed("The warning card could not be read.");
-        const card = (yield* listChoices(input.threadId).pipe(Effect.catch(unreadable))).find(
+        const card = (yield* listChoices(input.threadId)).find(
           (candidate) => candidate.choiceId === input.choiceId,
         );
         if (card === undefined) {
           return yield* new TeamChoiceError({ detail: "This warning card was not found." });
         }
-        const latest = (yield* madeChoices.pipe(Effect.catch(unreadable))).get(input.choiceId);
+        const latest = (yield* madeChoices).get(input.choiceId);
         const notRecorded = failed("The choice was sent, but not recorded on the card.");
         if (input.choice === "cancelWait") {
           if (!teamChoiceIsWaiting(latest)) {
@@ -820,10 +818,9 @@ export const make = Effect.gen(function* () {
   const answered = (input: AnsweredInput) =>
     clicks.withPermits(1)(
       Effect.gen(function* () {
-        const unreadable = failed("The warning card could not be read.");
-        const latest = (yield* madeChoices.pipe(Effect.catch(unreadable))).get(input.choiceId);
+        const latest = (yield* madeChoices).get(input.choiceId);
         if (!teamChoiceIsAsking(latest) || latest?.questionId !== input.questionId) return false;
-        const card = (yield* listChoices(input.threadId).pipe(Effect.catch(unreadable))).find(
+        const card = (yield* listChoices(input.threadId)).find(
           (candidate) => candidate.choiceId === input.choiceId,
         );
         if (card === undefined) return false;
@@ -865,9 +862,7 @@ export const make = Effect.gen(function* () {
   const endWait = (input: EndWaitInput) =>
     clicks.withPermits(1)(
       Effect.gen(function* () {
-        const latest = (yield* madeChoices.pipe(
-          Effect.catch(failed("The warning card could not be read.")),
-        )).get(input.choiceId);
+        const latest = (yield* madeChoices).get(input.choiceId);
         if (!teamChoiceIsWaiting(latest)) return false;
         if (input.outcome === "done") {
           yield* startTurn(
@@ -921,7 +916,7 @@ export const make = Effect.gen(function* () {
   const showEdited = (input: ShowEditedInput) =>
     Effect.gen(function* () {
       const threadId = input.context.thread.threadId;
-      const choiceId = `team-choice:${yield* crypto.randomUUIDv4()}`;
+      const choiceId = `team-choice:${yield* random.uuidV4()}`;
       yield* appendCard({
         threadId,
         kind: TEAM_CHOICE_ACTIVITY_KIND,

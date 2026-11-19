@@ -18,7 +18,7 @@ export const COMBINE_MIN_FREE_BYTES = 1.5 * 1024 * 1024 * 1024;
 /** The whole check (install, combined, each side) stops after this. */
 export const COMBINE_TIMEOUT_MS = 10 * 60 * 1000;
 /** Output lines kept from a run. */
-export const COMBINE_TAIL_LINES = 200;
+const COMBINE_TAIL_LINES = 200;
 /** Errors read from one run; past this the rest are counted only. */
 const MAX_PARSED_ERRORS = 2000;
 const MESSAGE_LENGTH = 200;
@@ -171,7 +171,6 @@ export class CheckOutput {
 
   private line(raw: string) {
     // Colors, if a tool ignores that it writes to a pipe.
-    // oxlint-disable-next-line no-control-regex
     const text = raw.replace(/\u001b\[[0-9;]*m/gu, "");
     this.tail.push(text);
     if (this.tail.length > COMBINE_TAIL_LINES) this.tail.shift();

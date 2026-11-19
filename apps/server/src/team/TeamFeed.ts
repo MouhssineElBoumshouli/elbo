@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * The team feed (fork-only, see team/UI_PLAN.md slice 0): what each team or
  * solo project on this server holds, for the UI's markers and presence chip.
@@ -57,7 +58,7 @@ export class TeamFeed extends Context.Service<
 const encodeView = Schema.encodeSync(Schema.fromJsonString(TeamFeedTeam));
 
 /** The first line of a note, cut to a list item. */
-export const handoffHeadline = (changed: string) => {
+const handoffHeadline = (changed: string) => {
   const line = changed.split("\n", 1)[0]!.trim();
   return line.length <= TEAM_FEED_LIMITS.headline
     ? line

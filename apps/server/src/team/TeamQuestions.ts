@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * "Ask" on the warning card (fork-only, team/PREVENTION_PLAN.md section 2,
  * slice 3d), both sides. The asker's click writes the question to the team
@@ -52,7 +53,7 @@ import * as TeamCards from "./TeamCards.ts";
 import * as TeamChoices from "./TeamChoices.ts";
 import * as TeamService from "./TeamService.ts";
 
-export const QUESTION_CHECK_INTERVAL = "15 seconds";
+const QUESTION_CHECK_INTERVAL = "15 seconds";
 
 export class TeamQuestions extends Context.Service<
   TeamQuestions,
@@ -324,16 +325,16 @@ export const make = Effect.gen(function* () {
         }
         return {};
       }).pipe(
-        Effect.catch((error) =>
-          error._tag === "TeamAnswerError"
-            ? Effect.fail(error)
-            : Effect.logWarning("A team answer could not be saved.", { error }).pipe(
-                Effect.andThen(
-                  Effect.fail(
-                    new TeamAnswerError({ detail: "Your answer could not be saved. Try again." }),
-                  ),
+        Effect.catchIf(
+          (error) => error._tag !== "TeamAnswerError",
+          (error) =>
+            Effect.logWarning("A team answer could not be saved.", { error }).pipe(
+              Effect.andThen(
+                Effect.fail(
+                  new TeamAnswerError({ detail: "Your answer could not be saved. Try again." }),
                 ),
               ),
+            ),
         ),
       ),
     );

@@ -29,7 +29,7 @@ import {
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useState } from "react";
 
 import { PierreEntryIcon } from "~/components/chat/PierreEntryIcon";
 import { Button } from "~/components/ui/button";
@@ -83,10 +83,7 @@ export const TeamChoiceCard = memo(function TeamChoiceCard(props: {
   const [pending, setPending] = useState<TeamChooseAction | null>(null);
   const [asking, setAsking] = useState(false);
   const [askLine, setAskLine] = useState("");
-  const files = useMemo(
-    () => card.files.map((file) => ({ path: file.path, holders: planHolders(file.holders) })),
-    [card.files],
-  );
+  const files = card.files.map((file) => ({ path: file.path, holders: planHolders(file.holders) }));
   const names = card.solo ? null : memberNames(card);
   const fileWords = files.length === 1 ? "a file" : `${files.length} files`;
   const where = card.edited === true ? "this chat changed" : "in this plan";
@@ -107,10 +104,9 @@ export const TeamChoiceCard = memo(function TeamChoiceCard(props: {
     teamChoices ? { environmentId: props.environmentId, threadId: card.threadId } : null,
   );
   const teams = useTeamFeed(teamChoices ? props.environmentId : null);
-  const pushed = useMemo(() => {
-    const team = findProjectTeam(teams, shell?.projectId ?? null)?.team;
-    return team === undefined ? undefined : buildOnTopClaim(team.claims, card.files);
-  }, [teams, shell?.projectId, card.files]);
+  const pushedTeam = findProjectTeam(teams, shell?.projectId ?? null)?.team;
+  const pushed =
+    pushedTeam === undefined ? undefined : buildOnTopClaim(pushedTeam.claims, card.files);
   const buildBlocked =
     shell !== null && shell.worktreePath === null
       ? "this chat has no copy of its own"

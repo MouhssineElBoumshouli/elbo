@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * thread -> project -> working folder -> `.team/team.json` -> team and this
  * server's member (team/DESIGN.md D5). Shared by the team tools, the team
@@ -36,7 +37,7 @@ const NOT_IN_TEAM: NotInTeamResult = {
 };
 
 /** Why this server cannot use the team a project names, in words the agent can pass on. */
-export const notInTeamReason = (
+const notInTeamReason = (
   teamFile: TeamFile,
   membership: Exclude<TeamService.TeamMembership, { readonly status: "member" }>,
 ): NotInTeamResult => {

@@ -48,7 +48,7 @@ import type {
   ThreadId,
 } from "@t3tools/contracts";
 import { useNavigate } from "@tanstack/react-router";
-import { Fragment, type ReactNode, useCallback, useState } from "react";
+import { Fragment, type ReactNode, useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { toastManager } from "~/components/ui/toast";
@@ -58,7 +58,7 @@ import { useAtomCommand } from "~/state/use-atom-command";
 import { formatRelativeTimeLabel } from "~/timestampFormat";
 
 /** A pair's identity in a list: its chat and what it merges with. */
-export const mergePairKey = (pair: Pick<TeamMergePair, "mine" | "other">) =>
+const mergePairKey = (pair: Pick<TeamMergePair, "mine" | "other">) =>
   `${pair.mine.thread.threadId}|${
     pair.other._tag === "branch"
       ? `${pair.other.memberId}/${pair.other.branch}`
@@ -79,7 +79,7 @@ function codeParts(text: string) {
 }
 
 /** A sentence with `code` spans. */
-export function MergeSentence(props: { readonly text: string }) {
+function MergeSentence(props: { readonly text: string }) {
   const parts = codeParts(props.text);
   return (
     <>
@@ -100,7 +100,7 @@ export function MergeSentence(props: { readonly text: string }) {
  * One pair: a dot by status, the sentence, when it was checked, and an action.
  * `updateStopped`: an update of this pair stopped on a conflict, said instead of "merge cleanly".
  */
-export function MergePairLine(props: {
+function MergePairLine(props: {
   readonly team: TeamFeedTeam;
   readonly pair: TeamMergePair;
   readonly pathPrefix: string;
@@ -170,61 +170,58 @@ function useMergeFixAction(environmentId: EnvironmentId, onUpdateConflict?: () =
   const mergeFix = useAtomCommand(teamFeed.mergeFix, { reportFailure: false });
   const allowed = useAtomValue(teamFeed.mergeFix.permissionAtom(environmentId));
   const [pending, setPending] = useState(false);
-  const act = useCallback(
-    (input: TeamMergeFixInput, failedTitle: string) => {
-      setPending(true);
-      void mergeFix({ environmentId, input }).then((result) => {
-        setPending(false);
-        if (result._tag === "Failure") {
-          if (isAtomCommandInterrupted(result)) return;
-          const error = squashAtomCommandFailure(result);
-          toastManager.add({
-            type: "error",
-            title: failedTitle,
-            description: error instanceof Error ? error.message : "Try again.",
-          });
-          return;
-        }
-        const outcome = result.value;
-        if (input._tag === "update") {
-          if (outcome.update === "conflict") onUpdateConflict?.();
-          toastManager.add(
-            outcome.update === "conflict"
-              ? {
-                  type: "warning",
-                  title: "Not updated: Git stopped on a conflict",
-                  description: outcome.detail ?? "Use Fix it to merge instead.",
-                }
-              : outcome.update === "checked"
-                ? {
-                    type: "warning",
-                    title: "Not updated yet",
-                    description: outcome.detail ?? "See the combined check on the line.",
-                  }
-                : { type: "success", title: "Copy updated" },
-          );
-          return;
-        }
-        if (input._tag !== "approve") return;
+  const act = (input: TeamMergeFixInput, failedTitle: string) => {
+    setPending(true);
+    void mergeFix({ environmentId, input }).then((result) => {
+      setPending(false);
+      if (result._tag === "Failure") {
+        if (isAtomCommandInterrupted(result)) return;
+        const error = squashAtomCommandFailure(result);
+        toastManager.add({
+          type: "error",
+          title: failedTitle,
+          description: error instanceof Error ? error.message : "Try again.",
+        });
+        return;
+      }
+      const outcome = result.value;
+      if (input._tag === "update") {
+        if (outcome.update === "conflict") onUpdateConflict?.();
         toastManager.add(
-          outcome.push === "failed"
+          outcome.update === "conflict"
             ? {
                 type: "warning",
-                title: "Merge committed, but the push failed",
-                description: outcome.detail ?? "Push it from the chat.",
+                title: "Not updated: Git stopped on a conflict",
+                description: outcome.detail ?? "Use Fix it to merge instead.",
               }
-            : {
-                type: "success",
-                title:
-                  outcome.push === "pushed"
-                    ? "Merge committed and pushed"
-                    : "Merge committed (the branch is not pushed)",
-              },
+            : outcome.update === "checked"
+              ? {
+                  type: "warning",
+                  title: "Not updated yet",
+                  description: outcome.detail ?? "See the combined check on the line.",
+                }
+              : { type: "success", title: "Copy updated" },
         );
-      });
-    },
-    [mergeFix, environmentId, onUpdateConflict],
-  );
+        return;
+      }
+      if (input._tag !== "approve") return;
+      toastManager.add(
+        outcome.push === "failed"
+          ? {
+              type: "warning",
+              title: "Merge committed, but the push failed",
+              description: outcome.detail ?? "Push it from the chat.",
+            }
+          : {
+              type: "success",
+              title:
+                outcome.push === "pushed"
+                  ? "Merge committed and pushed"
+                  : "Merge committed (the branch is not pushed)",
+            },
+      );
+    });
+  };
   return { act, pending, allowed };
 }
 

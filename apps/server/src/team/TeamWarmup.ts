@@ -42,7 +42,7 @@ export class TeamWarmup extends Context.Service<
   }
 >()("t3/team/TeamWarmup") {}
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const teams = yield* TeamService.TeamService;
   const projects = yield* ProjectService.ProjectService;
   const fileContext = yield* Effect.context<FileSystem.FileSystem | Path.Path>();

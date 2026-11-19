@@ -10,7 +10,7 @@ import {
   threadHolders,
 } from "@t3tools/client-runtime/state/teamMarkers";
 import type { ScopedThreadRef } from "@t3tools/contracts";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 
 import { cn } from "~/lib/utils";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
@@ -18,7 +18,7 @@ import { useThreadShell } from "~/state/entities";
 import { useTeamFeed } from "~/state/teamFeed";
 
 /** Readable on light and dark backgrounds with white text. */
-export const holderColor = (hue: number) => `hsl(${hue} 55% 45%)`;
+const holderColor = (hue: number) => `hsl(${hue} 55% 45%)`;
 
 /** A person's initials in their color. Its name goes on the surrounding tooltip or label. */
 export function TeamFace(props: {
@@ -76,7 +76,7 @@ export function TeamHolderNames(props: { readonly holders: ReadonlyArray<TeamHol
 }
 
 /** "Also held by Yassine, your chat "Search page"", for a tooltip. */
-export function TeamHoldersText(props: { readonly holders: ReadonlyArray<TeamHolder> }) {
+function TeamHoldersText(props: { readonly holders: ReadonlyArray<TeamHolder> }) {
   return (
     <>
       Also held by <TeamHolderNames holders={props.holders} />
@@ -139,20 +139,18 @@ export function TeamHolderMarks(props: {
 }
 
 /** Who else holds files a thread's claims cover. */
-export function useThreadHolders(threadRef: ScopedThreadRef): ReadonlyArray<TeamHolder> {
+function useThreadHolders(threadRef: ScopedThreadRef): ReadonlyArray<TeamHolder> {
   const { environmentId, threadId } = threadRef;
   const teams = useTeamFeed(environmentId);
-  return useMemo(() => {
-    for (const team of teams) {
-      const found = threadHolders(team, { environmentId, threadId });
-      if (found.length > 0) return found;
-    }
-    return [];
-  }, [teams, environmentId, threadId]);
+  for (const team of teams) {
+    const found = threadHolders(team, { environmentId, threadId });
+    if (found.length > 0) return found;
+  }
+  return [];
 }
 
 /** Who else holds a file of the thread's project. */
-export function useFileHolders(
+function useFileHolders(
   threadRef: ScopedThreadRef,
   relativePath: string,
 ): ReadonlyArray<TeamHolder> {
@@ -160,12 +158,10 @@ export function useFileHolders(
   const teams = useTeamFeed(environmentId);
   const shell = useThreadShell(threadRef);
   const projectId = shell?.projectId ?? null;
-  return useMemo(() => {
-    const projectTeam = findProjectTeam(teams, projectId);
-    return projectTeam === null
-      ? []
-      : fileHolders(projectTeam, relativePath, { environmentId, threadId });
-  }, [teams, projectId, relativePath, environmentId, threadId]);
+  const projectTeam = findProjectTeam(teams, projectId);
+  return projectTeam === null
+    ? []
+    : fileHolders(projectTeam, relativePath, { environmentId, threadId });
 }
 
 /** A sidebar thread's mark. The row's own tooltip names the holders ({@link TeamThreadHoldersLine}). */
