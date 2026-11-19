@@ -1,10 +1,13 @@
 import { isLoopbackHost } from "./preview.ts";
+import { TEAM_IDENTITY } from "./teamIdentity.ts"; // team-layer
 
 export function providerAuthReturnUrl(value: string | undefined): string | undefined {
   if (!value) return undefined;
   try {
     const url = new URL(value);
-    const desktop = ["t3code:", "t3code-dev:"].includes(url.protocol) && url.host === "app";
+    const desktop =
+      [`${TEAM_IDENTITY.protocol}:`, `${TEAM_IDENTITY.devProtocol}:`].includes(url.protocol) && // team-layer
+      url.host === "app";
     const web =
       ["http:", "https:"].includes(url.protocol) &&
       (isLoopbackHost(url.hostname) || url.origin === "https://app.t3.codes");

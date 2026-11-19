@@ -2,6 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
 import { hasCloudPublicConfig } from "./publicConfig.ts";
 
+// team-layer: these cases cover upstream's checks, so turn on the cloud Elbo keeps off
+// (publicConfig.team.test.ts checks it stays off).
+vi.mock("@t3tools/shared/teamIdentity", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@t3tools/shared/teamIdentity")>();
+  return { ...original, TEAM_IDENTITY: { ...original.TEAM_IDENTITY, cloudEnabled: true } };
+});
+
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();

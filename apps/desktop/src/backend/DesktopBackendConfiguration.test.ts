@@ -683,6 +683,8 @@ describe("DesktopBackendConfiguration", () => {
         );
 
         assert.equal(wsl.bootstrap.desktopBootstrapToken, primary.bootstrap.desktopBootstrapToken);
+        // team-layer: the WSL server takes Elbo's Linux home, never T3 Code's ~/.t3.
+        assert.equal(wsl.bootstrap.t3Home, "~/.elbo");
       }),
     ),
   );

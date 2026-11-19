@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./teamIdentity": {
+      "types": "./src/teamIdentity.ts",
+      "import": "./src/teamIdentity.ts"
+    },
     "./png": {
       "types": "./src/png.ts",
       "import": "./src/png.ts"

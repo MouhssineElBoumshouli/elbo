@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
+
 import {
   desktopCliCommandStateAtom,
   getDesktopCliCommandBridge,
@@ -52,15 +54,17 @@ export function CliCommandSettingsRow() {
 
   if (!state?.supported) return null;
   const installed = state.installedPath !== null;
+  // team-layer: Elbo's command is `elbo`.
+  const cli = TEAM_IDENTITY.cliName;
   const description = state.shadowedBy
-    ? `Another t3 at ${state.shadowedBy} runs first in a new terminal. Remove it to use T3 Code's.`
+    ? `Another ${cli} at ${state.shadowedBy} runs first in a new terminal. Remove it to use ${TEAM_IDENTITY.name}'s.`
     : !installed
-      ? "Run T3 Code's CLI as `t3` from any terminal."
+      ? `Run ${TEAM_IDENTITY.name}'s CLI as \`${cli}\` from any terminal.`
       : state.onPath
         ? `Installed at ${state.installedPath}. Open a new terminal to use it.`
         : state.pathSetup?.added
           ? `Installed at ${state.installedPath} and added to PATH in ${state.pathSetup.file}. Open a new terminal to use it.`
-          : `Installed at ${state.installedPath}, which is not on your PATH yet.${state.pathSetup ? "" : " Add its folder to your PATH to run `t3`."}`;
+          : `Installed at ${state.installedPath}, which is not on your PATH yet.${state.pathSetup ? "" : ` Add its folder to your PATH to run \`${cli}\`.`}`;
 
   return (
     <SettingsRow

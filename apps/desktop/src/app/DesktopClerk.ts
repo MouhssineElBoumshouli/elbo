@@ -20,6 +20,8 @@ import * as ElectronApp from "../electron/ElectronApp.ts";
 import * as ElectronProtocol from "../electron/ElectronProtocol.ts";
 import * as ElectronWindow from "../electron/ElectronWindow.ts";
 import * as DesktopUserData from "./DesktopUserData.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
+import { resolveTeamUserDataPath } from "../team/userData.ts"; // team-layer
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
 import { openClerkTokenStorage } from "./ClerkTokenStore.ts";
 import * as DesktopWebLinks from "./DesktopWebLinks.ts";
@@ -80,7 +82,8 @@ function resolveDesktopClerkFrontendApiHostname(
 }
 
 export const desktopClerkFrontendApiHostname = resolveDesktopClerkFrontendApiHostname(
-  typeof __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__ === "undefined"
+  // team-layer: T3 Connect sign-in is off in Elbo (it needs upstream's Clerk keys).
+  typeof __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__ === "undefined" || !TEAM_IDENTITY.cloudEnabled
     ? undefined
     : __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__,
 );
@@ -108,7 +111,7 @@ export const make = Effect.gen(function* () {
   const shell = yield* ElectronShell.ElectronShell;
 
   // Must not yield: the bridge registers a scheme Electron rejects once ready.
-  const userDataPath = yield* DesktopUserData.resolveUserDataPath(environment);
+  const userDataPath = yield* resolveTeamUserDataPath(environment); // team-layer
   yield* electronApp.setPath("userData", userDataPath);
 
   // Clerk skips the profile lock on macOS. Interrupt before runtime construction because quit is asynchronous.

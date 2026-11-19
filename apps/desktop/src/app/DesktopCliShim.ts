@@ -5,6 +5,8 @@ import * as Option from "effect/Option";
 import * as Random from "effect/Random";
 
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
+// team-layer: Elbo installs `elbo`, never T3 Code's `t3`.
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity";
 import { makeComponentLogger } from "./DesktopObservability.ts";
 
 // AppImage mounts change each run; the launcher must mount the image itself.
@@ -120,7 +122,7 @@ export const launcherPath = (environment: DesktopEnvironment.DesktopEnvironment[
   environment.path.join(
     environment.baseDir,
     "bin",
-    environment.platform === "win32" ? "t3.cmd" : "t3",
+    environment.platform === "win32" ? `${TEAM_IDENTITY.cliName}.cmd` : TEAM_IDENTITY.cliName, // team-layer
   );
 
 export const install = Effect.gen(function* () {

@@ -570,6 +570,48 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
     }),
   );
 
+  // team-layer: Elbo's Windows installer must never take T3 Code's id, name or schemes.
+  it.effect("builds Elbo's identity into the Windows installer", () =>
+    Effect.gen(function* () {
+      const stable = yield* createBuildConfig(
+        "win",
+        "nsis",
+        "1.0.0",
+        false,
+        false,
+        undefined,
+        undefined,
+      );
+      const beta = yield* createBuildConfig(
+        "win",
+        "nsis",
+        "1.0.1-nightly.20261120.1",
+        false,
+        false,
+        undefined,
+        undefined,
+      );
+      const mac = yield* createBuildConfig(
+        "mac",
+        "dmg",
+        "1.0.0",
+        false,
+        false,
+        undefined,
+        undefined,
+      );
+
+      assert.equal(stable.appId, "io.github.mouhssineelboumshouli.elbo");
+      assert.equal(stable.productName, "Elbo");
+      assert.equal(beta.productName, "Elbo (Beta)");
+      assert.equal(stable.artifactName, "Elbo-${version}-${arch}.${ext}");
+      assert.deepEqual(
+        (mac.mac as { protocols: Array<{ schemes: Array<string> }> }).protocols[0]?.schemes,
+        ["elbo", "elbo-dev"],
+      );
+    }),
+  );
+
   it.effect("names updatable AppImages without a version and apart per channel", () =>
     Effect.gen(function* () {
       const appImageName = (version: string) =>
@@ -1564,7 +1606,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
     });
 
     assert.deepStrictEqual(configuration, {
-      appId: "com.t3tools.t3code",
+      appId: "io.github.mouhssineelboumshouli.elbo",
       teamId: "ABC1234567",
       rpDomains: ["example.clerk.accounts.dev"],
       provisioningProfilePath: "/tmp/t3code.provisionprofile",
@@ -1587,7 +1629,10 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       "clerk.example.com",
       "example.clerk.accounts.dev",
     ]);
-    assert.include(entitlements, "<string>ABC1234567.com.t3tools.t3code</string>");
+    assert.include(
+      entitlements,
+      "<string>ABC1234567.io.github.mouhssineelboumshouli.elbo</string>",
+    );
     assert.include(entitlements, "<string>webcredentials:clerk.example.com</string>");
     assert.include(entitlements, "<string>webcredentials:example.clerk.accounts.dev</string>");
     assert.include(entitlements, "<key>com.apple.security.cs.allow-jit</key>");

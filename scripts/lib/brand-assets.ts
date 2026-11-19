@@ -1,4 +1,6 @@
-export const BRAND_ASSET_PATHS = {
+import { TEAM_BRAND_ASSET_PATHS } from "./team-brand-assets.ts";
+
+const UPSTREAM_BRAND_ASSET_PATHS = {
   developmentIconComposerProject: "assets/dev/app-icon.icon",
   developmentIosIconPng: "assets/dev/blueprint-ios-1024.png",
   developmentUniversalIconPng: "assets/dev/blueprint-universal-1024.png",
@@ -35,6 +37,12 @@ export const BRAND_ASSET_PATHS = {
   developmentWebAppleTouchIconPng: "assets/dev/blueprint-web-apple-touch-180.png",
   developmentWebIcon192Png: "assets/dev/blueprint-web-icon-192x192.png",
   developmentWebIcon512Png: "assets/dev/blueprint-web-icon-512x512.png",
+} as const;
+
+// team-layer: Elbo's icons replace the production and nightly (our Beta) ones.
+export const BRAND_ASSET_PATHS = {
+  ...UPSTREAM_BRAND_ASSET_PATHS,
+  ...TEAM_BRAND_ASSET_PATHS,
 } as const;
 
 export type WebAssetBrand = "development" | "nightly" | "production";

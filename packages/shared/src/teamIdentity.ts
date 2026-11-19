@@ -1,5 +1,5 @@
-// team-layer: Elbo's own app identity. The desktop app and scripts/build-desktop-artifact.ts read it,
-// so Elbo installs next to T3 Code without sharing data. Plain values only: the build script imports this file.
+// team-layer: Elbo's own app identity, the one place for it. Desktop, web, shared link parsers and
+// scripts/build-desktop-artifact.ts read it, so Elbo installs next to T3 Code without sharing data.
 export const TEAM_IDENTITY = {
   name: "Elbo",
   basedOn: { name: "T3 Code", version: "0.1.10" },
@@ -15,8 +15,24 @@ export const TEAM_IDENTITY = {
   cliName: "elbo",
   installerArtifactName: "Elbo-${version}-${arch}.${ext}",
   updateRepository: "MouhssineElBoumshouli/t3code",
+  author: "Mouhssine El Boumshouli",
   cloudEnabled: false,
 } as const;
+
+/** Stable is plain "Elbo"; upstream's nightly channel is our Beta. Takes desktop and web stage labels. */
+export function teamDisplayName(stageLabel: string): string {
+  const stage = stageLabel.trim().toLowerCase();
+  if (stage === "dev") return `${TEAM_IDENTITY.name} (Dev)`;
+  if (stage === "nightly") return `${TEAM_IDENTITY.name} (Beta)`;
+  return TEAM_IDENTITY.name;
+}
+
+/** Matches Elbo's link schemes (elbo:, elbo-dev:) and, for links T3 Code tools still write, T3 Code's. */
+export const TEAM_APP_LINK_PROTOCOL = new RegExp(
+  `^(?:t3code|${TEAM_IDENTITY.protocol})(?:-[a-z]+)?:$`,
+);
+
+export const TEAM_ABOUT_LINE = `${TEAM_IDENTITY.name}, based on ${TEAM_IDENTITY.basedOn.name} v${TEAM_IDENTITY.basedOn.version}`;
 
 // What upstream T3 Code uses today; the identity test fails if any of ours matches.
 export const T3_CODE_IDENTITY = {

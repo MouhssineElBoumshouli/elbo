@@ -35,6 +35,7 @@ import { APP_VERSION, HOSTED_APP_CHANNEL, HOSTED_APP_CHANNEL_LABEL } from "../..
 import { AboutVersionTitle } from "./AboutVersionTitle";
 import { CliCommandSettingsRow } from "./CliCommandSettingsRow";
 import { MobileAppSettingsRow } from "./MobileAppSettingsRow";
+import { TeamAboutRow } from "../team/TeamAboutRow"; // team-layer
 import {
   canCheckForUpdate,
   getDesktopUpdateButtonTooltip,
@@ -2325,6 +2326,7 @@ export function AboutSettingsPanel() {
             />
           </>
         )}
+        <TeamAboutRow />
         <MobileAppSettingsRow />
         {primaryEnvironmentId === null ? null : (
           <SettingsRow

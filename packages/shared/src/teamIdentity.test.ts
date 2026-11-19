@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
-import { T3_CODE_IDENTITY, TEAM_IDENTITY } from "./identity.ts";
+import { T3_CODE_IDENTITY, TEAM_IDENTITY } from "./teamIdentity.ts";
 
 describe("TEAM_IDENTITY", () => {
   it("shares no identity value with T3 Code", () => {

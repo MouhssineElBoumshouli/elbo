@@ -3,6 +3,7 @@ import {
   relayClerkTokenOptions,
 } from "@t3tools/shared/relayAuth";
 import { normalizeSecureRelayUrl } from "@t3tools/shared/relayUrl";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 import * as Schema from "effect/Schema";
 
 export class CloudPublicConfigMissingError extends Schema.TaggedError<CloudPublicConfigMissingError>()(
@@ -77,6 +78,8 @@ export function resolveRelayTracingConfig() {
 }
 
 export function hasCloudPublicConfig(): boolean {
+  // team-layer: T3 Connect and app.t3.codes sign-in are off in Elbo (they need upstream's Clerk keys).
+  if (!TEAM_IDENTITY.cloudEnabled) return false;
   const config = resolveCloudPublicConfig();
   if (!config.clerkPublishableKey || !config.clerkJwtTemplate || !config.relayUrl) {
     return false;
