@@ -52,7 +52,7 @@ import * as TeamCards from "./TeamCards.ts";
 import * as TeamChoices from "./TeamChoices.ts";
 import * as TeamService from "./TeamService.ts";
 
-export const QUESTION_CHECK_INTERVAL = "15 seconds";
+const QUESTION_CHECK_INTERVAL = "15 seconds";
 
 export class TeamQuestions extends Context.Service<
   TeamQuestions,

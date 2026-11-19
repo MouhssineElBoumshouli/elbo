@@ -36,7 +36,7 @@ const NOT_IN_TEAM: NotInTeamResult = {
 };
 
 /** Why this server cannot use the team a project names, in words the agent can pass on. */
-export const notInTeamReason = (
+const notInTeamReason = (
   teamFile: TeamFile,
   membership: Exclude<TeamService.TeamMembership, { readonly status: "member" }>,
 ): NotInTeamResult => {

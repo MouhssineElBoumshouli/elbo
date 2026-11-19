@@ -58,15 +58,15 @@ const EDIT_CHECK_TIMEOUT = "5 seconds";
 const quoted = (paths: ReadonlyArray<string>) => paths.map((path) => `\`${path}\``).join(", ");
 
 /** The reason a refused write gives the agent. */
-export const heldEditReason = (files: ReadonlyArray<TeamPlanFile>) => {
+const heldEditReason = (files: ReadonlyArray<TeamPlanFile>) => {
   const one = files.length === 1;
   return `${quoted(files.map((file) => file.path))} ${one ? "is" : "are"} held by ${TeamChoices.holderWords(files)}. Call team_plan with ${one ? "this file" : "these files"} before editing; it may wait for the user's choice.`;
 };
 
-export const openCardEditReason = (paths: ReadonlyArray<string>) =>
+const openCardEditReason = (paths: ReadonlyArray<string>) =>
   `The user has not chosen yet on the card for ${quoted(paths)}. Do not edit ${paths.length === 1 ? "it" : "them"}. Tell the user to pick a choice on the card, and end your turn.`;
 
-export const waitingEditReason = (paths: ReadonlyArray<string>) =>
+const waitingEditReason = (paths: ReadonlyArray<string>) =>
   `The user chose to wait until the holder of ${quoted(paths)} lets go of ${paths.length === 1 ? "it" : "them"}. Do not edit ${paths.length === 1 ? "it" : "them"}; end your turn. T3 starts your next turn then.`;
 
 interface Interval {

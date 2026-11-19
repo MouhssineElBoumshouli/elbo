@@ -67,7 +67,7 @@ export const CLAIM_NOT_SHARED_MESSAGE =
   "Claimed on this computer, not shared yet: the team's remote could not be reached. Overlaps with teammates' newest claims are unknown. It is shared on the next successful sync.";
 
 /** `team_status` when the team state could not be read just now and the last one read is shown. */
-export const notFreshMessage = (readAt: string | null) =>
+const notFreshMessage = (readAt: string | null) =>
   `Not fresh: the team state could not be read just now, so this is the last state read${readAt === null ? "" : ` (${readAt})`}. Teammates' newer claims may be missing; call team_status again before editing shared files.`;
 
 /** Caps on `team_status`, which every team agent may call often. Oldest items go first. */

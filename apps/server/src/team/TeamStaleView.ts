@@ -46,7 +46,7 @@ import { installTeamTurnNote } from "./teamTurnNote.ts";
 /** A slow lookup leaves the line out for this turn; it is not in the cached prefix. */
 const STALE_VIEW_TIMEOUT = "2 seconds";
 /** Files named in the line; the rest are counted. */
-export const STALE_VIEW_MAX_FILES = 5;
+const STALE_VIEW_MAX_FILES = 5;
 /** Files compared per turn, so a long thread stays cheap. */
 const STALE_VIEW_MAX_CHECKED = 200;
 

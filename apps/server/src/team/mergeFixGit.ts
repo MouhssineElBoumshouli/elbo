@@ -24,7 +24,7 @@ const GIT_TIMEOUT_MS = 120_000;
 
 type Git = GitVcsDriver.GitVcsDriver["Service"];
 
-export class MergeFixGitError extends Data.TaggedError("MergeFixGitError")<{
+class MergeFixGitError extends Data.TaggedError("MergeFixGitError")<{
   readonly detail: string;
 }> {}
 

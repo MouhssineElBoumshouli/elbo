@@ -556,7 +556,7 @@ export const compactWriterFile = (file: TeamWriterFile, now: string): TeamWriter
 };
 
 /** "a, b, c and 2 more". */
-export const describePaths = (paths: ReadonlyArray<string>) =>
+const describePaths = (paths: ReadonlyArray<string>) =>
   paths.length <= 3
     ? paths.join(", ")
     : `${paths.slice(0, 3).join(", ")} and ${paths.length - 3} more`;

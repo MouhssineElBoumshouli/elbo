@@ -151,6 +151,7 @@ const start = Effect.gen(function* () {
 
   const client = yield* HttpClient.HttpClient;
   yield* Effect.gen(function* () {
+    // oxlint-disable-next-line t3code/no-polling-loop-in-tests -- waits on a separate server process to answer HTTP; no in-process event exists.
     while (true) {
       if (child.exitCode !== null) {
         return yield* Effect.die(new Error(`server exited with ${child.exitCode}`));
@@ -161,6 +162,7 @@ const start = Effect.gen(function* () {
         Effect.orElseSucceed(() => false),
       );
       if (ready) return;
+      // oxlint-disable-next-line t3code/no-real-time-wait-in-tests -- the server is a real child process on the real clock.
       yield* Effect.sleep("500 millis");
     }
   }).pipe(
@@ -281,6 +283,7 @@ const failureOf = (exit: Exit.Exit<unknown, unknown>) => {
     : undefined;
 };
 
+// oxlint-disable-next-line t3code/no-test-timeout-or-unreasoned-skip -- the layer starts a real server process, which takes longer than the project timeout.
 it.layer(ReadOnlySocketLive, { timeout: STARTUP_TIMEOUT_MS + 30_000, excludeTestServices: true })(
   "ChatGPT RPCs need orchestration:operate",
   (it) => {

@@ -133,7 +133,7 @@ export class TeamMergeFix extends Context.Service<
 const fail = (detail: string) => Effect.fail(new TeamMergeFixError({ detail }));
 
 /** How the other side is named: in the prompt, the commit message and the chat. */
-export const otherSideWords = (other: TeamMergeOther, nameOf: (memberId: string) => string) => {
+const otherSideWords = (other: TeamMergeOther, nameOf: (memberId: string) => string) => {
   switch (other._tag) {
     case "branch": {
       const name = nameOf(other.memberId);

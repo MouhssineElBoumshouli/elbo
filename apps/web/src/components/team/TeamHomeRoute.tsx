@@ -5,7 +5,6 @@
  * else its first project.
  */
 import type { EnvironmentId, ProjectId } from "@t3tools/contracts";
-import { useMemo } from "react";
 
 import { useProjects } from "~/state/entities";
 import { usePrimaryEnvironmentId } from "~/state/environments";
@@ -22,12 +21,10 @@ export function TeamHomeRoute(props: {
   const environmentId = props.environmentId ?? primaryEnvironmentId;
   const projects = useProjects();
   const teams = useTeamFeed(environmentId);
-  const projectId = useMemo(() => {
-    if (props.projectId !== undefined) return props.projectId;
-    const here = projects.filter((project) => project.environmentId === environmentId);
-    const inFeed = new Set(teams.flatMap((team) => team.projects.map((p) => p.projectId)));
-    return (here.find((project) => inFeed.has(project.id)) ?? here[0])?.id ?? null;
-  }, [props.projectId, projects, environmentId, teams]);
+  const here = projects.filter((project) => project.environmentId === environmentId);
+  const inFeed = new Set(teams.flatMap((team) => team.projects.map((p) => p.projectId)));
+  const projectId =
+    props.projectId ?? (here.find((project) => inFeed.has(project.id)) ?? here[0])?.id ?? null;
 
   if (environmentId === null || projectId === null) {
     return (

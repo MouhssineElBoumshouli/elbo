@@ -249,9 +249,7 @@ const readOptionalFile = (filePath: string) =>
   });
 
 /** Reads `.team/team.json` at a repo root. None when there is no file. */
-export const readTeamFile = Effect.fn("TeamProjectFiles.readTeamFile")(function* (
-  repoRoot: string,
-) {
+const readTeamFile = Effect.fn("TeamProjectFiles.readTeamFile")(function* (repoRoot: string) {
   const path = yield* Path.Path;
   const filePath = path.join(repoRoot, TEAM_DIRECTORY_NAME, TEAM_FILE_NAME);
   const raw = yield* readOptionalFile(filePath);

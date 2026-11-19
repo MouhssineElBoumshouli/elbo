@@ -21,8 +21,17 @@ import {
   viewerMergePairs,
 } from "@t3tools/client-runtime/state/teamMerging";
 import { fileNotes } from "@t3tools/client-runtime/state/teamNotes";
-import type { EnvironmentId, ScopedThreadRef, TeamFeedTeam, TeamNote } from "@t3tools/contracts";
-import { useEffect, useMemo, useRef } from "react";
+import type {
+  EnvironmentId,
+  ProjectId,
+  ScopedThreadRef,
+  TeamFeedTeam,
+  TeamNote,
+  ThreadId,
+} from "@t3tools/contracts";
+import { useEffect, useRef } from "react";
+
+import { useStableCallback } from "~/hooks/useStableCallback";
 
 import { useThreadShell } from "~/state/entities";
 import { useTeamFeed } from "~/state/teamFeed";
@@ -84,7 +93,7 @@ function withMergeMark(
 }
 
 /** The text and tooltip for one row's holders; null when nothing is marked. */
-export function treeDecorationFor(holders: ReadonlyArray<TeamHolder>): TeamTreeDecoration | null {
+function treeDecorationFor(holders: ReadonlyArray<TeamHolder>): TeamTreeDecoration | null {
   if (holders.length === 0) return null;
   const members = holders.filter((holder) => holder.kind === "member");
   const chats = holders.length - members.length;
@@ -128,35 +137,42 @@ export function useTeamTreeDecoration(input: {
   // Keyed by the ids, not the ref object, which callers may rebuild each render.
   const environmentId = input.threadRef?.environmentId ?? null;
   const threadId = input.threadRef?.threadId ?? null;
-  const decorate = useMemo(() => {
-    const projectTeam = findProjectTeam(teams, projectId);
-    if (projectTeam === null) return noDecoration;
-    const viewing =
-      environmentId === null || threadId === null ? null : { environmentId, threadId };
-    const mergePairs = viewerMergePairs(
-      projectMergePairs(projectTeam.team, projectId),
-      viewing === null ? null : { ...viewing, sharedCheckout: sharedCheckout },
-    );
-    return (path: string) => {
-      const holders = fileHolders(projectTeam, path, viewing);
-      return joinDecorations(
-        withMergeMark(
-          projectTeam.team,
-          treeDecorationFor(holders),
-          fileMergeMark({ pairs: mergePairs, pathPrefix: projectTeam.pathPrefix, path, holders }),
-          projectTeam.pathPrefix,
-        ),
-        notesDecoration(projectTeam.team, fileNotes(projectTeam, path)),
-      );
-    };
-  }, [teams, projectId, environmentId, threadId, sharedCheckout]);
+  const decorate = treeDecorator(teams, projectId, environmentId, threadId, sharedCheckout);
   const decorateRef = useRef(decorate);
-  const onChangeRef = useRef(input.onChange);
-  onChangeRef.current = input.onChange;
+  const onChange = useStableCallback(input.onChange);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- repaints the file tree's rows, drawn outside React, when the marks change.
   useEffect(() => {
     if (decorateRef.current === decorate) return;
     decorateRef.current = decorate;
-    onChangeRef.current();
-  }, [decorate]);
+    onChange();
+  }, [decorate, onChange]);
   return decorateRef;
+}
+
+function treeDecorator(
+  teams: ReadonlyArray<TeamFeedTeam>,
+  projectId: ProjectId | null,
+  environmentId: EnvironmentId | null,
+  threadId: ThreadId | null,
+  sharedCheckout: boolean,
+) {
+  const projectTeam = findProjectTeam(teams, projectId);
+  if (projectTeam === null) return noDecoration;
+  const viewing = environmentId === null || threadId === null ? null : { environmentId, threadId };
+  const mergePairs = viewerMergePairs(
+    projectMergePairs(projectTeam.team, projectId),
+    viewing === null ? null : { ...viewing, sharedCheckout },
+  );
+  return (path: string) => {
+    const holders = fileHolders(projectTeam, path, viewing);
+    return joinDecorations(
+      withMergeMark(
+        projectTeam.team,
+        treeDecorationFor(holders),
+        fileMergeMark({ pairs: mergePairs, pathPrefix: projectTeam.pathPrefix, path, holders }),
+        projectTeam.pathPrefix,
+      ),
+      notesDecoration(projectTeam.team, fileNotes(projectTeam, path)),
+    );
+  };
 }

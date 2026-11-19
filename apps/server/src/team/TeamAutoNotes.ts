@@ -49,7 +49,7 @@ export const diffToTeamPaths = (
     return outside ? [] : [relative];
   });
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const teams = yield* TeamService.TeamService;
   const eventSink = yield* EventSink.EventSinkV2;
   const git = yield* GitVcsDriver.GitVcsDriver;

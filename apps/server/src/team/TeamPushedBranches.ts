@@ -23,7 +23,7 @@ import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import { claimPullRequestOf } from "./mergeOrder.ts";
 import * as TeamService from "./TeamService.ts";
 
-export const PUSHED_CHECK_INTERVAL = "15 seconds";
+const PUSHED_CHECK_INTERVAL = "15 seconds";
 
 export const make = Effect.gen(function* () {
   const teams = yield* TeamService.TeamService;

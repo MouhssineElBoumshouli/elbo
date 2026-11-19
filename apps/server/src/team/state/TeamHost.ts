@@ -28,7 +28,7 @@ import * as VcsProcess from "../../vcs/VcsProcess.ts";
  * laptop). Used only for a remote on this computer ({@link isLocalTeamRemote}),
  * so it can never write under a made-up name to a team on GitHub.
  */
-export const TEAM_LOGIN_OVERRIDE_ENV = "T3CODE_TEAM_LOGIN_OVERRIDE";
+const TEAM_LOGIN_OVERRIDE_ENV = "T3CODE_TEAM_LOGIN_OVERRIDE";
 
 const GH_TIMEOUT_MS = 15_000;
 /**
@@ -36,7 +36,7 @@ const GH_TIMEOUT_MS = 15_000;
  * viewer cache time). `gh auth status` takes about half a second, and the
  * first turn after a start must not spend it again for every team.
  */
-export const TEAM_LOGIN_CACHE_TTL = Duration.minutes(10);
+const TEAM_LOGIN_CACHE_TTL = Duration.minutes(10);
 /** No prompts and no update notices: nobody can answer them. */
 const GH_ENV = { GH_PROMPT_DISABLED: "1", GH_NO_UPDATE_NOTIFIER: "1" };
 
@@ -151,7 +151,7 @@ export interface HttpResponse {
 }
 
 /** Splits `gh api -i` output into the status, headers and body. Null when it is not a response. */
-export const parseHttpResponse = (output: string): HttpResponse | null => {
+const parseHttpResponse = (output: string): HttpResponse | null => {
   const text = output.replaceAll("\r\n", "\n");
   const status = /^HTTP\/[\d.]+ (\d{3})/u.exec(text);
   if (!status) return null;

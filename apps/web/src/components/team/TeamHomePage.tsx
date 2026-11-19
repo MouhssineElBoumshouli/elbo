@@ -33,7 +33,7 @@ import type {
 import { useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { HouseIcon, UsersIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { isElectron } from "~/env";
 import { getLocalStorageItem, setLocalStorageItem } from "~/hooks/useLocalStorage";
@@ -77,6 +77,7 @@ function useLastVisit(environmentId: EnvironmentId, projectId: ProjectId) {
       return { now, last: null };
     }
   });
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- records this visit in localStorage for the next one's "since" line.
   useEffect(() => {
     try {
       setLocalStorageItem(key, visit.now, Schema.String);
@@ -144,47 +145,39 @@ export function TeamHomePage(props: {
   const timestampFormat = useClientSettings((settings) => settings.timestampFormat);
   const project = useProject({ environmentId, projectId });
   const teams = useTeamFeed(environmentId);
-  const projectTeam = useMemo(() => findProjectTeam(teams, projectId), [teams, projectId]);
+  const projectTeam = findProjectTeam(teams, projectId);
   const team = projectTeam?.team ?? null;
   const pathPrefix = projectTeam?.pathPrefix ?? "";
   const solo = team === null || team.solo;
 
-  const projectRefs = useMemo(() => [{ environmentId, projectId }], [environmentId, projectId]);
+  const projectRefs = [{ environmentId, projectId }];
   const shells = useThreadShellsForProjectRefs(projectRefs);
   const cardsByThread = useTeamThreadCardsByThread(environmentId);
-  const chats = useMemo(
-    () =>
-      shells
-        .filter((shell) => shell.archivedAt === null)
-        .map((shell) => ({
-          shell,
-          chat: {
-            key: `${shell.environmentId}/${shell.id}`,
-            title: shell.title,
-            working: threadRuntimeIsActive(shell.runtime),
-            awaitsYou:
-              shell.hasPendingApprovals ||
-              shell.hasPendingUserInput ||
-              teamAwaitsUser(cardsByThread.get(shell.id), shell.latestRun?.runId ?? null),
-            completedAt: shell.latestRun?.completedAt ?? null,
-          } satisfies TeamHomeChat,
-        })),
-    [shells, cardsByThread],
-  );
+  const chats = shells
+    .filter((shell) => shell.archivedAt === null)
+    .map((shell) => ({
+      shell,
+      chat: {
+        key: `${shell.environmentId}/${shell.id}`,
+        title: shell.title,
+        working: threadRuntimeIsActive(shell.runtime),
+        awaitsYou:
+          shell.hasPendingApprovals ||
+          shell.hasPendingUserInput ||
+          teamAwaitsUser(cardsByThread.get(shell.id), shell.latestRun?.runId ?? null),
+        completedAt: shell.latestRun?.completedAt ?? null,
+      } satisfies TeamHomeChat,
+    }));
 
   const visit = useLastVisit(environmentId, projectId);
-  const catchUp = useMemo(
-    () =>
-      buildCatchUp({
-        team,
-        projectId,
-        pathPrefix,
-        chats: chats.map((entry) => entry.chat),
-        lastVisitAt: visit.last,
-        now: visit.now,
-      }),
-    [team, projectId, pathPrefix, chats, visit],
-  );
+  const catchUp = buildCatchUp({
+    team,
+    projectId,
+    pathPrefix,
+    chats: chats.map((entry) => entry.chat),
+    lastVisitAt: visit.last,
+    now: visit.now,
+  });
 
   const openChat = (threadId: string) =>
     void navigate({ to: "/$environmentId/$threadId", params: { environmentId, threadId } });
@@ -267,16 +260,12 @@ const memberName = teamMemberName;
 function TeamPeople(props: { readonly team: TeamFeedTeam; readonly pathPrefix: string }) {
   const { team } = props;
   // You first, then teammates by who was around last.
-  const people = useMemo(
-    () =>
-      [...team.members].sort((a, b) =>
-        a.memberId === team.me
-          ? -1
-          : b.memberId === team.me
-            ? 1
-            : Date.parse(b.lastSeenAt) - Date.parse(a.lastSeenAt),
-      ),
-    [team],
+  const people = [...team.members].sort((a, b) =>
+    a.memberId === team.me
+      ? -1
+      : b.memberId === team.me
+        ? 1
+        : Date.parse(b.lastSeenAt) - Date.parse(a.lastSeenAt),
   );
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -407,10 +396,7 @@ function SoloChats(props: {
   readonly openChat: (threadId: string) => void;
 }) {
   const { team } = props;
-  const titles = useMemo(
-    () => new Map(props.chats.map((entry) => [entry.chat.key, entry.chat.title])),
-    [props.chats],
-  );
+  const titles = new Map(props.chats.map((entry) => [entry.chat.key, entry.chat.title]));
   // Chats that are running, wait for you, or hold files.
   const shown = props.chats.filter(
     (entry) =>

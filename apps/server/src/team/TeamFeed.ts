@@ -57,7 +57,7 @@ export class TeamFeed extends Context.Service<
 const encodeView = Schema.encodeSync(Schema.fromJsonString(TeamFeedTeam));
 
 /** The first line of a note, cut to a list item. */
-export const handoffHeadline = (changed: string) => {
+const handoffHeadline = (changed: string) => {
   const line = changed.split("\n", 1)[0]!.trim();
   return line.length <= TEAM_FEED_LIMITS.headline
     ? line

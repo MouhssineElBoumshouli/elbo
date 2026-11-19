@@ -62,7 +62,7 @@ interface LineCounts {
 const linesLabel = (lines: LineCounts) => `+${lines.added} -${lines.removed} lines`;
 
 /** "content of src/a.ts changed since this note was written (+1 -0 lines)", and the like. */
-export const describeChanges = (changes: ReadonlyArray<FileChange>, since: string) => {
+const describeChanges = (changes: ReadonlyArray<FileChange>, since: string) => {
   const [only] = changes;
   if (changes.length === 1 && only !== undefined) {
     if (only.change !== "edited") {

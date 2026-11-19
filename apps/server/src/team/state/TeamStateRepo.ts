@@ -24,7 +24,7 @@ import * as GitVcsDriver from "../../vcs/GitVcsDriver.ts";
 import { TeamStorageError } from "../TeamErrors.ts";
 
 /** Pushes refused for being behind are redone this many times in all. */
-export const TEAM_STATE_PUSH_ATTEMPTS = 5;
+const TEAM_STATE_PUSH_ATTEMPTS = 5;
 
 const NETWORK_TIMEOUT_MS = 20_000;
 const LOCAL_TIMEOUT_MS = 10_000;

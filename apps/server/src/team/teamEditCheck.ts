@@ -10,13 +10,6 @@ import type { Options as ClaudeQueryOptions } from "@anthropic-ai/claude-agent-s
 import type { ThreadId } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 
-/**
- * Claude Code's limit on a call to T3's MCP server (the per-server `timeout`,
- * which overrides MCP_TOOL_TIMEOUT for that server only). Its default drops an
- * HTTP call at 60 s; the warning card holds `team_plan` up to 55 minutes.
- */
-export const CLAUDE_T3_MCP_TOOL_TIMEOUT_MS = 60 * 60 * 1000;
-
 /** Why the write must wait (told to the agent), or `undefined` to let it through. Never fails. */
 export type TeamEditCheck = (
   threadId: ThreadId,
@@ -42,7 +35,7 @@ export function checkTeamEdit(
 }
 
 /** The file a Claude edit tool writes, from its input. */
-export function claudeEditToolPath(toolInput: unknown): string | undefined {
+function claudeEditToolPath(toolInput: unknown): string | undefined {
   if (typeof toolInput !== "object" || toolInput === null) return undefined;
   const input = toolInput as { readonly file_path?: unknown; readonly notebook_path?: unknown };
   const path = input.file_path ?? input.notebook_path;
@@ -50,7 +43,7 @@ export function claudeEditToolPath(toolInput: unknown): string | undefined {
 }
 
 /** The Claude tools that write files. Bash is not one: the after-the-turn check sees its edits. */
-export const CLAUDE_EDIT_TOOLS_MATCHER = "Edit|Write|MultiEdit|NotebookEdit";
+const CLAUDE_EDIT_TOOLS_MATCHER = "Edit|Write|MultiEdit|NotebookEdit";
 
 /**
  * Claude's PreToolUse hook on its edit tools: a held file is refused with the

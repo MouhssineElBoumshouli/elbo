@@ -90,7 +90,7 @@ export class TeamNotes extends Context.Service<
   }
 >()("t3/team/TeamNotes") {}
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const teams = yield* TeamService.TeamService;
   /** Note ids told to each chat on this server. */
   const told = new Map<ThreadId, Set<string>>();

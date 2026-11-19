@@ -33,7 +33,7 @@ export function projectMergePairs(
 }
 
 /** A team path as the project names it, case kept; the team path when outside the project. */
-export function mergePathInProject(path: string, pathPrefix: string): string {
+function mergePathInProject(path: string, pathPrefix: string): string {
   const inProject = claimPathInProject(path, pathPrefix);
   if (inProject === null || inProject === "") return path;
   return path.slice(path.length - inProject.length);
@@ -44,10 +44,7 @@ const memberName = teamMemberName;
 const code = (text: string) => `\`${text}\``;
 
 /** "Your "login" chat and Sara's `search` branch"; "Your chats "A" and "B"". */
-export function mergePairSubject(
-  team: TeamFeedTeam,
-  pair: Pick<TeamMergePair, "mine" | "other">,
-): string {
+function mergePairSubject(team: TeamFeedTeam, pair: Pick<TeamMergePair, "mine" | "other">): string {
   const mine = `"${pair.mine.title}"`;
   switch (pair.other._tag) {
     case "chat":

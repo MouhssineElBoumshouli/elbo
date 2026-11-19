@@ -105,18 +105,18 @@ import * as Model from "./TeamStateModel.ts";
 import * as TeamStateRepo from "./TeamStateRepo.ts";
 
 /** Push access and the login are checked again after this long (upstream's viewer cache time). */
-export const TEAM_MEMBERSHIP_TTL = Duration.minutes(10);
+const TEAM_MEMBERSHIP_TTL = Duration.minutes(10);
 /** Writes other than claims wait this long, so writes close together share one push. */
 export const TEAM_SYNC_DELAY = Duration.seconds(2);
 /** A claim's fetch and push each get this long (STORAGE_PLAN.md Q4). */
-export const TEAM_CLAIM_NETWORK_TIMEOUT_MS = 3_000;
+const TEAM_CLAIM_NETWORK_TIMEOUT_MS = 3_000;
 /** The poller's ETag check: free on GitHub when nothing changed (STORAGE_PLAN.md Q2). */
-export const TEAM_POLL_INTERVAL = Duration.seconds(15);
+const TEAM_POLL_INTERVAL = Duration.seconds(15);
 /** Without gh (or a remote on no Git host), `git ls-remote`, which GitHub does count. */
-export const TEAM_POLL_FALLBACK_INTERVAL = Duration.seconds(60);
+const TEAM_POLL_FALLBACK_INTERVAL = Duration.seconds(60);
 /** After a failed check the wait doubles from this, up to the max (upstream's SourceControlRateLimit). */
-export const TEAM_POLL_BACKOFF = Duration.seconds(30);
-export const TEAM_POLL_MAX_BACKOFF = Duration.minutes(15);
+const TEAM_POLL_BACKOFF = Duration.seconds(30);
+const TEAM_POLL_MAX_BACKOFF = Duration.minutes(15);
 
 export type TeamPollMode = "etag" | "lsRemote";
 
