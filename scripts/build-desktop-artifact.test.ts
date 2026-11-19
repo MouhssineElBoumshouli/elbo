@@ -605,6 +605,10 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       assert.equal(stable.productName, "Elbo");
       assert.equal(beta.productName, "Elbo (Beta)");
       assert.equal(stable.artifactName, "Elbo-${version}-${arch}.${ext}");
+      const license = (stable.extraResources as Array<{ from: string; to: string }>).find(
+        (entry) => entry.to === "LICENSE.txt",
+      );
+      assert.match(license?.from ?? "", /[\\/]LICENSE$/);
       assert.deepEqual(
         (mac.mac as { protocols: Array<{ schemes: Array<string> }> }).protocols[0]?.schemes,
         ["elbo", "elbo-dev"],

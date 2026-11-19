@@ -25,7 +25,7 @@ Today the build is "T3 Code (Beta)", id `com.t3tools.t3code`, data in `%USERPROF
 | Icon                                   | `BRAND_ASSET_PATHS` (production and nightly icons)                                     | Our own `.ico` and PNGs, a nightly-style variant for Beta                               |
 | `t3` command the app puts on PATH      | `DesktopCliShim.ts`: `t3.cmd`                                                          | `<name>.cmd`, so it never replaces real T3 Code's `t3`                                  |
 
-How: one team file holds these values (`apps/desktop/src/team/identity.ts`, also read by the build script), and each upstream spot gets one `team-layer:` line that reads from it. About 8 small hooks. [verify] while building: the server's own default home when started from the shim, the WSL backend's home, and `DesktopHomeOwner`'s lock all take the home we pass.
+How (built 2026-11-19, slice 1): one team file holds these values, `packages/shared/src/teamIdentity.ts` (in shared because desktop, web, the shared link parsers and the build script all read it), and each upstream spot has a small `team-layer:` hook. Checked: `DesktopHomeOwner`'s lock lives under the home we pass; the `elbo` shim hands the server `~/.elbo`; the WSL backend now gets `~/.elbo` too (it fell back to `~/.t3` before).
 
 Shared on purpose: provider sign-ins (`~/.claude`, `~/.codex`, ...) and `gh`. A person signed in for T3 Code or the CLIs is signed in for us too. That is easier, not a leak.
 
