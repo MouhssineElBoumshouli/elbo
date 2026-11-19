@@ -36,7 +36,6 @@ import { useComposerSend } from "./chat/useComposerSend";
 import { useComposerResume } from "./chat/useComposerResume";
 import { ThreadFind, ThreadFindCanvas } from "./chat/ThreadFindProvider";
 import { closeThreadFind, openThreadFind, useThreadFindOpen } from "./chat/threadFindStore";
-import { withTeamCardEntries } from "./team/teamTimeline"; // team-layer
 import { useTeamThreadCards } from "~/state/teamFeed"; // team-layer
 import { THREAD_FIND_BAR_RESERVED_HEIGHT } from "./chat/ThreadFindBar";
 import { usageLimitRecoveryBannerItem } from "./chat/UsageLimitRecoveryBanner";
@@ -1601,13 +1600,12 @@ export default function ChatView(props: ChatViewProps) {
         message,
       }) as const,
   );
-  // team-layer: the chat's team cards among its entries (team/V2_PORT_PLAN.md D1).
+  // team-layer: the chat's team cards; ThreadTimeline puts them among its entries (team/V2_PORT_PLAN.md D1).
   const teamCards = useTeamThreadCards(
     activeThreadRef?.environmentId ?? null,
     activeThreadRef?.threadId ?? null,
   );
-  const serverEntriesWithTeamCards = withTeamCardEntries(serverTimelineEntries, teamCards);
-  const timelineEntries = isServerThread ? serverEntriesWithTeamCards : draftTimelineEntries;
+  const timelineEntries = isServerThread ? serverTimelineEntries : draftTimelineEntries;
   const timelineMessages = timelineEntries.flatMap((entry) =>
     entry.kind === "message" ? [entry.message] : [],
   );
@@ -3450,6 +3448,7 @@ export default function ChatView(props: ChatViewProps) {
                   threadDetailRef={routeThreadDetailRef}
                   entriesInput={timelineEntriesInput}
                   draftEntries={isServerThread ? null : draftTimelineEntries}
+                  teamCards={teamCards} // team-layer
                   activeThreadKey={activeThreadKey}
                   syncing={threadSyncPhase !== null}
                   detailLoading={threadDetailLoading}

@@ -10,6 +10,8 @@ import {
   timelineHasEphemeralPreviewUrls,
 } from "../ChatView.logic";
 import { MessagesTimeline } from "./MessagesTimeline";
+import type { TeamCardRow } from "@t3tools/client-runtime/work-log/team-cards"; // team-layer
+import { withTeamCardEntries } from "../team/teamTimeline"; // team-layer
 
 /**
  * The timeline with the streamed text. ChatView reads the thread through its quiet
@@ -24,6 +26,7 @@ export function ThreadTimeline({
   activeThreadKey,
   syncing,
   detailLoading,
+  teamCards,
   ...timelineProps
 }: Omit<ComponentProps<typeof MessagesTimeline>, "timelineEntries"> & {
   /** Null until the thread's detail may load; see resolveThreadDetailRef. */
@@ -34,13 +37,15 @@ export function ThreadTimeline({
   activeThreadKey: string | null;
   syncing: boolean;
   detailLoading: boolean;
+  /** team-layer: the chat's team cards, placed among its entries (team/V2_PORT_PLAN.md D1). */
+  teamCards: ReadonlyArray<TeamCardRow>;
 }) {
   const visibleTurnItems = useTimelineVisibleTurnItems(threadDetailRef);
   const serverEntries = useIncrementalTimelineEntries(activeThreadKey, {
     ...entriesInput,
     visibleTurnItems,
   });
-  const entries = draftEntries ?? serverEntries;
+  const entries = draftEntries ?? withTeamCardEntries(serverEntries, teamCards); // team-layer
   const displayedEntries = resolveThreadSwitchTimeline({
     loading: entries.length === 0 && syncing,
     activeThreadKey,
