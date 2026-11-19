@@ -197,7 +197,9 @@ Each slice ships on its own, is tested, committed, pushed and logged.
 10. **No-help test** with one classmate, fix the top three, repeat with a second.
 11. **Signing** (if SignPath approved), then **Stable 1.0**.
 
-Not in this stage: macOS and Linux builds of our app, Windows on ARM, the mobile app under our name, the Microsoft Store.
+Later, after slice 2: **one unsigned Mac build** for a single test with a friend who has a Mac. Unsigned means macOS blocks the first open; he opens System Settings → Privacy & Security → "Open Anyway" once. No auto-updates without signing: each new version is a manual download.
+
+Not in this stage: signed macOS and Linux builds of our app, Windows on ARM, the mobile app under our name, the Microsoft Store.
 
 **What you need to do yourself:**
 
