@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 import {
   countTeamWords,
   TEAM_PLAN_ACTIVITY_KIND,
@@ -8,7 +9,7 @@ import {
   type TeamTask,
   type TeamThreadRef,
 } from "@t3tools/contracts";
-import * as Crypto from "effect/Crypto";
+import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -113,7 +114,7 @@ const make = Effect.gen(function* () {
   const orchestrator = yield* Orchestrator.OrchestratorV2;
   const projects = yield* ProjectService.ProjectService;
   const cards = yield* TeamCards.TeamCards;
-  const crypto = yield* Crypto.Crypto;
+  const random = yield* SecureRandom.SecureRandom;
   const { resolve } = yield* makeTeamResolver;
   const platform = yield* HostProcess.Platform;
   const choices = yield* TeamChoices.TeamChoices;
@@ -348,7 +349,7 @@ const make = Effect.gen(function* () {
       yield* cards.append({
         threadId,
         entry: {
-          id: `team-plan:${yield* crypto.randomUUIDv4()}`,
+          id: `team-plan:${yield* random.uuidV4()}`,
           kind: TEAM_PLAN_ACTIVITY_KIND,
           summary: teamPlanSummary(payload.files.length),
           payload,

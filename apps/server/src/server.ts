@@ -859,14 +859,14 @@ const layerMakeRoutes = Layer.mergeAll(
     Ws.layer,
     speechStreamRouteLayer,
   ),
-  // team-layer: the team tools, registered on the MCP server built below (team/DESIGN.md D5).
-  TeamMcpLayer.layer.pipe(
-    Layer.provideMerge(
-      McpHttpServer.layer.pipe(
-        Layer.provide(ProviderAdapterRegistry.layerFromProviderInstanceRegistry),
-        Layer.provide(McpOAuth.layerMcpClientAuthenticator),
-      ),
-    ),
+  // team-layer: McpHttpServer.layer plus the team tools (team/DESIGN.md D5). They go in
+  // the transport's registrations, whose auth middleware gives each call its
+  // McpInvocationContext; keep this in step with McpHttpServer.layer.
+  McpHttpServer.layerMcpTransport(
+    Layer.mergeAll(McpHttpServer.layerTools, McpHttpServer.layerToolSearch, TeamMcpLayer.layer),
+  ).pipe(
+    Layer.provide(ProviderAdapterRegistry.layerFromProviderInstanceRegistry),
+    Layer.provide(McpOAuth.layerMcpClientAuthenticator),
   ),
   // Follows delegated tasks running in linked environments, including after a restart.
   Layer.effectDiscard(

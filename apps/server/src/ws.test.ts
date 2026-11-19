@@ -180,6 +180,11 @@ import {
   WS_RPC_SERVER_OPTIONS,
   withLateConfigDiscovery,
 } from "./ws.ts";
+import * as TeamChoices from "./team/TeamChoices.ts"; // team-layer
+import * as TeamFeed from "./team/TeamFeed.ts"; // team-layer
+import * as TeamMergeFix from "./team/TeamMergeFix.ts"; // team-layer
+import * as TeamNotes from "./team/TeamNotes.ts"; // team-layer
+import * as TeamQuestions from "./team/TeamQuestions.ts"; // team-layer
 
 const snapshotConfig = (fields: Partial<ServerConfig>) =>
   ({ availableEditors: [], settings: {}, ...fields }) as unknown as ServerConfig;
@@ -887,6 +892,12 @@ const layerUnusedConfigRpcServices = Layer.mergeAll(
   Layer.mock(WorkspaceEntries.WorkspaceEntries)({}),
   Layer.mock(WorkspaceFileSystem.WorkspaceFileSystem)({}),
   Layer.mock(WorktreeSetupTracker.WorktreeSetupTracker)({}),
+  // team-layer: the team RPC handlers' services (ws.ts).
+  Layer.mock(TeamFeed.TeamFeed)({}),
+  Layer.mock(TeamChoices.TeamChoices)({}),
+  Layer.mock(TeamQuestions.TeamQuestions)({}),
+  Layer.mock(TeamNotes.TeamNotes)({}),
+  Layer.mock(TeamMergeFix.TeamMergeFix)({}),
 );
 
 const layerConfigSources = Layer.mergeAll(

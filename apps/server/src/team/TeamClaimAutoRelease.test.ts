@@ -1,4 +1,5 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   CommandId,
   EnvironmentId,
@@ -74,85 +75,85 @@ interface Released {
   readonly paths: ReadonlyArray<string>;
 }
 
-const makeHarness = Effect.fn("makeTeamClaimAutoReleaseHarness")(function* (
-  threads: ReadonlyArray<ThreadId>,
-) {
-  const merges = yield* PubSub.unbounded<PullRequestService.PullRequestMergeEvent>();
-  // Every release call, in order, with what it released.
-  const releases = yield* Queue.unbounded<Released>();
+const makeHarness = Effect.fn("makeTeamClaimAutoReleaseHarness")(
+  function* (threads: ReadonlyArray<ThreadId>) {
+    const merges = yield* PubSub.unbounded<PullRequestService.PullRequestMergeEvent>();
+    // Every release call, in order, with what it released.
+    const releases = yield* Queue.unbounded<Released>();
 
-  // The real service on a local origin, recording each release call.
-  const fs = yield* FileSystem.FileSystem;
-  const checkout = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-release-" });
-  useTeamOrigin(
-    checkout,
-    makeTeamOrigin(yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-origin-" })),
-  );
-  const teamContext = yield* Layer.build(
-    Layer.effect(
-      TeamService.TeamService,
-      TeamService.TeamService.pipe(
-        Effect.map((service) =>
-          TeamService.TeamService.of({
-            ...service,
-            releaseThreadClaims: (input) =>
-              service.releaseThreadClaims(input).pipe(
-                Effect.tap((released) =>
-                  Queue.offer(releases, {
-                    threadId: input.thread.threadId,
-                    reason: input.reason,
-                    paths: released.flatMap((claim) => claim.paths),
-                  }),
+    // The real service on a local origin, recording each release call.
+    const fs = yield* FileSystem.FileSystem;
+    const checkout = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-release-" });
+    useTeamOrigin(
+      checkout,
+      makeTeamOrigin(yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-origin-" })),
+    );
+    const teamContext = yield* Layer.build(
+      Layer.effect(
+        TeamService.TeamService,
+        TeamService.TeamService.pipe(
+          Effect.map((service) =>
+            TeamService.TeamService.of({
+              ...service,
+              releaseThreadClaims: (input) =>
+                service.releaseThreadClaims(input).pipe(
+                  Effect.tap((released) =>
+                    Queue.offer(releases, {
+                      threadId: input.thread.threadId,
+                      reason: input.reason,
+                      paths: released.flatMap((claim) => claim.paths),
+                    }),
+                  ),
                 ),
-              ),
+            }),
+          ),
+        ),
+      ).pipe(
+        Layer.provide(
+          testTeamServiceLayer({
+            environmentId: ENVIRONMENT_ID,
+            stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-state-" }),
           }),
         ),
       ),
-    ).pipe(
-      Layer.provide(
-        testTeamServiceLayer({
-          environmentId: ENVIRONMENT_ID,
-          stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-state-" }),
-        }),
-      ),
-    ),
-  );
-  const teams = yield* TeamService.TeamService.pipe(Effect.provide(teamContext));
-  const { membership } = yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout });
-  assert.equal(membership.status, "member");
-  const owner = Option.getOrThrow(yield* teams.currentMember(TEAM_FILE.teamId));
-  const claim = (threadId: ThreadId, paths: Array<string>) =>
-    teams.claimPaths({
-      teamId: TEAM_FILE.teamId,
-      memberId: owner.memberId,
-      thread: { environmentId: ENVIRONMENT_ID, threadId },
-      paths,
-    });
-  const activePaths = (threadId: ThreadId) =>
-    teams
-      .listActiveClaims(TEAM_FILE.teamId)
-      .pipe(
-        Effect.map((claims) =>
-          claims.filter((held) => held.thread.threadId === threadId).flatMap((held) => held.paths),
-        ),
-      );
+    );
+    const teams = yield* TeamService.TeamService.pipe(Effect.provide(teamContext));
+    const { membership } = yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout });
+    assert.equal(membership.status, "member");
+    const owner = Option.getOrThrow(yield* teams.currentMember(TEAM_FILE.teamId));
+    const claim = (threadId: ThreadId, paths: Array<string>) =>
+      teams.claimPaths({
+        teamId: TEAM_FILE.teamId,
+        memberId: owner.memberId,
+        thread: { environmentId: ENVIRONMENT_ID, threadId },
+        paths,
+      });
+    const activePaths = (threadId: ThreadId) =>
+      teams
+        .listActiveClaims(TEAM_FILE.teamId)
+        .pipe(
+          Effect.map((claims) =>
+            claims
+              .filter((held) => held.thread.threadId === threadId)
+              .flatMap((held) => held.paths),
+          ),
+        );
 
-  // The real v2 orchestrator, with each thread (and the sentinel) in it.
-  const orchestration = yield* Layer.build(TeamOrchestrator.layer);
-  for (const threadId of threads) {
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId,
-      workspaceRoot: checkout,
-    }).pipe(Effect.provide(orchestration));
-  }
-  const orchestrator = yield* Orchestrator.OrchestratorV2.pipe(Effect.provide(orchestration));
-  const eventSink = yield* EventSink.EventSinkV2.pipe(Effect.provide(orchestration));
-  let commands = 0;
-  const nextCommandId = () => CommandId.make(`command:release-test-${++commands}`);
+    // The real v2 orchestrator, with each thread (and the sentinel) in it.
+    const orchestration = yield* Layer.build(TeamOrchestrator.layer);
+    for (const threadId of threads) {
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
+        threadId,
+        workspaceRoot: checkout,
+      }).pipe(Effect.provide(orchestration));
+    }
+    const orchestrator = yield* Orchestrator.OrchestratorV2.pipe(Effect.provide(orchestration));
+    const eventSink = yield* EventSink.EventSinkV2.pipe(Effect.provide(orchestration));
+    let commands = 0;
+    const nextCommandId = () => CommandId.make(`command:release-test-${++commands}`);
 
-  const start = Effect.gen(function* () {
-    yield* Layer.build(
+    const start = Layer.build(
       TeamClaimAutoReleaseLive.pipe(
         Layer.provide(
           Layer.mergeAll(
@@ -169,65 +170,66 @@ const makeHarness = Effect.fn("makeTeamClaimAutoReleaseHarness")(function* (
           ),
         ),
       ),
-    );
-  });
+    ).pipe(Effect.asVoid);
 
-  const archive = (threadId: ThreadId) =>
-    orchestrator.dispatch({ type: "thread.archive", commandId: nextCommandId(), threadId });
-  const remove = (threadId: ThreadId) =>
-    orchestrator.dispatch({ type: "thread.delete", commandId: nextCommandId(), threadId });
-  /** The provider sync's event: the thread with these links. */
-  const syncPullRequests = (
-    threadId: ThreadId,
-    pullRequests: ReadonlyArray<ThreadPullRequestLink>,
-  ) =>
-    Effect.gen(function* () {
-      const { thread } = yield* orchestrator.getThreadProjection(threadId);
-      const commandId = nextCommandId();
-      yield* eventSink.write({
-        commandId,
-        events: [
-          {
-            id: EventId.make(`event:${commandId}`),
-            type: "thread.pull-request-synced",
-            threadId,
-            occurredAt: yield* DateTime.now,
-            payload: { ...thread, pullRequests },
-          },
-        ],
+    const archive = (threadId: ThreadId) =>
+      orchestrator.dispatch({ type: "thread.archive", commandId: nextCommandId(), threadId });
+    const remove = (threadId: ThreadId) =>
+      orchestrator.dispatch({ type: "thread.delete", commandId: nextCommandId(), threadId });
+    /** The provider sync's event: the thread with these links. */
+    const syncPullRequests = (
+      threadId: ThreadId,
+      pullRequests: ReadonlyArray<ThreadPullRequestLink>,
+    ) =>
+      Effect.gen(function* () {
+        const { thread } = yield* orchestrator.getThreadProjection(threadId);
+        const commandId = nextCommandId();
+        yield* eventSink.write({
+          commandId,
+          events: [
+            {
+              id: EventId.make(`event:${commandId}`),
+              type: "thread.pull-request-synced",
+              threadId,
+              occurredAt: yield* DateTime.now,
+              payload: { ...thread, pullRequests },
+            },
+          ],
+        });
       });
+
+    /** Archives a new sentinel and waits for it: every release before it is returned. */
+    let sentinels = 0;
+    const settle = Effect.gen(function* () {
+      const sentinel = ThreadId.make(`thread-sentinel-${++sentinels}`);
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
+        threadId: sentinel,
+        workspaceRoot: checkout,
+      }).pipe(Effect.provide(orchestration));
+      yield* archive(sentinel);
+      const seen: Array<Released> = [];
+      while (true) {
+        const next = yield* Queue.take(releases);
+        if (isSentinel(next.threadId)) return seen;
+        seen.push(next);
+      }
     });
 
-  /** Archives a new sentinel and waits for it: every release before it is returned. */
-  let sentinels = 0;
-  const settle = Effect.gen(function* () {
-    const sentinel = ThreadId.make(`thread-sentinel-${++sentinels}`);
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId: sentinel,
-      workspaceRoot: checkout,
-    }).pipe(Effect.provide(orchestration));
-    yield* archive(sentinel);
-    const seen: Array<Released> = [];
-    while (true) {
-      const next = yield* Queue.take(releases);
-      if (isSentinel(next.threadId)) return seen;
-      seen.push(next);
-    }
-  });
-
-  return {
-    start,
-    settle,
-    claim,
-    activePaths,
-    releases,
-    archive,
-    remove,
-    syncPullRequests,
-    merge: (value: PullRequestService.PullRequestMergeEvent) => PubSub.publish(merges, value),
-  };
-}, Effect.provide(NodeServices.layer));
+    return {
+      start,
+      settle,
+      claim,
+      activePaths,
+      releases,
+      archive,
+      remove,
+      syncPullRequests,
+      merge: (value: PullRequestService.PullRequestMergeEvent) => PubSub.publish(merges, value),
+    };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 describe("TeamClaimAutoRelease", () => {
   it.effect("keeps claims when a turn ends: nothing releases them by default", () =>

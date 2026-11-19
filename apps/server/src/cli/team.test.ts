@@ -5,6 +5,7 @@ import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   GitCommandError,
@@ -45,7 +46,13 @@ import {
 
 const runCli = (args: ReadonlyArray<string>) =>
   Command.runWith(cli, { version: "0.0.0" })(args).pipe(
-    Effect.provide(Layer.mergeAll(NodeServices.layer, NetService.layer, TestConsole.layer)),
+    Effect.provide(
+      Layer.mergeAll(
+        Layer.mergeAll(NodeServices.layer, NodeCrypto.layer),
+        NetService.layer,
+        TestConsole.layer,
+      ),
+    ),
   );
 
 /** A temp folder that looks like a Git repo root (the command only looks for `.git`). */
@@ -380,9 +387,9 @@ const initRemote = (
     Effect.provide(
       Layer.mergeAll(
         options.gitHubOrigin === true
-          ? Layer.merge(originLooksLikeGitHub, NodeServices.layer)
+          ? Layer.merge(originLooksLikeGitHub, Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))
           : options.lsRemoteTimesOut === true
-            ? Layer.merge(lsRemoteTimesOut, NodeServices.layer)
+            ? Layer.merge(lsRemoteTimesOut, Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))
             : TestTeamGitLayer,
         TestConsole.layer,
       ),

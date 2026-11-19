@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * "Fix it" for a merge clash (fork-only, team/MERGE_HELP_PLAN.md section 5).
  *

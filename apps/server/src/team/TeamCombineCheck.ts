@@ -1,4 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off - free memory comes from `os.freemem`.
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Typecheck on the combined result (fork-only, team/MERGE_HELP_PLAN.md
  * section 2): runs the project's check command on a pair that Git merges
@@ -352,7 +353,7 @@ export const make = Effect.gen(function* () {
         remaining.pipe(
           Effect.flatMap((ms) =>
             ms <= 0
-              ? Effect.succeed(undefined)
+              ? Effect.undefined
               : runCombineCommand({ command: line, cwd: checkFolder, timeoutMs: ms }),
           ),
         );

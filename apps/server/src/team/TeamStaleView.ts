@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * The stale-view line (fork-only, team/VISION.md 3.6 point 3): at the start of
  * each turn, the agent is told which files it touched or planned changed
@@ -260,7 +261,7 @@ export const make = Effect.gen(function* () {
   const read = (threadId: ThreadId): Effect.Effect<string | undefined> =>
     resolve({ environmentId, threadId }).pipe(
       Effect.flatMap((resolved) =>
-        resolved._tag === "InTeam" ? turnNote(resolved.context) : Effect.succeed(undefined),
+        resolved._tag === "InTeam" ? turnNote(resolved.context) : Effect.undefined,
       ),
       Effect.timeoutOption(STALE_VIEW_TIMEOUT),
       Effect.map(Option.getOrUndefined),

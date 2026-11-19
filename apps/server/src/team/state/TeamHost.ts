@@ -12,6 +12,7 @@
  */
 import { TEAM_STATE_REF, TeamLogin } from "@t3tools/contracts";
 import * as Clock from "effect/Clock";
+import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -399,8 +400,12 @@ export const layer = Layer.effect(
   TeamHost,
   Effect.gen(function* () {
     const config = yield* ServerConfig.ServerConfig;
+    const loginOverride = yield* Config.String(TEAM_LOGIN_OVERRIDE_ENV).pipe(
+      Config.option,
+      Config.map(Option.getOrUndefined),
+    );
     return yield* make({
-      loginOverride: globalThis.process.env[TEAM_LOGIN_OVERRIDE_ENV],
+      loginOverride,
       devMode: config.devUrl !== undefined,
       cwd: config.cwd,
     });

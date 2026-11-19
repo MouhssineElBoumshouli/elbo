@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * The guard (fork-only, team/PREVENTION_PLAN.md section 3, slice 3b): the
  * pause in the middle, when an agent goes to change a file someone else holds

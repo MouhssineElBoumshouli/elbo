@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Solo mode (team/WINDOWS_AND_SOLO.md S1, S5): a project without
  * `.team/team.json` still gets memory, notes, claims between the person's own

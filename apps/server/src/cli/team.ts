@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * `t3 team` commands (fork-only, see team/DESIGN.md and team/STORAGE_PLAN.md).
  *

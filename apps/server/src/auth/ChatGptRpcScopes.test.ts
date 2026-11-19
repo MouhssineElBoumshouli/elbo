@@ -31,7 +31,8 @@ import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as NodeSocket from "@effect/platform-node/NodeSocket";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
+import * as NodeWS from "@effect/platform-node/NodeWS";
 import { assert, it } from "@effect/vitest";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -220,7 +221,13 @@ const start = Effect.gen(function* () {
 });
 
 const ReadOnlySocketLive = Layer.effect(ReadOnlySocket, start).pipe(
-  Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NetService.layer, FetchHttpClient.layer)),
+  Layer.provideMerge(
+    Layer.mergeAll(
+      Layer.mergeAll(NodeServices.layer, NodeCrypto.layer),
+      NetService.layer,
+      FetchHttpClient.layer,
+    ),
+  ),
 );
 
 const rpcProtocolLayer = (url: string) =>
@@ -231,7 +238,7 @@ const rpcProtocolLayer = (url: string) =>
           Layer.succeed(
             Socket.WebSocketConstructor,
             (socketUrl, protocols) =>
-              new NodeSocket.NodeWS.WebSocket(
+              new NodeWS.WebSocket(
                 socketUrl,
                 protocols as string | Array<string> | undefined,
               ) as unknown as globalThis.WebSocket,

@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Merging help, slice 1 (fork-only, team/MERGE_HELP_PLAN.md sections 1, 3
  * and 6): on events, this server combines each of its chats' latest

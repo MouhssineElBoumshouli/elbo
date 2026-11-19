@@ -31,7 +31,7 @@ export function checkTeamEdit(
   threadId: ThreadId,
   paths: ReadonlyArray<string>,
 ): Effect.Effect<string | undefined> {
-  return Effect.suspend(() => installedCheck?.(threadId, paths) ?? Effect.succeed(undefined));
+  return Effect.suspend(() => installedCheck?.(threadId, paths) ?? Effect.undefined);
 }
 
 /** The file a Claude edit tool writes, from its input. */

@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * GitTeamService - the team service on the Git team state (team/STORAGE_PLAN.md
  * 3.1 to 3.4): the same reads and writes M1's tools use, kept in this server's
@@ -59,7 +60,7 @@ import {
   type ThreadId,
   type TeamWriterFile,
 } from "@t3tools/contracts";
-import * as Crypto from "effect/Crypto";
+import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -277,11 +278,11 @@ export const make = Effect.fn("GitTeamService.make")(function* (options: GitTeam
   const host = yield* TeamHost.TeamHost;
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const crypto = yield* Crypto.Crypto;
+  const random = yield* SecureRandom.SecureRandom;
   const scope = yield* Scope.Scope;
   const environmentId = options.environmentId;
 
-  const newId = crypto.randomUUIDv4().pipe(Effect.orDie);
+  const newId = random.uuidV4().pipe(Effect.orDie);
   const nowIso = DateTime.now.pipe(Effect.map(DateTime.formatIso));
   const nowMillis = DateTime.now.pipe(Effect.map(DateTime.toEpochMillis));
   const storage =

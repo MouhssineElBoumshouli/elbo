@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 // @effect-diagnostics nodeBuiltinImport:off - a dev script: synchronous Git and file setup.
 
 /**
@@ -38,6 +39,7 @@ import * as NodePath from "node:path";
 
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   T3_PROJECT_FILE_NAME,
@@ -430,7 +432,7 @@ const main = Effect.gen(function* () {
       GitVcsDriver.layer.pipe(
         Layer.provide(ServerConfig.layerTest(project, stateRoot)),
         Layer.provideMerge(VcsProcess.layer),
-        Layer.provideMerge(NodeServices.layer),
+        Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
       ),
     ),
     Effect.ensuring(Effect.sync(() => NodeFS.rmSync(stateRoot, { recursive: true, force: true }))),

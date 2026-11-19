@@ -278,10 +278,8 @@ export default function FileBrowserPanel({
   const teamDecoration = useTeamTreeDecoration({
     environmentId,
     threadRef: teamThreadRef,
-    onChange: () => {
-      const tree = treeModelRef.current;
-      tree?.setComposition(tree.getComposition());
-    },
+    // Called from an effect, after `model` below exists.
+    onChange: () => model.setComposition(model.getComposition()),
   });
   const { model } = useFileTree({
     composition: {

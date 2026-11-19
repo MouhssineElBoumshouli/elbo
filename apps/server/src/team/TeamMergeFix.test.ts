@@ -4,6 +4,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   type OrchestrationV2ServerCommand,
@@ -64,181 +65,184 @@ const read = (root: string, file: string) => NodeFS.readFileSync(NodePath.join(r
  * A team project; Sara's pushed `search` branch changes the routes line that
  * thread A (its own worktree, branch `t3/a` pushed) changed without committing.
  */
-const makeHarness = Effect.fn("makeTeamMergeFixHarness")(function* () {
-  const fs = yield* FileSystem.FileSystem;
-  const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-fix-" });
-  initRepo(root, {
-    [ROUTES]: "get /search\nget /login\n",
-    ".team/team.json": `{ "teamId": "${TEAM_ID}", "name": "Core" }`,
-    ".team/rulebook.md": "# Rules\n\n## Check\n\n`pnpm typecheck`\n",
-  });
-  useTeamOrigin(root, originUrl);
-  git(root, "push", "--quiet", "origin", "main");
-  git(root, "checkout", "--quiet", "-b", "search", "main");
-  writeFile(root, ROUTES, "get /search?tag\nget /login\n");
-  const saraCommit = commitAll(root, "Sara: search by tag");
-  git(root, "checkout", "--quiet", "main");
-  const worktree = NodePath.join(originRoot, "worktree-a");
-  git(root, "worktree", "add", "--quiet", "-b", "t3/a", worktree, "main");
-  git(worktree, "push", "--quiet", "-u", "origin", "t3/a");
-  writeFile(worktree, ROUTES, "get /search/trimmed\nget /login\n");
-  const headBefore = git(worktree, "rev-parse", "HEAD");
-
-  const orchestration = yield* Layer.build(TeamOrchestrator.layer);
-  yield* Effect.gen(function* () {
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId: THREAD_A,
-      workspaceRoot: root,
-      worktreePath: worktree,
+const makeHarness = Effect.fn("makeTeamMergeFixHarness")(
+  function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-fix-" });
+    initRepo(root, {
+      [ROUTES]: "get /search\nget /login\n",
+      ".team/team.json": `{ "teamId": "${TEAM_ID}", "name": "Core" }`,
+      ".team/rulebook.md": "# Rules\n\n## Check\n\n`pnpm typecheck`\n",
     });
-    yield* TeamOrchestrator.seedThread({
-      projectId: PROJECT_ID,
-      threadId: THREAD_SHARED,
-      workspaceRoot: root,
-    });
-  }).pipe(Effect.provide(orchestration));
+    useTeamOrigin(root, originUrl);
+    git(root, "push", "--quiet", "origin", "main");
+    git(root, "checkout", "--quiet", "-b", "search", "main");
+    writeFile(root, ROUTES, "get /search?tag\nget /login\n");
+    const saraCommit = commitAll(root, "Sara: search by tag");
+    git(root, "checkout", "--quiet", "main");
+    const worktree = NodePath.join(originRoot, "worktree-a");
+    git(root, "worktree", "add", "--quiet", "-b", "t3/a", worktree, "main");
+    git(worktree, "push", "--quiet", "-u", "origin", "t3/a");
+    writeFile(worktree, ROUTES, "get /search/trimmed\nget /login\n");
+    const headBefore = git(worktree, "rev-parse", "HEAD");
 
-  const pair = (threadId: ThreadId): TeamMergePair => ({
-    projectId: PROJECT_ID,
-    mine: {
-      thread: { environmentId: ENVIRONMENT_ID, threadId },
-      title: "Trim",
-      worktree: threadId === THREAD_A,
-      commit: "mine-checkpoint",
-    },
-    other: { _tag: "branch", memberId: SARA, branch: "search", commit: saraCommit },
-    status: "clash",
-    files: [{ path: ROUTES, places: 1, regenerate: false }],
-    fileCount: 1,
-    bothChanged: [],
-    previous: null,
-    since: "2026-10-13T10:00:00.000Z",
-    checkedAt: "2026-10-13T10:00:30.000Z",
-  });
-  const usedCommits = yield* Ref.make<ReadonlyArray<string>>([]);
-  /** The pair the merge check returns instead of the clash with Sara, when set. */
-  const pairOverride = yield* Ref.make<TeamMergePair | undefined>(undefined);
-  const mergeCheck = TeamMergeCheck.TeamMergeCheck.of({
-    forTeam: () => Effect.succeed(undefined),
-    subscribeChanges: Effect.die("not used"),
-    request: () => Effect.void,
-    findPair: (_projectId, threadId) =>
-      Ref.get(pairOverride).pipe(Effect.map((override) => override ?? pair(threadId))),
-    useCommitUntilNextTurn: (input) => Ref.update(usedCommits, (all) => [...all, input.commit]),
-    takeClashLine: () => Effect.succeed(undefined),
-    placeOf: () => Effect.succeedNone,
-    setCombined: () => Effect.void,
-    combinedOf: () => Effect.succeed(undefined),
-  });
-  /** What the combined check before an update finds; clean when unset. */
-  const combinedResult = yield* Ref.make<TeamCombinedCheck | undefined>(undefined);
-  const combinedRuns = yield* Ref.make(0);
-  /** The check on a fix's result: what it was asked, and when it may finish (new errors). */
-  const resultRequested = yield* Deferred.make<TeamCombineCheck.ResultRequest>();
-  const resultRelease = yield* Deferred.make<void>();
-  const combineCheck = TeamCombineCheck.TeamCombineCheck.of({
-    start: () => Effect.void,
-    checkResult: (request) =>
-      Deferred.succeed(resultRequested, request).pipe(
-        Effect.andThen(Deferred.await(resultRelease)),
-        Effect.as<TeamCombinedCheck>({
-          mineCommit: request.mineCommit,
-          otherCommit: request.otherCommit,
-          status: "broken",
-          command: "npm run typecheck",
-          errors: [{ path: ROUTES, message: "Cannot find name 'tag'.", side: "both" }],
-          errorCount: 1,
-          checkedAt: "2026-10-14T10:00:00.000Z",
-        }),
-      ),
-    run: (request) =>
-      Ref.update(combinedRuns, (count) => count + 1).pipe(
-        Effect.andThen(Ref.get(combinedResult)),
-        Effect.map(
-          (found): TeamCombinedCheck =>
-            found ?? {
-              mineCommit: "mine",
-              otherCommit: request.other.commit,
-              status: "clean",
-              errors: [],
-              errorCount: 0,
-              checkedAt: "2026-10-14T10:00:00.000Z",
-            },
+    const orchestration = yield* Layer.build(TeamOrchestrator.layer);
+    yield* Effect.gen(function* () {
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
+        threadId: THREAD_A,
+        workspaceRoot: root,
+        worktreePath: worktree,
+      });
+      yield* TeamOrchestrator.seedThread({
+        projectId: PROJECT_ID,
+        threadId: THREAD_SHARED,
+        workspaceRoot: root,
+      });
+    }).pipe(Effect.provide(orchestration));
+
+    const pair = (threadId: ThreadId): TeamMergePair => ({
+      projectId: PROJECT_ID,
+      mine: {
+        thread: { environmentId: ENVIRONMENT_ID, threadId },
+        title: "Trim",
+        worktree: threadId === THREAD_A,
+        commit: "mine-checkpoint",
+      },
+      other: { _tag: "branch", memberId: SARA, branch: "search", commit: saraCommit },
+      status: "clash",
+      files: [{ path: ROUTES, places: 1, regenerate: false }],
+      fileCount: 1,
+      bothChanged: [],
+      previous: null,
+      since: "2026-10-13T10:00:00.000Z",
+      checkedAt: "2026-10-13T10:00:30.000Z",
+    });
+    const usedCommits = yield* Ref.make<ReadonlyArray<string>>([]);
+    /** The pair the merge check returns instead of the clash with Sara, when set. */
+    const pairOverride = yield* Ref.make<TeamMergePair | undefined>(undefined);
+    const mergeCheck = TeamMergeCheck.TeamMergeCheck.of({
+      forTeam: () => Effect.undefined,
+      subscribeChanges: Effect.die("not used"),
+      request: () => Effect.void,
+      findPair: (_projectId, threadId) =>
+        Ref.get(pairOverride).pipe(Effect.map((override) => override ?? pair(threadId))),
+      useCommitUntilNextTurn: (input) => Ref.update(usedCommits, (all) => [...all, input.commit]),
+      takeClashLine: () => Effect.undefined,
+      placeOf: () => Effect.succeedNone,
+      setCombined: () => Effect.void,
+      combinedOf: () => Effect.undefined,
+    });
+    /** What the combined check before an update finds; clean when unset. */
+    const combinedResult = yield* Ref.make<TeamCombinedCheck | undefined>(undefined);
+    const combinedRuns = yield* Ref.make(0);
+    /** The check on a fix's result: what it was asked, and when it may finish (new errors). */
+    const resultRequested = yield* Deferred.make<TeamCombineCheck.ResultRequest>();
+    const resultRelease = yield* Deferred.make<void>();
+    const combineCheck = TeamCombineCheck.TeamCombineCheck.of({
+      start: () => Effect.void,
+      checkResult: (request) =>
+        Deferred.succeed(resultRequested, request).pipe(
+          Effect.andThen(Deferred.await(resultRelease)),
+          Effect.as<TeamCombinedCheck>({
+            mineCommit: request.mineCommit,
+            otherCommit: request.otherCommit,
+            status: "broken",
+            command: "npm run typecheck",
+            errors: [{ path: ROUTES, message: "Cannot find name 'tag'.", side: "both" }],
+            errorCount: 1,
+            checkedAt: "2026-10-14T10:00:00.000Z",
+          }),
         ),
+      run: (request) =>
+        Ref.update(combinedRuns, (count) => count + 1).pipe(
+          Effect.andThen(Ref.get(combinedResult)),
+          Effect.map(
+            (found): TeamCombinedCheck =>
+              found ?? {
+                mineCommit: "mine",
+                otherCommit: request.other.commit,
+                status: "clean",
+                errors: [],
+                errorCount: 0,
+                checkedAt: "2026-10-14T10:00:00.000Z",
+              },
+          ),
+        ),
+    });
+
+    const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
+    const dependencies = Layer.mergeAll(
+      testTeamServiceLayer({
+        environmentId: ENVIRONMENT_ID,
+        stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-fix-state-" }),
+      }),
+      TestTeamGitLayer,
+      Layer.succeedContext(orchestration),
+      TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
+      Layer.succeed(TeamMergeCheck.TeamMergeCheck, mergeCheck),
+      Layer.succeed(TeamCombineCheck.TeamCombineCheck, combineCheck),
+      Layer.mock(ServerEnvironment.ServerEnvironment)({
+        getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
+      }),
+    ).pipe(
+      Layer.provideMerge(ServerConfig.layerTest(process.cwd(), { prefix: "t3-team-fix-home-" })),
+      Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+    );
+    const context = yield* Layer.build(TeamMergeFix.layer.pipe(Layer.provideMerge(dependencies)));
+    const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
+    yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root });
+
+    // Sara joins from her own server.
+    const sara = yield* Layer.build(
+      testTeamServiceLayer({
+        environmentId: EnvironmentId.make("sara-server"),
+        stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-fix-sara-" }),
+        host: fakeTeamHost("Sara"),
+      }),
+    ).pipe(Effect.flatMap((built) => TeamService.TeamService.pipe(Effect.provide(built))));
+    yield* sara.openTeam({ teamFile: TEAM_FILE, checkout: root });
+    yield* sara.sync(TEAM_ID);
+    yield* teams.refresh(TEAM_ID);
+
+    const fixes = yield* TeamMergeFix.TeamMergeFix.pipe(Effect.provide(context));
+    const start = (threadId: ThreadId) =>
+      fixes.act({ _tag: "start", projectId: PROJECT_ID, threadId, other: pair(threadId).other });
+    const endTurn = TeamOrchestrator.setRun({
+      threadId: THREAD_A,
+      runId: RUN_FIX,
+      ordinal: 1,
+      status: "completed",
+    }).pipe(Effect.provide(orchestration));
+    const turnTexts = Ref.get(dispatched).pipe(
+      Effect.map((commands) =>
+        commands.flatMap((command) => (command.type === "message.dispatch" ? [command.text] : [])),
       ),
-  });
-
-  const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
-  const dependencies = Layer.mergeAll(
-    testTeamServiceLayer({
-      environmentId: ENVIRONMENT_ID,
-      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-fix-state-" }),
-    }),
-    TestTeamGitLayer,
-    Layer.succeedContext(orchestration),
-    TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
-    Layer.succeed(TeamMergeCheck.TeamMergeCheck, mergeCheck),
-    Layer.succeed(TeamCombineCheck.TeamCombineCheck, combineCheck),
-    Layer.mock(ServerEnvironment.ServerEnvironment)({
-      getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
-    }),
-  ).pipe(
-    Layer.provideMerge(ServerConfig.layerTest(process.cwd(), { prefix: "t3-team-fix-home-" })),
-    Layer.provideMerge(NodeServices.layer),
-  );
-  const context = yield* Layer.build(TeamMergeFix.layer.pipe(Layer.provideMerge(dependencies)));
-  const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
-  yield* teams.ensureTeam({ teamFile: TEAM_FILE, checkout: root });
-
-  // Sara joins from her own server.
-  const sara = yield* Layer.build(
-    testTeamServiceLayer({
-      environmentId: EnvironmentId.make("sara-server"),
-      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-fix-sara-" }),
-      host: fakeTeamHost("Sara"),
-    }),
-  ).pipe(Effect.flatMap((built) => TeamService.TeamService.pipe(Effect.provide(built))));
-  yield* sara.openTeam({ teamFile: TEAM_FILE, checkout: root });
-  yield* sara.sync(TEAM_ID);
-  yield* teams.refresh(TEAM_ID);
-
-  const fixes = yield* TeamMergeFix.TeamMergeFix.pipe(Effect.provide(context));
-  const start = (threadId: ThreadId) =>
-    fixes.act({ _tag: "start", projectId: PROJECT_ID, threadId, other: pair(threadId).other });
-  const endTurn = TeamOrchestrator.setRun({
-    threadId: THREAD_A,
-    runId: RUN_FIX,
-    ordinal: 1,
-    status: "completed",
-  }).pipe(Effect.provide(orchestration));
-  const turnTexts = Ref.get(dispatched).pipe(
-    Effect.map((commands) =>
-      commands.flatMap((command) => (command.type === "message.dispatch" ? [command.text] : [])),
-    ),
-  );
-  return {
-    root,
-    worktree,
-    headBefore,
-    saraCommit,
-    teams,
-    fixes,
-    start,
-    endTurn,
-    orchestration,
-    turnTexts,
-    usedCommits: Ref.get(usedCommits),
-    setPair: (next: TeamMergePair | undefined) => Ref.set(pairOverride, next),
-    setCombined: (next: TeamCombinedCheck | undefined) => Ref.set(combinedResult, next),
-    combinedRuns: Ref.get(combinedRuns),
-    resultRequested: Deferred.await(resultRequested),
-    releaseResult: Deferred.succeed(resultRelease, undefined),
-    pair,
-    /** The service again, as after a server restart: it reads the saved fixes. */
-    restarted: TeamMergeFix.make.pipe(Effect.provide(context)),
-  };
-}, Effect.provide(NodeServices.layer));
+    );
+    return {
+      root,
+      worktree,
+      headBefore,
+      saraCommit,
+      teams,
+      fixes,
+      start,
+      endTurn,
+      orchestration,
+      turnTexts,
+      usedCommits: Ref.get(usedCommits),
+      setPair: (next: TeamMergePair | undefined) => Ref.set(pairOverride, next),
+      setCombined: (next: TeamCombinedCheck | undefined) => Ref.set(combinedResult, next),
+      combinedRuns: Ref.get(combinedRuns),
+      resultRequested: Deferred.await(resultRequested),
+      releaseResult: Deferred.succeed(resultRelease, undefined),
+      pair,
+      /** The service again, as after a server restart: it reads the saved fixes. */
+      restarted: TeamMergeFix.make.pipe(Effect.provide(context)),
+    };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 describe("TeamMergeFix", () => {
   it.effect("starts the fix's turn, then approve commits, pushes and tells Sara", () =>

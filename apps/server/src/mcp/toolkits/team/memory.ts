@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * `team_memory_search` (team/DESIGN.md D5, D7): keyword search over handoff
  * notes (written and automatic) and `.team/decisions/*.md`, with a freshness

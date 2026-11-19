@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * The team's checked-in files in a project repo: `.team/team.json`,
  * `.team/rulebook.md`, and the `defaultThreadEnvMode` field of `t3.json`.
@@ -21,7 +22,7 @@ import {
   TeamId,
 } from "@t3tools/contracts";
 import { fromJsonStringPretty, fromLenientJson } from "@t3tools/shared/schemaJson";
-import * as Crypto from "effect/Crypto";
+import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as FileSystem from "effect/FileSystem";
@@ -301,7 +302,7 @@ export const initTeamProject = Effect.fn("TeamProjectFiles.initTeamProject")(fun
   }) => Effect.Effect<void, TeamProjectRegisterError>;
 }) {
   const path = yield* Path.Path;
-  const crypto = yield* Crypto.Crypto;
+  const random = yield* SecureRandom.SecureRandom;
 
   const repoRoot = yield* findRepoRoot(input.startDirectory).pipe(
     Effect.flatMap(
@@ -331,7 +332,7 @@ export const initTeamProject = Effect.fn("TeamProjectFiles.initTeamProject")(fun
   const teamFile = Option.isSome(existingTeam)
     ? existingTeam.value
     : TeamFile.make({
-        teamId: input.teamId ?? TeamId.make(yield* crypto.randomUUIDv4().pipe(Effect.orDie)),
+        teamId: input.teamId ?? TeamId.make(yield* random.uuidV4().pipe(Effect.orDie)),
         name: requestedName && requestedName.length > 0 ? requestedName : path.basename(repoRoot),
       });
 

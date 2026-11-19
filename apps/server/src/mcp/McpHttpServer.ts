@@ -1395,4 +1395,8 @@ export const layerToolSearch = Layer.mergeAll(
   layerDeferredListing,
 ).pipe(Layer.provide(layerToolExposure));
 
+/**
+ * team-layer: unused in this fork; server.ts builds it with the team tools added. Keep both in step.
+ * @public
+ */
 export const layer = layerMcpTransport(Layer.mergeAll(layerTools, layerToolSearch));

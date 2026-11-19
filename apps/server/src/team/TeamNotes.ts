@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Notes (fork-only, team/UI_PLAN.md slice 4): what a client does with them
  * (`team.note` in `ws.ts`), and which notes an agent is told.

@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * Claim lifetime (fork-only, see team/DESIGN.md D5): a claim lasts until the
  * thread's work is merged or dropped, not until a turn ends. Agents are told

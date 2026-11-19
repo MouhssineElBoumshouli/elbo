@@ -87,5 +87,5 @@ export function installTeamBriefingResolver(resolver: TeamBriefingResolver): () 
 
 /** The briefing for this thread, or `undefined` when its project is not in a team. */
 export function readTeamBriefing(threadId: ThreadId): Effect.Effect<string | undefined> {
-  return Effect.suspend(() => installedResolver?.(threadId) ?? Effect.succeed(undefined));
+  return Effect.suspend(() => installedResolver?.(threadId) ?? Effect.undefined);
 }

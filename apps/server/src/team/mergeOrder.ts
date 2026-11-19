@@ -19,7 +19,11 @@ import type {
   TeamMergeOrderReason,
   ThreadPullRequestLink,
 } from "@t3tools/contracts";
-import { resolveThreadCurrentPullRequestLink } from "@t3tools/shared/threadPullRequests";
+import { makeThreadPullRequests } from "@t3tools/source-control-core/shared/threadPullRequests";
+
+import { sourceControlDefinitions } from "../sourceControl/sourceControlDefinitions.ts";
+
+const { resolveThreadCurrentPullRequestLink } = makeThreadPullRequests(sourceControlDefinitions);
 
 export interface MergeOrderSide {
   /** Breaks a tie: the login, or the chat's title. */

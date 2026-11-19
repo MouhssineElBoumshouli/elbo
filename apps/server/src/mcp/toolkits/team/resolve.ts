@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * thread -> project -> working folder -> `.team/team.json` -> team and this
  * server's member (team/DESIGN.md D5). Shared by the team tools, the team

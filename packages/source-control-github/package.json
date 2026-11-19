@@ -7,6 +7,10 @@
       "types": "./src/shared/definition.ts",
       "import": "./src/shared/definition.ts"
     },
+    "./server/gitHubAuthStatus": {
+      "types": "./src/server/gitHubAuthStatus.ts",
+      "import": "./src/server/gitHubAuthStatus.ts"
+    },
     "./server/driver": {
       "types": "./src/server/driver.ts",
       "import": "./src/server/driver.ts"

@@ -1,4 +1,5 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   CheckpointId,
   CheckpointRef,
@@ -49,7 +50,7 @@ const THREAD_PLAIN = ThreadId.make("thread-plain");
 const GitLayer = GitVcsDriver.layer.pipe(
   Layer.provide(ServerConfig.layerTest(process.cwd(), { prefix: "t3-team-auto-notes-" })),
   Layer.provideMerge(VcsProcess.layer),
-  Layer.provideMerge(NodeServices.layer),
+  Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
 );
 
 let sequence = 0;
@@ -237,7 +238,7 @@ describe("TeamAutoNotes", () => {
       const notes = yield* harness.teams.listHandoffs(TEAM_ID);
       assert.lengthOf(notes, 1);
       assert.equal(yield* harness.savedCount, 0);
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("keeps a note for each thread, with paths from the folder holding .team", () =>
@@ -273,6 +274,6 @@ describe("TeamAutoNotes", () => {
         "src/b.ts": git(worktree, "hash-object", "app/src/b.ts"),
       });
       assert.lengthOf(yield* harness.teams.listHandoffs(TEAM_ID), 2);
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 });

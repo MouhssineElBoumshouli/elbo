@@ -4,6 +4,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   ProjectId,
@@ -144,7 +145,7 @@ const makeDependencies = (
               Effect.orDie,
             ),
           ).pipe(Layer.provideMerge(dependencies)),
-    Layer.provideMerge(NodeServices.layer),
+    Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
   );
 
 const briefingIn = (
@@ -171,7 +172,7 @@ describe("team briefing resolver", () => {
       const briefing = yield* briefingIn(root, null, { startsTeam: false });
       assert.equal(briefing, renderSoloBriefing());
       assert.notInclude(briefing ?? "", "rulebook");
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("briefs a thread in a team this server is a member of", () =>
@@ -179,7 +180,7 @@ describe("team briefing resolver", () => {
       attachMcp();
       const root = yield* makeFolder({ team: true });
       assert.strictEqual(yield* briefingIn(root), EXPECTED);
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   // Only `t3 team init` starts the team state; a briefing lookup never does.
@@ -198,7 +199,7 @@ describe("team briefing resolver", () => {
       assert.isUndefined(briefing);
       assert.isTrue(Option.isNone(team));
       assert.equal(git(NodePath.join(testRoot, "origin.git"), "for-each-ref"), "");
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("points to the rulebook at the repo root from a project subfolder", () =>
@@ -211,7 +212,7 @@ describe("team briefing resolver", () => {
       yield* fs.makeDirectory(project, { recursive: true });
       const briefing = yield* briefingIn(project);
       assert.include(briefing, "Project rules are in ../../.team/rulebook.md;");
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("reads the team from the thread's worktree, not the project root", () =>
@@ -220,14 +221,14 @@ describe("team briefing resolver", () => {
       const project = yield* makeFolder({ team: false });
       const worktree = yield* makeFolder({ team: true });
       assert.strictEqual(yield* briefingIn(project, worktree), EXPECTED);
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("gives no briefing when the session has no t3-code MCP server", () =>
     Effect.gen(function* () {
       const root = yield* makeFolder({ team: true });
       assert.isUndefined(yield* briefingIn(root));
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("gives no briefing when this server cannot use the team", () =>
@@ -250,7 +251,7 @@ describe("team briefing resolver", () => {
         host: fakeTeamHost(null),
       });
       assert.isUndefined(briefing);
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("gives no briefing, instead of failing, when the team file is broken", () =>
@@ -262,7 +263,7 @@ describe("team briefing resolver", () => {
       yield* fs.makeDirectory(path.join(root, ".team"));
       yield* fs.writeFileString(path.join(root, ".team", "team.json"), "{ not json");
       assert.isUndefined(yield* briefingIn(root));
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   // A turn without it would change the cached prompt prefix (team/VISION.md 6.5).
@@ -289,7 +290,7 @@ describe("team briefing resolver", () => {
       assert.strictEqual(broken, EXPECTED);
       assert.isUndefined(notInTeam);
       assert.isUndefined(brokenAfter);
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("serves adapters through readTeamBriefing while the layer is up", () =>
@@ -301,6 +302,6 @@ describe("team briefing resolver", () => {
       );
       assert.strictEqual(inside, EXPECTED);
       assert.isUndefined(yield* readTeamBriefing(THREAD_ID));
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 });

@@ -4,6 +4,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   type OrchestrationV2ServerCommand,
@@ -122,141 +123,145 @@ interface HarnessOptions {
 const RealGitLayer = GitVcsDriver.layer.pipe(
   Layer.provide(ServerConfig.layerTest(process.cwd(), { prefix: "t3-team-memory-git-" })),
   Layer.provideMerge(VcsProcess.layer),
-  Layer.provideMerge(NodeServices.layer),
+  Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
 );
 
-const makeHarness = Effect.fn("makeTeamToolkitHarness")(function* (options: HarnessOptions) {
-  const gitCalls = yield* Ref.make<ReadonlyArray<GitVcsDriver.ExecuteGitInput>>([]);
-  /** The app's turns (T3 Code's own messages); they stop here, as tests open no provider. */
-  const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
-  /** Each warning card, as it is added: the held call is waiting by then. */
-  const cards = yield* Queue.unbounded<TeamChoiceActivityPayload>();
-  const fs = yield* FileSystem.FileSystem;
-  // The real v2 orchestrator (one Codex instance): threads A, B and C, each in a run.
-  const orchestration = yield* Layer.build(TeamOrchestrator.layer);
-  for (const [ordinal, threadId] of [THREAD_A, THREAD_B, THREAD_C].entries()) {
-    yield* Effect.gen(function* () {
-      yield* TeamOrchestrator.seedThread({
-        projectId: PROJECT_ID,
-        threadId,
-        workspaceRoot: options.workspaceRoot,
-        worktreePath: options.worktrees?.[threadId] ?? options.worktreePath ?? null,
-      });
-      yield* TeamOrchestrator.setRun({
-        threadId,
-        runId: runOf(threadId),
-        ordinal: ordinal + 1,
-        status: "running",
-      });
-    }).pipe(Effect.provide(orchestration));
-  }
-  // The team service always runs real Git: its state is a Git repo.
-  const teamLayer = testTeamServiceLayer({
-    environmentId: ENVIRONMENT_ID,
-    stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-state-" }),
-    host: options.host,
-  });
-  const dependencies = Layer.mergeAll(
-    teamLayer,
-    TeamCards.layer.pipe(Layer.provide(Layer.succeedContext(orchestration))),
-    Layer.succeedContext(orchestration),
-    // After the orchestration's own: the team's turns stop at the recorded dispatch.
-    TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
-    options.realGit === true
-      ? RealGitLayer
-      : Layer.mock(GitVcsDriver.GitVcsDriver)({
-          execute: (input) =>
-            Ref.update(gitCalls, (calls) => [...calls, input]).pipe(
-              Effect.as({
-                exitCode: 0 as never,
-                stdout: `${COMMIT}\n`,
-                stderr: "",
-                stdoutTruncated: false,
-                stderrTruncated: false,
-              }),
-            ),
+const makeHarness = Effect.fn("makeTeamToolkitHarness")(
+  function* (options: HarnessOptions) {
+    const gitCalls = yield* Ref.make<ReadonlyArray<GitVcsDriver.ExecuteGitInput>>([]);
+    /** The app's turns (T3 Code's own messages); they stop here, as tests open no provider. */
+    const dispatched = yield* Ref.make<ReadonlyArray<OrchestrationV2ServerCommand>>([]);
+    /** Each warning card, as it is added: the held call is waiting by then. */
+    const cards = yield* Queue.unbounded<TeamChoiceActivityPayload>();
+    const fs = yield* FileSystem.FileSystem;
+    // The real v2 orchestrator (one Codex instance): threads A, B and C, each in a run.
+    const orchestration = yield* Layer.build(TeamOrchestrator.layer);
+    for (const [ordinal, threadId] of [THREAD_A, THREAD_B, THREAD_C].entries()) {
+      yield* Effect.gen(function* () {
+        yield* TeamOrchestrator.seedThread({
+          projectId: PROJECT_ID,
+          threadId,
+          workspaceRoot: options.workspaceRoot,
+          worktreePath: options.worktrees?.[threadId] ?? options.worktreePath ?? null,
+        });
+        yield* TeamOrchestrator.setRun({
+          threadId,
+          runId: runOf(threadId),
+          ordinal: ordinal + 1,
+          status: "running",
+        });
+      }).pipe(Effect.provide(orchestration));
+    }
+    // The team service always runs real Git: its state is a Git repo.
+    const teamLayer = testTeamServiceLayer({
+      environmentId: ENVIRONMENT_ID,
+      stateDirectory: yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-state-" }),
+      host: options.host,
+    });
+    const dependencies = Layer.mergeAll(
+      teamLayer,
+      TeamCards.layer.pipe(Layer.provide(Layer.succeedContext(orchestration))),
+      Layer.succeedContext(orchestration),
+      // After the orchestration's own: the team's turns stop at the recorded dispatch.
+      TeamOrchestrator.layerRecordingDispatch(dispatched, orchestration),
+      options.realGit === true
+        ? RealGitLayer
+        : Layer.mock(GitVcsDriver.GitVcsDriver)({
+            execute: (input) =>
+              Ref.update(gitCalls, (calls) => [...calls, input]).pipe(
+                Effect.as({
+                  exitCode: 0 as never,
+                  stdout: `${COMMIT}\n`,
+                  stderr: "",
+                  stdoutTruncated: false,
+                  stderrTruncated: false,
+                }),
+              ),
+          }),
+      Layer.mock(ServerEnvironment.ServerEnvironment)({
+        getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
+        getDescriptor: Effect.succeed({
+          environmentId: ENVIRONMENT_ID,
+          label: ME,
+          platform: { os: "linux" as const, arch: "x64" as const },
+          serverVersion: "0.0.0-test",
+          capabilities: { repositoryIdentity: true },
         }),
-    Layer.mock(ServerEnvironment.ServerEnvironment)({
-      getEnvironmentId: Effect.succeed(ENVIRONMENT_ID),
-      getDescriptor: Effect.succeed({
-        environmentId: ENVIRONMENT_ID,
-        label: ME,
-        platform: { os: "linux" as const, arch: "x64" as const },
-        serverVersion: "0.0.0-test",
-        capabilities: { repositoryIdentity: true },
       }),
-    }),
-  ).pipe(Layer.provideMerge(NodeServices.layer));
-  const context = yield* Layer.build(
-    Layer.mergeAll(TeamChoices.layer, TeamNotes.layer).pipe(Layer.provideMerge(dependencies)),
-  );
-  const teamCards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
-  // Each new warning card, in the order they are added.
-  const seenCards = new Set<string>();
-  yield* Stream.fromSubscription(yield* teamCards.subscribeChanges).pipe(
-    Stream.runForEach((change) =>
-      Effect.forEach(change.entries, (entry) => {
-        if (entry.kind !== TEAM_CHOICE_ACTIVITY_KIND || seenCards.has(entry.id)) return Effect.void;
-        seenCards.add(entry.id);
-        const card = decodeChoice(entry.payload);
-        return Option.isSome(card) ? Queue.offer(cards, card.value) : Effect.void;
-      }),
-    ),
-    Effect.forkScoped,
-  );
-  /** A thread's card records, oldest first. */
-  const entries = (threadId: ThreadId = THREAD_A) => teamCards.forThread(threadId);
-  const toolkit = yield* TeamToolkit.pipe(
-    Effect.provide(McpToolAccess.HandlersLayer.layer(TeamHandlersLayer)),
-    Effect.provide(context),
-  );
-  const call = <Name extends ToolName>(
-    name: Name,
-    params: Parameters<typeof toolkit.handle<Name>>[1],
-    threadId: ThreadId | null = THREAD_A,
-  ) =>
-    toolkit.handle(name, params).pipe(
-      Stream.unwrap,
-      Stream.runCollect,
-      // Failure mode is "error", so a delivered result is always the success shape.
-      Effect.map((chunk) => chunk.at(-1)!.result as ToolResult<Name>),
-      Effect.provideService(McpInvocationContext.McpInvocationContext, {
-        environmentId: ENVIRONMENT_ID,
-        capabilities: new Set<McpInvocationContext.McpCapability>(),
-        issuedAt: 1,
-        requestNamespace: "team-test",
-        // null: an outside MCP client, not an agent in a T3 chat.
-        thread:
-          threadId === null
-            ? undefined
-            : {
-                threadId,
-                providerSessionId: "provider-session-1",
-                providerInstanceId: TeamOrchestrator.modelSelection.instanceId,
-              },
-        client: undefined,
-      }),
+    ).pipe(Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
+    const context = yield* Layer.build(
+      Layer.mergeAll(TeamChoices.layer, TeamNotes.layer).pipe(Layer.provideMerge(dependencies)),
+    );
+    const teamCards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
+    // Each new warning card, in the order they are added.
+    const seenCards = new Set<string>();
+    yield* Stream.fromSubscription(yield* teamCards.subscribeChanges).pipe(
+      Stream.runForEach((change) =>
+        Effect.forEach(change.entries, (entry) => {
+          if (entry.kind !== TEAM_CHOICE_ACTIVITY_KIND || seenCards.has(entry.id))
+            return Effect.void;
+          seenCards.add(entry.id);
+          const card = decodeChoice(entry.payload);
+          return Option.isSome(card) ? Queue.offer(cards, card.value) : Effect.void;
+        }),
+      ),
+      Effect.forkScoped,
+    );
+    /** A thread's card records, oldest first. */
+    const entries = (threadId: ThreadId = THREAD_A) => teamCards.forThread(threadId);
+    const toolkit = yield* TeamToolkit.pipe(
+      Effect.provide(McpToolAccess.HandlersLayer.layer(TeamHandlersLayer)),
       Effect.provide(context),
     );
-  const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
-  if (options.startsTeam !== false) {
-    const started = yield* teams.ensureTeam({
-      teamFile: TEAM_FILE,
-      checkout: options.worktreePath ?? options.workspaceRoot,
-    });
-    assert.equal(started.membership.status, "member");
-  }
-  const choices = yield* TeamChoices.TeamChoices.pipe(Effect.provide(context));
-  /** The user stops the thread's run. */
-  const stopTurn = (threadId: ThreadId) =>
-    TeamOrchestrator.setRun({
-      threadId,
-      runId: runOf(threadId),
-      ordinal: [THREAD_A, THREAD_B, THREAD_C].indexOf(threadId) + 1,
-      status: "completed",
-    }).pipe(Effect.provide(orchestration));
-  return { call, teams, gitCalls, dispatched, cards, entries, choices, stopTurn };
-}, Effect.provide(NodeServices.layer));
+    const call = <Name extends ToolName>(
+      name: Name,
+      params: Parameters<typeof toolkit.handle<Name>>[1],
+      threadId: ThreadId | null = THREAD_A,
+    ) =>
+      toolkit.handle(name, params).pipe(
+        Stream.unwrap,
+        Stream.runCollect,
+        // Failure mode is "error", so a delivered result is always the success shape.
+        Effect.map((chunk) => chunk.at(-1)!.result as ToolResult<Name>),
+        Effect.provideService(McpInvocationContext.McpInvocationContext, {
+          environmentId: ENVIRONMENT_ID,
+          capabilities: new Set<McpInvocationContext.McpCapability>(),
+          issuedAt: 1,
+          requestNamespace: "team-test",
+          // null: an outside MCP client, not an agent in a T3 chat.
+          thread:
+            threadId === null
+              ? undefined
+              : {
+                  threadId,
+                  providerSessionId: "provider-session-1",
+                  providerInstanceId: TeamOrchestrator.modelSelection.instanceId,
+                },
+          client: undefined,
+        }),
+        Effect.provide(context),
+      );
+    const teams = yield* TeamService.TeamService.pipe(Effect.provide(context));
+    if (options.startsTeam !== false) {
+      const started = yield* teams.ensureTeam({
+        teamFile: TEAM_FILE,
+        checkout: options.worktreePath ?? options.workspaceRoot,
+      });
+      assert.equal(started.membership.status, "member");
+    }
+    const choices = yield* TeamChoices.TeamChoices.pipe(Effect.provide(context));
+    /** The user stops the thread's run. */
+    const stopTurn = (threadId: ThreadId) =>
+      TeamOrchestrator.setRun({
+        threadId,
+        runId: runOf(threadId),
+        ordinal: [THREAD_A, THREAD_B, THREAD_C].indexOf(threadId) + 1,
+        status: "completed",
+      }).pipe(Effect.provide(orchestration));
+    return { call, teams, gitCalls, dispatched, cards, entries, choices, stopTurn };
+  },
+  Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+);
 
 /**
  * A temp project folder; with `team: true` it holds `.team/team.json` and is a
@@ -268,7 +273,7 @@ const makeProjectFolder = (team: boolean) =>
     const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-team-tools-" });
     if (team) yield* writeTeamFile(root);
     return root;
-  }).pipe(Effect.provide(NodeServices.layer));
+  }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
 
 /** Another person's T3 server, on this test's origin. */
 const teammate = (login: string) =>
@@ -282,7 +287,7 @@ const teammate = (login: string) =>
       }),
     );
     return yield* TeamService.TeamService.pipe(Effect.provide(context));
-  }).pipe(Effect.provide(NodeServices.layer));
+  }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
 
 /** The state ref on this test's origin; empty when there is none. */
 const originStateRefs = () => git(NodePath.join(originRoot, "origin.git"), "for-each-ref");
@@ -345,7 +350,9 @@ describe("team toolkit", () => {
         // Kept in T3 home: nothing in the project, nothing on a remote.
         assert.deepEqual(NodeFS.readdirSync(root), []);
         assert.equal(originStateRefs(), "");
-        const soloId = yield* soloTeamIdOf(root).pipe(Effect.provide(NodeServices.layer));
+        const soloId = yield* soloTeamIdOf(root).pipe(
+          Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
+        );
         assert.isTrue(yield* teams.isSolo(soloId));
         assert.isTrue(Option.isNone(yield* teams.getTeam(TEAM_ID)));
       }),
@@ -423,7 +430,7 @@ describe("team toolkit", () => {
         reasonOf(yield* elsewhere.call("team_claim", { paths: ["src/a.ts"] })),
         "This project is in team Core, but the project's remote holds the state of another team (team-2). Team tools do nothing here.",
       );
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("finds the team file at the repo root when the project is a subfolder", () =>
@@ -436,7 +443,7 @@ describe("team toolkit", () => {
       const { call } = yield* makeHarness({ workspaceRoot });
       const claim = inTeam(yield* call("team_claim", { paths: ["src/a.ts"] }));
       assert.deepEqual(claim.claimed, ["packages/web/src/a.ts"]);
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect(
@@ -459,7 +466,7 @@ describe("team toolkit", () => {
           [[CLAIM_WHERE.sameCheckout, ["src/Auth/Login.ts"]]],
         );
         NodeFS.rmSync(link);
-      }).pipe(Effect.provide(NodeServices.layer)),
+      }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("claims full and relative paths, reports overlaps, and releases", () =>
@@ -1383,7 +1390,7 @@ describe("team toolkit", () => {
           ["decision", "fresh"],
         ],
       );
-    }).pipe(Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
   it.effect("caps results at 5, works without a decisions folder, and needs keywords", () =>

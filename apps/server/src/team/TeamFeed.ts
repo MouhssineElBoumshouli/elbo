@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * The team feed (fork-only, see team/UI_PLAN.md slice 0): what each team or
  * solo project on this server holds, for the UI's markers and presence chip.

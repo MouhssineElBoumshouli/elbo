@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * `git merge-tree` for merging help (fork-only, team/MERGE_HELP_PLAN.md
  * section 1): combines two commits in the object store and says which files

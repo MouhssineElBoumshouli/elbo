@@ -3,6 +3,7 @@ import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import {
   EnvironmentId,
   ProjectId,
@@ -94,12 +95,12 @@ const makeHarness = Effect.gen(function* () {
   const turnRunning = yield* Ref.make(false);
 
   const mergeCheck = TeamMergeCheck.TeamMergeCheck.of({
-    forTeam: () => Effect.succeed(undefined),
+    forTeam: () => Effect.undefined,
     subscribeChanges: Effect.die("not used"),
     request: () => Effect.void,
     findPair: () => Ref.get(current),
     useCommitUntilNextTurn: () => Effect.void,
-    takeClashLine: () => Effect.succeed(undefined),
+    takeClashLine: () => Effect.undefined,
     placeOf: () => Effect.succeedSome({ teamId: "team" as never, teamRoot: root, repoRoot: root }),
     setCombined: (_projectId, check) => Ref.update(stored, (all) => [...all, check]),
     combinedOf: (pair) =>
@@ -152,7 +153,7 @@ const makeHarness = Effect.gen(function* () {
 });
 
 const TestLayer = ServerConfig.layerTest(process.cwd(), { prefix: "t3-team-combine-" }).pipe(
-  Layer.provideMerge(NodeServices.layer),
+  Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
 );
 
 describe("TeamCombineCheck", () => {

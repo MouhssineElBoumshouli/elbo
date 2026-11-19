@@ -1,3 +1,4 @@
+// @effect-diagnostics effectFnOpportunity:off - team code predates this style rule (v0.1.10 sync).
 /**
  * TeamStateRepo - one team's state on this server: a bare Git repo used only
  * for the hidden ref {@link TEAM_STATE_REF} (team/STORAGE_PLAN.md 3.3). Its
