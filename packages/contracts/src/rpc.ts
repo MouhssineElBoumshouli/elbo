@@ -418,6 +418,12 @@ import { TeamChoiceError, TeamChooseInput, TeamChooseResult } from "./teamChoice
 import { TeamAnswerError, TeamAnswerInput, TeamAnswerResult } from "./teamAsk.ts"; // team-layer
 import { TeamNoteError, TeamNoteInput, TeamNoteResult } from "./teamNotes.ts"; // team-layer
 import { TeamMergeFixError, TeamMergeFixInput, TeamMergeFixResult } from "./teamMerging.ts"; // team-layer
+import {
+  TeamSetupChooseInput,
+  TeamSetupError,
+  TeamSetupFacts,
+  TeamSetupFactsInput,
+} from "./teamSetup.ts"; // team-layer
 
 export const WS_METHODS = {
   projectsListEntries: "projects.listEntries",
@@ -644,6 +650,9 @@ export const WS_METHODS = {
   teamNote: "team.note",
   // team-layer: "Fix it" on a merge clash, then approve or undo (MERGE_HELP_PLAN.md section 5).
   teamMergeFix: "team.mergeFix",
+  // team-layer: Check my setup (WINDOWS_RELEASE_PLAN.md section 4a).
+  teamSetupFacts: "team.setupFacts",
+  teamSetupChoose: "team.setupChoose",
 } as const;
 
 const WsServerUpsertKeybindingRpc = Rpc.make(WS_METHODS.serverUpsertKeybinding, {
@@ -2142,6 +2151,18 @@ const WsTeamNoteRpc = Rpc.make(WS_METHODS.teamNote, {
   error: Schema.Union([TeamNoteError, EnvironmentAuthorizationError]),
 });
 
+// team-layer: Check my setup (fork-only, see team/WINDOWS_RELEASE_PLAN.md section 4a).
+const WsTeamSetupFactsRpc = Rpc.make(WS_METHODS.teamSetupFacts, {
+  payload: TeamSetupFactsInput,
+  success: TeamSetupFacts,
+  error: Schema.Union([TeamSetupError, EnvironmentAuthorizationError]),
+});
+const WsTeamSetupChooseRpc = Rpc.make(WS_METHODS.teamSetupChoose, {
+  payload: TeamSetupChooseInput,
+  success: TeamSetupFacts,
+  error: Schema.Union([TeamSetupError, EnvironmentAuthorizationError]),
+});
+
 // team-layer: "Fix it" on a merge clash (fork-only, see team/MERGE_HELP_PLAN.md section 5).
 const WsTeamMergeFixRpc = Rpc.make(WS_METHODS.teamMergeFix, {
   payload: TeamMergeFixInput,
@@ -2365,6 +2386,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsTeamAnswerRpc, // team-layer
   WsTeamNoteRpc, // team-layer
   WsTeamMergeFixRpc, // team-layer
+  WsTeamSetupFactsRpc, // team-layer
+  WsTeamSetupChooseRpc, // team-layer
   WsOrchestrationV2DispatchCommandRpc,
   WsOrchestrationV2GetWorkflowScriptRpc,
   WsOrchestrationV2GetNativeChildWorkRpc,

@@ -25,6 +25,8 @@ import { holdersOf } from "../../../team/heldElsewhere.ts";
 import * as TeamCards from "../../../team/TeamCards.ts";
 import * as TeamChoices from "../../../team/TeamChoices.ts";
 import * as TeamNotes from "../../../team/TeamNotes.ts";
+import * as TeamSetup from "../../../team/setup/TeamSetup.ts"; // team-layer
+import { describeTeamSetupRows } from "@t3tools/shared/teamSetupRows"; // team-layer
 import * as TeamService from "../../../team/TeamService.ts";
 import * as GitVcsDriver from "../../../vcs/GitVcsDriver.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
@@ -49,6 +51,7 @@ import {
   TeamToolError,
   TeamToolkit,
   type TeamMemorySearchResult,
+  type TeamSetupCheckResult,
   type TeamPlanResult,
   type TeamStatusResult,
 } from "./tools.ts";
@@ -119,6 +122,7 @@ const make = Effect.gen(function* () {
   const platform = yield* HostProcess.Platform;
   const choices = yield* TeamChoices.TeamChoices;
   const teamNotes = yield* TeamNotes.TeamNotes;
+  const teamSetup = yield* TeamSetup.TeamSetup; // team-layer: Check my setup
 
   /** A folder as the OS compares it: links resolved, and on Windows case and slashes ignored (W8). */
   const folderKeyOf = (folder: string) =>
@@ -734,6 +738,16 @@ const make = Effect.gen(function* () {
                   .join(" ");
           return { results, message } satisfies TeamMemorySearchResult;
         }),
+      ),
+    ),
+
+    // team-layer: the same rows as Settings → Check my setup, as plain lines.
+    team_setup_check: McpToolAccess.readsAsCaller(() =>
+      teamSetup.rows.pipe(
+        Effect.map(
+          (rows) => ({ summary: describeTeamSetupRows(rows) }) satisfies TeamSetupCheckResult,
+        ),
+        Effect.mapError((error) => new TeamToolError({ detail: error.detail })),
       ),
     ),
   } satisfies McpToolAccess.Handlers<typeof TeamToolkit.tools>;

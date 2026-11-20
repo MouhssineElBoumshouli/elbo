@@ -39,6 +39,7 @@ import { TEAM_RULEBOOK_TEMPLATE } from "../../../team/TeamProjectFiles.ts";
 import * as TeamCards from "../../../team/TeamCards.ts";
 import * as TeamChoices from "../../../team/TeamChoices.ts";
 import * as TeamNotes from "../../../team/TeamNotes.ts";
+import * as TeamSetup from "../../../team/setup/TeamSetup.ts"; // team-layer
 import * as TeamOrchestrator from "../../../team/teamOrchestrator.testkit.ts";
 import * as TeamService from "../../../team/TeamService.ts";
 import * as GitVcsDriver from "../../../vcs/GitVcsDriver.ts";
@@ -190,7 +191,11 @@ const makeHarness = Effect.fn("makeTeamToolkitHarness")(
       }),
     ).pipe(Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
     const context = yield* Layer.build(
-      Layer.mergeAll(TeamChoices.layer, TeamNotes.layer).pipe(Layer.provideMerge(dependencies)),
+      Layer.mergeAll(
+        TeamChoices.layer,
+        TeamNotes.layer,
+        Layer.mock(TeamSetup.TeamSetup)({}), // team-layer
+      ).pipe(Layer.provideMerge(dependencies)),
     );
     const teamCards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));
     // Each new warning card, in the order they are added.

@@ -83,3 +83,4 @@ export * from "./teamAsk.ts"; // team-layer: "Ask" on the warning card (slice 3d
 export * from "./teamCards.ts"; // team-layer: cards kept per chat (V2_PORT_PLAN.md D1)
 export * from "./teamNotes.ts"; // team-layer: notes (UI_PLAN.md slice 4)
 export * from "./teamMerging.ts"; // team-layer: merging help (MERGE_HELP_PLAN.md slice 1)
+export * from "./teamSetup.ts"; // team-layer: Check my setup (WINDOWS_RELEASE_PLAN.md 4a)

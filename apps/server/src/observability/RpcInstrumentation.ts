@@ -239,6 +239,8 @@ const RPC_AGGREGATES = {
   [WS_METHODS.teamAnswer]: "team",
   [WS_METHODS.teamNote]: "team",
   [WS_METHODS.teamMergeFix]: "team", // team-layer
+  [WS_METHODS.teamSetupFacts]: "team", // team-layer
+  [WS_METHODS.teamSetupChoose]: "team", // team-layer
 } as const satisfies Readonly<Record<WsRpcMethod, string>>;
 
 const RPC_SPAN_PREFIX = "ws.rpc";

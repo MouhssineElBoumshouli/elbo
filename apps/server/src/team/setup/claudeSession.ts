@@ -4,8 +4,7 @@
 const SIGNED_OUT_TEXT =
   /session has expired|sign in again|please run \/login|claude auth login|not logged in/iu;
 
-export const CLAUDE_SIGNED_OUT_MESSAGE =
-  "Claude is signed out on this computer. Sign in again to use Claude here.";
+export { TEAM_CLAUDE_SIGNED_OUT_MESSAGE as CLAUDE_SIGNED_OUT_MESSAGE } from "@t3tools/shared/teamSetupRows";
 
 /** True when a failed account check says the user must sign in again. */
 export function isClaudeSignedOutFailure(cause: unknown): boolean {

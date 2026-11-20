@@ -162,6 +162,7 @@ import {
 } from "@t3tools/provider-core/server/subagentProjection";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+import { codexToolStartupNotice } from "../../team/setup/codexToolChoices.ts"; // team-layer
 
 const CODEX_PROVIDER = ProviderDriverKind.make("codex");
 const CODEX_CAPACITY_MAX_RETRIES = 5;
@@ -2379,6 +2380,9 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
             if (failures === undefined) return;
             mcpStartupFailures.delete(nativeThreadId);
             for (const [name, message] of failures) {
+              // team-layer: once per tool per run, as a quiet line (Check my setup has the fix).
+              const notice = codexToolStartupNotice(name, message);
+              if (notice === null) continue;
               const nativeItemId = `mcp-startup-failed:${context.providerTurnId}:${name}`;
               const { ordinal, startedAt } = yield* resolveItemPosition(context, nativeItemId);
               yield* emitProviderEvent({
@@ -2399,8 +2403,9 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
                   ordinal,
                   type: "system_notice",
                   status: "completed",
-                  title: `MCP server ${name} failed to start`,
-                  message,
+                  level: "info",
+                  title: notice.title,
+                  message: notice.message,
                   startedAt,
                   completedAt: startedAt,
                   updatedAt: startedAt,

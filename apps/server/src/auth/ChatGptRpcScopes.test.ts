@@ -286,7 +286,11 @@ const callByName = (wsUrl: string, tag: string, payload: unknown) =>
 const failureOf = (exit: Exit.Exit<unknown, unknown>) => {
   const error = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
   return typeof error === "object" && error !== null
-    ? (error as { readonly _tag?: string; readonly requiredScope?: string })
+    ? (error as {
+        readonly _tag?: string;
+        readonly requiredScope?: string;
+        readonly requiredPermission?: string;
+      })
     : undefined;
 };
 
@@ -356,6 +360,21 @@ it.layer(ReadOnlySocketLive, { timeout: STARTUP_TIMEOUT_MS + 30_000, excludeTest
         const failure = failureOf(exit);
         assert.strictEqual(failure?._tag, "EnvironmentAuthorizationError");
         assert.strictEqual(failure?.requiredScope, "orchestration:operate");
+      }),
+    );
+
+    // team-layer: "Don't use in this app" changes how Codex starts, so it needs providers:manage.
+    it.effect("teamSetupChoose refuses an orchestration:read session", () =>
+      Effect.gen(function* () {
+        const { wsUrl } = yield* ReadOnlySocket;
+        const exit = yield* callByName(
+          wsUrl,
+          WS_METHODS.teamSetupChoose,
+          yield* samplePayload(WS_METHODS.teamSetupChoose),
+        );
+        const failure = failureOf(exit);
+        assert.strictEqual(failure?._tag, "EnvironmentAuthorizationError");
+        assert.strictEqual(failure?.requiredPermission, "providers:manage");
       }),
     );
 

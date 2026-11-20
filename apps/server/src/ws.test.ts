@@ -183,6 +183,7 @@ import {
 import * as TeamChoices from "./team/TeamChoices.ts"; // team-layer
 import * as TeamFeed from "./team/TeamFeed.ts"; // team-layer
 import * as TeamMergeFix from "./team/TeamMergeFix.ts"; // team-layer
+import * as TeamSetup from "./team/setup/TeamSetup.ts"; // team-layer
 import * as TeamNotes from "./team/TeamNotes.ts"; // team-layer
 import * as TeamQuestions from "./team/TeamQuestions.ts"; // team-layer
 
@@ -898,6 +899,7 @@ const layerUnusedConfigRpcServices = Layer.mergeAll(
   Layer.mock(TeamQuestions.TeamQuestions)({}),
   Layer.mock(TeamNotes.TeamNotes)({}),
   Layer.mock(TeamMergeFix.TeamMergeFix)({}),
+  Layer.mock(TeamSetup.TeamSetup)({}), // team-layer
 );
 
 const layerConfigSources = Layer.mergeAll(

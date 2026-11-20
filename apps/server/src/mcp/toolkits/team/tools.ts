@@ -270,6 +270,27 @@ const TeamMemorySearchTool = Tool.make("team_memory_search", {
   // Acts as the calling thread: outside MCP clients are not offered it.
   .annotate(McpSchema.EnabledWhen, McpInvocationContext.hiddenFromOutsideClients);
 
+export const TeamSetupCheckResult = Schema.Struct({
+  /** One line per row: what works, what doesn't, and the button that fixes it. */
+  summary: Schema.String,
+});
+export type TeamSetupCheckResult = typeof TeamSetupCheckResult.Type;
+
+// team-layer: Check my setup (WINDOWS_RELEASE_PLAN.md section 4a).
+const TeamSetupCheckTool = Tool.make("team_setup_check", {
+  description:
+    "Check this computer's setup: AI agents installed and signed in, Codex tools needing sign-in, Git and the GitHub CLI. Each problem names the app button that fixes it; tell the user that button, not a command.",
+  success: TeamSetupCheckResult,
+  failure: TeamToolFailure,
+  dependencies,
+})
+  .annotate(Tool.Title, "Check my setup")
+  .annotate(Tool.Readonly, true)
+  .annotate(Tool.Destructive, false)
+  .annotate(Tool.Idempotent, true)
+  .annotate(Tool.OpenWorld, false)
+  .annotate(McpSchema.EnabledWhen, McpInvocationContext.hiddenFromOutsideClients);
+
 export const TeamToolkit = Toolkit.make(
   TeamStatusTool,
   TeamPlanTool,
@@ -277,4 +298,5 @@ export const TeamToolkit = Toolkit.make(
   TeamTaskTool,
   TeamHandoffTool,
   TeamMemorySearchTool,
+  TeamSetupCheckTool,
 );

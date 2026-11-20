@@ -1,5 +1,7 @@
 import { tokenizeCliArgs } from "@t3tools/shared/cliArgs";
 
+import { codexToolsOffArgs } from "../team/setup/codexToolChoices.ts"; // team-layer
+
 const T3CODE_CODEX_LAUNCH_ARGS_ENV = "T3CODE_CODEX_LAUNCH_ARGS";
 
 export const resolveCodexLaunchArgs = (
@@ -14,6 +16,7 @@ export const codexAppServerArgs = (launchArgs?: string) => [
   "app-server",
   "-c",
   "thread_unload_delay_secs=0",
+  ...codexToolsOffArgs(), // team-layer: Codex tools off in this app (Check my setup)
   ...codexLaunchArgv(launchArgs),
 ];
 
