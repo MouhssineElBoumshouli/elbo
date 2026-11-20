@@ -1,3 +1,4 @@
+import { ELBO_THEME } from "@t3tools/shared/teamTheme"; // team-layer
 import {
   CheckIcon,
   CopyIcon,
@@ -55,6 +56,7 @@ import {
 import { ThemeWireframe } from "./ThemeWireframe";
 
 const MAINTAINER_THEMES: ReadonlyArray<ThemeDefinition> = [
+  ELBO_THEME, // team-layer
   T3_CHAT_THEME,
   GROVE_THEME,
   OCEAN_THEME,

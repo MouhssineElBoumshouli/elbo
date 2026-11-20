@@ -1,0 +1,92 @@
+/*
+ * team-layer: Elbo's look (team/mockups/slice3/README.md, "B's solid base with A's touches").
+ * Loaded after index.css and unlayered, so it wins over upstream's layered utilities. Colors come
+ * from the Elbo theme (packages/shared/src/teamTheme.ts); type, corners and the chat card are
+ * scoped to it, so other themes keep upstream's look. The rail's room is not: the rail shows in
+ * every theme. Solid colors only: no backdrop blur, nothing that repaints while idle.
+ */
+
+/* Figtree, bundled so it works offline (SIL Open Font License, fonts/Figtree-OFL.txt). */
+@font-face {
+  font-family: "Figtree Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url("./fonts/figtree-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Figtree Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url("./fonts/figtree-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --team-rail-width: 4.5rem;
+}
+
+html[data-theme-id="elbo"] {
+  --font-sans: "Figtree Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --radius: 0.75rem;
+}
+
+/* The rail is a column in the sidebar wrapper; the fixed sidebar and its toggle move past it. */
+@media (min-width: 768px) {
+  [data-slot="sidebar-wrapper"]:has(> [data-team-rail]) [data-slot="sidebar-container"] {
+    left: var(--team-rail-width);
+  }
+
+  [data-slot="sidebar-wrapper"]:has(> [data-team-rail])
+    [data-collapsible="offcanvas"]
+    [data-slot="sidebar-container"] {
+    left: calc(var(--team-rail-width) - var(--sidebar-width));
+  }
+
+  [data-slot="sidebar-wrapper"]:has(> [data-team-rail]) [data-sidebar-control] {
+    transform: translateX(var(--team-rail-width));
+  }
+
+  /* The chat sits on a white card over the soft background. */
+  html[data-theme-id="elbo"] [data-slot="sidebar-wrapper"]:has(> [data-team-rail]) {
+    background-color: var(--app-chrome-background);
+  }
+
+  html[data-theme-id="elbo"]
+    [data-slot="sidebar-wrapper"]:has(> [data-team-rail])
+    > main[data-slot="sidebar-inset"] {
+    height: calc(100dvh - 1rem);
+    margin: 0.5rem 0.5rem 0.5rem 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    box-shadow: 0 10px 30px -18px rgb(15 50 45 / 0.28);
+  }
+
+  /* Windows draws its window buttons at the top right: the card stays flush there. */
+  html.wco[data-theme-id="elbo"]
+    [data-slot="sidebar-wrapper"]:has(> [data-team-rail])
+    > main[data-slot="sidebar-inset"] {
+    height: calc(100dvh - 0.5rem);
+    margin-top: 0;
+    margin-right: 0;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  html.dark[data-theme-id="elbo"]
+    [data-slot="sidebar-wrapper"]:has(> [data-team-rail])
+    > main[data-slot="sidebar-inset"] {
+    box-shadow: none;
+  }
+}

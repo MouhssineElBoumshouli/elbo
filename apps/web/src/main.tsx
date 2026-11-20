@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 
 import "@fontsource-variable/inter";
 import "./index.css";
+import "./components/team/look/elbo.css"; // team-layer: Elbo's type, corners and chat card
 
 import { hasCloudPublicConfig } from "./cloud/publicConfig";
 import { isElectron } from "./env";

@@ -1,3 +1,4 @@
+import { ELBO_THEME } from "@t3tools/shared/teamTheme"; // team-layer
 import { pipe } from "effect/Function";
 import { THEME_CSS_MAX_LENGTH, type EnvironmentTheme } from "@t3tools/contracts";
 import * as Equal from "effect/Equal";
@@ -1220,7 +1221,8 @@ export function updateThemeColorFamily(
   }
 }
 
-const BUILT_IN_THEME_DEFINITIONS: ReadonlyArray<ThemeDefinition> = BUILT_IN_THEMES;
+// team-layer: Elbo's theme first (packages/shared/src/teamTheme.ts); web and desktop only.
+const BUILT_IN_THEME_DEFINITIONS: ReadonlyArray<ThemeDefinition> = [ELBO_THEME, ...BUILT_IN_THEMES];
 
 export function getThemeDefinition(theme: ThemePreference): ThemeDefinition | null {
   const themeId = themeIdFromPreference(theme);

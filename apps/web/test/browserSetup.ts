@@ -2,6 +2,10 @@ import { beforeEach } from "vite-plus/test";
 import { commands } from "vite-plus/test/browser";
 
 import { initializeI18n } from "../src/i18n/initializeI18n";
+import { TEAM_SIMPLE_MODE_DEFAULT } from "../src/components/team/simple/simpleMode";
+
+// team-layer: upstream's browser tests cover upstream's full composer, not Elbo's simple mode.
+TEAM_SIMPLE_MODE_DEFAULT.on = false;
 
 declare module "vite-plus/test/browser" {
   interface BrowserCommands {

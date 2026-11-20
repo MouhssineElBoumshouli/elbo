@@ -1,4 +1,6 @@
 import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
+import { useTeamSimpleMode } from "./team/simple/simpleMode"; // team-layer
+import { TeamFewerOptions, TeamSimpleStrip } from "./team/simple/TeamSimpleStrip"; // team-layer
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { readLocalApi } from "../localApi";
 import { stackedThreadToast, toastManager } from "./ui/toast";
@@ -677,6 +679,7 @@ export const BranchToolbar = memo(function BranchToolbar({
     canPickEnvironment: hasMultipleEnvironments,
   });
   const [attachStrip, labelsOverflow] = useLabelsOverflow();
+  const teamSimpleMode = useTeamSimpleMode(); // team-layer
 
   if (!activeProject) return null;
 
@@ -727,6 +730,12 @@ export const BranchToolbar = memo(function BranchToolbar({
       </div>
     );
   }
+
+  // team-layer: simple mode keeps worktree and branch behind "More options" (WINDOWS_RELEASE_PLAN 4c).
+  if (teamSimpleMode)
+    return (
+      <TeamSimpleStrip environmentId={environmentId} projectId={projectId} trailing={trailing} />
+    );
 
   return (
     <ComposerSurface.ContextStrip
@@ -800,7 +809,6 @@ export const BranchToolbar = memo(function BranchToolbar({
           ) : null}
         </div>
       ) : null}
-
       {showGitControls ? (
         <BranchToolbarBranchSelector
           forceNewWorktree={forceNewWorktree}
@@ -820,6 +828,7 @@ export const BranchToolbar = memo(function BranchToolbar({
         />
       ) : null}
       {trailing}
+      <TeamFewerOptions /> {/* team-layer */}
     </ComposerSurface.ContextStrip>
   );
 });

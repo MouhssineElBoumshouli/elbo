@@ -1,4 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
+import { TeamSimpleModeRow } from "../team/simple/TeamSimpleModeRow"; // team-layer
 import { NotificationSettings } from "./NotificationSettings";
 import { CheckIcon } from "lucide-react";
 import { msg, T, useGT, useMessages } from "gt-react";
@@ -804,6 +805,9 @@ export function GeneralSettingsPanel() {
 
   return (
     <SettingsPageContainer>
+      <SettingsSection id="simple-mode" title="Simple mode">
+        <TeamSimpleModeRow /> {/* team-layer */}
+      </SettingsSection>
       <SettingsSection id="notifications" title={gt("Notifications")}>
         <NotificationSettings />
         <SettingsRow

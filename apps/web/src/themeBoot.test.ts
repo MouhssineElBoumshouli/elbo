@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 
+import { ELBO_THEME } from "@t3tools/shared/teamTheme"; // team-layer
 import indexHtml from "../index.html?raw";
 import {
   CUSTOM_THEMES_STORAGE_KEY,
@@ -310,7 +311,14 @@ describe("index.html boot script", () => {
   });
 
   it("keeps every built-in boot splash in sync with the real palettes", () => {
-    for (const theme of [T3_CHAT_THEME, GROVE_THEME, OCEAN_THEME, EMBER_THEME, IRIS_THEME]) {
+    for (const theme of [
+      ELBO_THEME, // team-layer
+      T3_CHAT_THEME,
+      GROVE_THEME,
+      OCEAN_THEME,
+      EMBER_THEME,
+      IRIS_THEME,
+    ]) {
       expect(theme.appearance).toBe("light");
       for (const mode of ["light", "dark"] as const) {
         const colors = getThemeColorsForMode(theme, mode);
@@ -330,6 +338,17 @@ describe("index.html boot script", () => {
         expect(boot.backgroundColor).toBe(colors!.chrome);
         expect(boot.metaContent).toBe(colors!.chrome);
       }
+    }
+  });
+
+  // team-layer: before any choice the splash is Elbo's, light or dark with the OS.
+  it("paints Elbo's theme when nothing is stored", () => {
+    for (const prefersDark of [false, true]) {
+      const boot = runBootScript({ storage: {}, prefersDark });
+      const colors = getThemeColorsForMode(ELBO_THEME, prefersDark ? "dark" : "light")!;
+      expect(boot.themeId).toBe("elbo");
+      expect(boot.isDark).toBe(prefersDark);
+      expect(boot.backgroundColor).toBe(colors.chrome);
     }
   });
 

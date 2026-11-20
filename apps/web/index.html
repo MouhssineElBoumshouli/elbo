@@ -52,6 +52,21 @@
         // Keep this small boot-time copy in sync with the built-in palettes so
         // the selected theme is visible before the app has mounted.
         const BUILT_IN_THEME_PALETTES = {
+          // team-layer: Elbo's theme (packages/shared/src/teamTheme.ts), the default.
+          elbo: {
+            light: {
+              background: "#ffffff",
+              foreground: "#1c2421",
+              accent: "#0f766e",
+              chrome: "#eef2f0",
+            },
+            dark: {
+              background: "#1b2120",
+              foreground: "#e6ecea",
+              accent: "#2cc2b0",
+              chrome: "#131816",
+            },
+          },
           "t3-chat": {
             light: {
               background: "oklch(0.982446 0.010114 325.653)",
@@ -130,6 +145,7 @@
           ]),
         );
         const RESERVED_THEME_IDS = [
+          "elbo", // team-layer
           "system",
           "light",
           "dark",
@@ -230,7 +246,8 @@
           };
           const isLegacyT3ChatDark = storedTheme === "t3-chat-dark";
           const themeId =
-            storedTheme === null ? "" : (LEGACY_THEME_IDS[storedTheme] ?? storedTheme);
+            // team-layer: no choice yet paints Elbo's theme (teamLook.ts stores it on start).
+            storedTheme === null ? "elbo" : (LEGACY_THEME_IDS[storedTheme] ?? storedTheme);
           const legacyMode = isLegacyT3ChatDark ? "dark" : null;
           const builtInModes = BUILT_IN_THEME_MODES[themeId] ?? null;
           const customTheme = builtInModes ? null : findCustomTheme(themeId);

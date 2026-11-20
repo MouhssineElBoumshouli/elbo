@@ -152,9 +152,7 @@ export function TeamFirstStart({
             <p className="mb-2 text-sm text-muted-foreground">
               {aiReady ? "One is ready. That's enough to start." : "One working AI is enough."}
             </p>
-            <div className="overflow-hidden rounded-lg border border-border/70">
-              <TeamSetupRows environmentId={environmentId} setup={setup} agentsOnly />
-            </div>
+            <TeamSetupRows environmentId={environmentId} setup={setup} agentsOnly />
           </Step>
 
           <Step number={3} title="Start a chat" done={false}>

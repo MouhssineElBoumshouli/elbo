@@ -14,7 +14,6 @@ import {
   type TeamSetupRow,
 } from "@t3tools/shared/teamSetupRows";
 import { useNavigate } from "@tanstack/react-router";
-import { CircleAlertIcon, CircleCheckIcon, CircleDashedIcon, InfoIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { usePersistEnvironmentProviderInstanceMutation } from "../../../hooks/useSettings";
@@ -23,7 +22,7 @@ import { serverEnvironment } from "../../../state/server";
 import { useEnvironmentScope } from "../../../state/session";
 import { teamSetup } from "../../../state/teamSetup";
 import { useAtomCommand } from "../../../state/use-atom-command";
-import { SettingsRow } from "../../settings/settingsLayout";
+import { cn } from "../../../lib/utils";
 import { Button } from "../../ui/button";
 import { toastManager } from "../../ui/toast";
 import { TeamSetupTerminal, type TeamSetupRun } from "./TeamSetupTerminal";
@@ -66,11 +65,60 @@ export function useTeamSetupRows(environmentId: EnvironmentId) {
   };
 }
 
-function RowIcon({ state }: { readonly state: TeamSetupRow["state"] }) {
-  if (state === "ready") return <CircleCheckIcon className="size-4 text-success" />;
-  if (state === "needsAction") return <CircleAlertIcon className="size-4 text-warning" />;
-  if (state === "info") return <InfoIcon className="size-4 text-muted-foreground" />;
-  return <CircleDashedIcon className="size-4 text-muted-foreground" />;
+const STATE_LOOK: Record<TeamSetupRow["state"], { badge: string; pill: string; word: string }> = {
+  ready: { badge: "bg-success/12 text-success", pill: "bg-success/12 text-success", word: "Ready" },
+  needsAction: {
+    badge: "bg-warning/14 text-warning-foreground",
+    pill: "bg-warning/14 text-warning-foreground",
+    word: "Needs you",
+  },
+  info: {
+    badge: "bg-muted text-muted-foreground",
+    pill: "bg-muted text-muted-foreground",
+    word: "Good to know",
+  },
+  off: {
+    badge: "bg-muted text-muted-foreground",
+    pill: "bg-muted text-muted-foreground",
+    word: "Off",
+  },
+  checking: {
+    badge: "bg-muted text-muted-foreground",
+    pill: "bg-muted text-muted-foreground",
+    word: "Checking…",
+  },
+};
+
+function RowBadge({ row }: { readonly row: TeamSetupRow }) {
+  const letters =
+    row.name === "GitHub CLI" ? "GH" : row.name.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 1);
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "grid size-9 shrink-0 place-items-center rounded-lg text-xs font-bold",
+        STATE_LOOK[row.state].badge,
+      )}
+    >
+      {letters.toUpperCase()}
+    </div>
+  );
+}
+
+function StatusPill({ state }: { readonly state: TeamSetupRow["state"] }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+        STATE_LOOK[state].pill,
+      )}
+    >
+      {state === "ready" || state === "needsAction" ? (
+        <span aria-hidden className="size-1.5 rounded-full bg-current" />
+      ) : null}
+      {STATE_LOOK[state].word}
+    </span>
+  );
 }
 
 export type TeamSetupState = ReturnType<typeof useTeamSetupRows>;
@@ -175,37 +223,61 @@ export function TeamSetupRows({
       actions: row.actions.filter((action) => action.kind !== "useWsl" || hasDesktop),
     }));
 
+  const groups = agentsOnly
+    ? [{ title: null, rows: shown }]
+    : [
+        { title: "AI", rows: shown.filter((row) => row.group !== "tool") },
+        { title: "Tools", rows: shown.filter((row) => row.group === "tool") },
+      ];
+
   return (
     <>
-      {shown.map((row) => (
-        <SettingsRow
-          key={row.id}
-          title={
-            <span className="flex items-center gap-2">
-              <RowIcon state={row.state} />
-              {row.name}
-            </span>
-          }
-          description={row.note ? `${row.message} ${row.note}` : row.message}
-          control={
-            row.actions.length === 0 ? null : (
-              <div className="flex flex-wrap justify-end gap-2">
-                {row.actions.map((action, index) => (
-                  <Button
-                    key={action.kind}
-                    size="sm"
-                    variant={index === 0 ? "default" : "outline"}
-                    disabled={busyRow === row.id || disabledFor(action)}
-                    onClick={() => void act(row, action)}
-                  >
-                    {action.label}
-                  </Button>
-                ))}
-              </div>
-            )
-          }
-        />
-      ))}
+      {groups
+        .filter((group) => group.rows.length > 0)
+        .map((group) => (
+          <section key={group.title ?? "rows"} className="flex flex-col gap-2">
+            {group.title ? (
+              <h3 className="ms-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                {group.title}
+              </h3>
+            ) : null}
+            <div className="divide-y divide-border overflow-hidden rounded-xl border bg-card">
+              {group.rows.map((row) => (
+                <div
+                  key={row.id}
+                  data-team-setup-row={row.id}
+                  className="flex items-center gap-3.5 px-4 py-3.5"
+                >
+                  <RowBadge row={row} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold">{row.name}</div>
+                    <div className="mt-0.5 text-sm text-muted-foreground">{row.message}</div>
+                    {row.note ? (
+                      <div className="mt-1 text-xs text-muted-foreground/80">{row.note}</div>
+                    ) : null}
+                  </div>
+                  {row.actions.length === 0 ? (
+                    <StatusPill state={row.state} />
+                  ) : (
+                    <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                      {row.actions.map((action, index) => (
+                        <Button
+                          key={action.kind}
+                          size="sm"
+                          variant={index === 0 ? "default" : "outline"}
+                          disabled={busyRow === row.id || disabledFor(action)}
+                          onClick={() => void act(row, action)}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
       {!canOperateTerminal && shown.some((row) => row.state === "needsAction") ? (
         <p className="px-4 py-2 text-xs text-muted-foreground">
           This connection cannot run setup steps on this computer.
