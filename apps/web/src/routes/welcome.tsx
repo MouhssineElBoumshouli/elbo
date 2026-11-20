@@ -6,6 +6,7 @@ import * as Option from "effect/Option";
 
 import { NoProjectsHero } from "../components/NoProjectsHero";
 import { WelcomePage } from "../components/onboarding/WelcomePage";
+import { TeamFirstStart } from "../components/team/setup/TeamFirstStart"; // team-layer
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 import { useEnvironments, usePrimaryEnvironmentId } from "../state/environments";
 
@@ -40,9 +41,30 @@ function WelcomeRouteView() {
   // The root can remount this pending outlet after navigation; do not reopen setup.
   const isWelcomeRoute = useLocation({ select: (location) => location.pathname === "/welcome" });
   const [dismissed, setDismissed] = useState(false);
+  const [showMore, setShowMore] = useState(false); // team-layer: upstream's page is "More options"
   const openNewThread = useNewThreadHandler();
   if (waitingForCatalog) return null;
   if (environmentId === null || !isWelcomeRoute || dismissed) return <NoProjectsHero />;
+  // team-layer: three-step first start (WINDOWS_RELEASE_PLAN.md section 4b).
+  if (!showMore) {
+    return (
+      <TeamFirstStart
+        key={environmentId}
+        environmentId={environmentId}
+        onMore={() => setShowMore(true)}
+        onDone={async (projectRef) => {
+          setDismissed(true);
+          if (projectRef !== undefined) {
+            await openNewThread(projectRef, { replace: true }).catch(() =>
+              navigate({ to: "/", replace: true }),
+            );
+            return;
+          }
+          await navigate({ to: "/", replace: true });
+        }}
+      />
+    );
+  }
   return (
     <WelcomePage
       key={environmentId}

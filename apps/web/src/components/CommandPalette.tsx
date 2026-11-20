@@ -74,6 +74,7 @@ import {
   PaletteIcon,
   RotateCcwIcon,
   SettingsIcon,
+  ListChecksIcon, // team-layer
   MonitorIcon,
   PinIcon,
   PinOffIcon,
@@ -1737,6 +1738,17 @@ function OpenCommandPaletteDialog(props: {
     icon: <SettingsIcon className={ITEM_ICON_CLASS} />,
     run: async () => {
       await navigate({ to: "/settings" });
+    },
+  });
+  // team-layer: Check my setup (WINDOWS_RELEASE_PLAN.md section 4a).
+  actionItems.push({
+    kind: "action",
+    value: "action:check-my-setup",
+    searchTerms: ["check my setup", "setup", "sign in", "install", "doctor", "broken"],
+    title: "Check my setup",
+    icon: <ListChecksIcon className={ITEM_ICON_CLASS} />,
+    run: async () => {
+      await navigate({ to: "/settings/setup" });
     },
   });
 

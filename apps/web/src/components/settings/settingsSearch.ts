@@ -18,6 +18,7 @@ import { commandLabel } from "./KeybindingsSettings.logic";
 import type { ResolvedSettingsScope } from "./settingsScope";
 
 export type SettingsPath =
+  | "/settings/setup" // team-layer: Check my setup
   | "/settings/projects"
   | "/settings/general"
   | "/settings/diagnostics"
@@ -94,6 +95,7 @@ export interface SettingsSearchAvailability {
 }
 
 export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
+  "/settings/setup": msg("Check my setup"), // team-layer
   "/settings/diagnostics": msg("Diagnostics"),
   "/settings/projects": msg("Projects"),
   "/settings/general": msg("General"),
@@ -141,6 +143,7 @@ export const SETTINGS_NAV_GROUPS: ReadonlyArray<{
   {
     heading: msg("Agents"),
     paths: [
+      "/settings/setup", // team-layer
       "/settings/providers",
       "/settings/threads",
       "/settings/browser",
@@ -978,6 +981,15 @@ export const SETTINGS_SEARCH_ITEMS = [
     to: "/settings/snap-shot",
     targetId: "snap-shot-enabled",
   },
+  // team-layer: Check my setup (WINDOWS_RELEASE_PLAN.md section 4a).
+  {
+    id: "check-my-setup",
+    title: "Check my setup",
+    to: "/settings/setup",
+    searchTerms: [
+      "setup check health doctor broken install sign in login signed out claude codex git github gh mcp tools fix",
+    ],
+  },
   {
     id: "providers",
     title: "Providers",
@@ -1383,6 +1395,7 @@ export type SettingsSearchItemId = (typeof SETTINGS_SEARCH_ITEMS)[number]["id"];
 const SEARCH_ITEMS_BY_ID = new Map(SETTINGS_SEARCH_ITEMS.map((item) => [item.id, item] as const));
 
 const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScope | null>> = {
+  "/settings/setup": null, // team-layer
   "/settings/diagnostics": "environment",
   "/settings/projects": "project",
   "/settings/general": null,

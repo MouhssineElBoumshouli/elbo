@@ -171,6 +171,10 @@
       "types": "./src/state/teamFeed.ts",
       "default": "./src/state/teamFeed.ts"
     },
+    "./state/teamSetup": {
+      "types": "./src/state/teamSetup.ts",
+      "default": "./src/state/teamSetup.ts"
+    },
     "./state/teamHome": {
       "types": "./src/state/teamHome.ts",
       "default": "./src/state/teamHome.ts"

@@ -1,5 +1,6 @@
 import { type SlowRpcAckRequest, subscribeSlowRpcAckRequests } from "../rpc/requestLatencyState";
 import { toastManager } from "./ui/toast";
+import { slowRequestWarningsEnabled } from "./team/TeamDeveloperNotices"; // team-layer
 
 function describeSlowRequests(requests: ReadonlyArray<SlowRpcAckRequest>): string {
   const count = requests.length;
@@ -33,7 +34,8 @@ export function startSlowRpcRequestToasts(): () => void {
   let toastId: ReturnType<typeof toastManager.add> | null = null;
 
   const unsubscribe = subscribeSlowRpcAckRequests((slowRequests) => {
-    if (slowRequests.length === 0) {
+    // team-layer: hidden unless Settings → Diagnostics → "Warn about slow requests" is on.
+    if (slowRequests.length === 0 || !slowRequestWarningsEnabled()) {
       if (toastId !== null) {
         toastManager.close(toastId);
         toastId = null;

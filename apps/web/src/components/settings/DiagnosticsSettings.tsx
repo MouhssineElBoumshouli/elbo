@@ -44,6 +44,7 @@ import { ExpandableText } from "./ExpandableText";
 import { ResourceTelemetryDiagnostics } from "./ResourceTelemetryDiagnostics";
 import { formatCpuTime } from "./ResourceTelemetryDiagnostics.logic";
 import { SettingsPageContainer, SettingsSection } from "./settingsLayout";
+import { TeamDeveloperNoticesSection } from "../team/TeamDeveloperNotices"; // team-layer
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useSettingsScope } from "./SettingsScopeContext";
 import { TelemetryExportSettings } from "./TelemetryExportSettings";
@@ -912,8 +913,9 @@ function DiagnosticsSettingsBody() {
 
   return (
     <SettingsPageContainer width="expanded" className="gap-10">
+      {/* team-layer: slow-request warnings switch */}
+      <TeamDeveloperNoticesSection />
       <ResourceTelemetryDiagnostics environmentId={environmentId} />
-
       <SettingsSection
         title="Live Processes"
         headerAction={
@@ -975,7 +977,6 @@ function DiagnosticsSettingsBody() {
           }
         />
       </SettingsSection>
-
       <SettingsSection
         title="Resource History"
         headerAction={
@@ -1045,7 +1046,6 @@ function DiagnosticsSettingsBody() {
           }
         />
       </SettingsSection>
-
       <SettingsSection
         title="Trace Diagnostics"
         headerAction={
@@ -1134,7 +1134,6 @@ function DiagnosticsSettingsBody() {
           </div>
         ) : null}
       </SettingsSection>
-
       <SettingsSection title="Latest Failures">
         {data && data.latestFailures.length > 0 ? (
           <DiagnosticsTable headers={["Span", "Cause", "Duration", "Ended"]}>
@@ -1159,7 +1158,6 @@ function DiagnosticsSettingsBody() {
           <EmptyRows label={isInitialLoading ? "Loading failures..." : "No failed spans found."} />
         )}
       </SettingsSection>
-
       <SettingsSection title="Most Common Failures">
         {data && data.commonFailures.length > 0 ? (
           <DiagnosticsTable
@@ -1189,7 +1187,6 @@ function DiagnosticsSettingsBody() {
           />
         )}
       </SettingsSection>
-
       <SettingsSection title="Slowest Spans">
         {data && data.slowestSpans.length > 0 ? (
           <DiagnosticsTable
@@ -1218,7 +1215,6 @@ function DiagnosticsSettingsBody() {
           <EmptyRows label={isInitialLoading ? "Loading slow spans..." : "No spans found."} />
         )}
       </SettingsSection>
-
       <SettingsSection title="Span Logs">
         {data && data.latestWarningAndErrorLogs.length > 0 ? (
           <ScrollArea
@@ -1283,7 +1279,6 @@ function DiagnosticsSettingsBody() {
           />
         )}
       </SettingsSection>
-
       <SettingsSection title="Top Span Names">
         {data && data.topSpansByCount.length > 0 ? (
           <DiagnosticsTable
