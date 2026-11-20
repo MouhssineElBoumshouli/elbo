@@ -2049,6 +2049,31 @@ it.effect.skipIf(HostProcess.Platform.defaultValue() === "win32")(
     }).pipe(Effect.scoped, Effect.provide(layerGitContract)),
 );
 
+// team-layer: a stray `git init` in the home folder made every plain project below it one huge
+// repository, so the diff preview listed the whole profile's untracked files and timed out.
+it.effect("GitVcsDriver ignores a repository at the home folder for folders below it", () =>
+  Effect.gen(function* () {
+    const fileSystem = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const home = yield* fileSystem.realPath(
+      yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-home-repo-" }),
+    );
+    yield* runGit(home, ["init"]);
+    const project = path.join(home, "Desktop", "elbo-test");
+    yield* fileSystem.makeDirectory(project, { recursive: true });
+    const ownRepo = path.join(home, "code", "app");
+    yield* fileSystem.makeDirectory(ownRepo, { recursive: true });
+    yield* runGit(ownRepo, ["init"]);
+    const driver = yield* GitVcsDriver.makeVcsDriverShape().pipe(
+      Effect.provideService(HostProcess.HomeDirectory, home),
+    );
+
+    assert.strictEqual(yield* driver.detectRepository(project), null);
+    assert.strictEqual((yield* driver.detectRepository(home))?.rootPath, home);
+    assert.strictEqual((yield* driver.detectRepository(ownRepo))?.rootPath, ownRepo);
+  }).pipe(Effect.scoped, Effect.provide(layerGitContract)),
+);
+
 it.effect.skipIf(HostProcess.Platform.defaultValue() === "win32")(
   "GitVcsDriver still fails detection when git exists but cannot be spawned",
   () =>

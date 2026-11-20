@@ -24,6 +24,10 @@ import { createModelCapabilities } from "@t3tools/shared/model";
 import { envTrampoline, supportsEnvChdir } from "@t3tools/shared/envTrampoline";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as SpawnWorker from "../process/SpawnWorker.ts";
+import {
+  CLAUDE_SIGNED_OUT_MESSAGE,
+  isClaudeSignedOutFailure,
+} from "../team/setup/claudeSession.ts"; // team-layer
 import { resolveSpawnCommand } from "@t3tools/shared/shell";
 import {
   query as claudeQuery,
@@ -476,7 +480,8 @@ function claudeGatewayDiscoveryGraceMs(environment: Readonly<Record<string, unkn
   return Number.isFinite(configured) && configured > 0 ? configured : 3_000;
 }
 
-class ClaudeCapabilitiesProbeSdkError extends Schema.TaggedError<ClaudeCapabilitiesProbeSdkError>()(
+// team-layer: exported for the expired-session test.
+export class ClaudeCapabilitiesProbeSdkError extends Schema.TaggedError<ClaudeCapabilitiesProbeSdkError>()(
   "ClaudeCapabilitiesProbeSdkError",
   { operation: Schema.Literals(["initialize", "usage", "settings"]), cause: Schema.Defect() },
 ) {
@@ -801,6 +806,30 @@ export const checkClaudeProviderStatus = Effect.fn("checkClaudeProviderStatus")(
   const skills = yield* discoverClaudeSkills(claudeSettings, cwd, resolvedEnvironment);
   const slashCommands = [COMPACT_SLASH_COMMAND, ...(capabilities?.slashCommands ?? [])];
   const dedupedSlashCommands = dedupeSlashCommands(slashCommands);
+
+  // team-layer: an expired sign-in fails the account check; show it as signed out.
+  if (
+    !capabilities &&
+    probeFailure?._tag === "ClaudeCapabilitiesProbeSdkError" &&
+    isClaudeSignedOutFailure(probeFailure.cause)
+  ) {
+    return buildServerProvider({
+      presentation: CLAUDE_PRESENTATION,
+      enabled: claudeSettings.enabled,
+      checkedAt,
+      models,
+      updateRequiredModels,
+      slashCommands: dedupedSlashCommands,
+      skills,
+      probe: {
+        installed: true,
+        version: parsedVersion,
+        status: "error",
+        auth: { status: "unauthenticated" },
+        message: CLAUDE_SIGNED_OUT_MESSAGE,
+      },
+    });
+  }
 
   if (!capabilities) {
     return buildServerProvider({

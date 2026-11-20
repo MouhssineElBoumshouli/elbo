@@ -185,19 +185,20 @@ W14 and W16 (developing on native Windows) stay out of scope.
 
 Each slice ships on its own, is tested, committed, pushed and logged.
 
-1. **Identity.** After you pick the name: the identity file, hooks, icon. A local unsigned build installs next to T3 Code without sharing data.
-2. **Installer on Actions.** `team-release.yml`, first Beta on the fork's Releases. Proven by updating Beta 1 to Beta 2 on your laptop.
-3. **Windows CI.** `team-windows-tests.yml`, fix what fails.
-4. **Measure, then make us quiet.** Baseline against upstream, then the idle fixes from section 5, measured again.
-5. **Check my setup**, including Codex MCP sign-ins and the quiet chat line.
-6. **First start.**
-7. **Simple mode** and plain labels.
-8. **Left rail**, then **glass** after the W9 test.
-9. **Your manual checklist** round.
-10. **No-help test** with one classmate, fix the top three, repeat with a second.
-11. **Signing** (if SignPath approved), then **Stable 1.0**.
+Order changed 2026-11-20: easy setup and the look come before the installer on Actions, CI and measuring. Until then, local unsigned installers go to your Windows Downloads for each test.
 
-Later, after slice 2: **one unsigned Mac build** for a single test with a friend who has a Mac. Unsigned means macOS blocks the first open; he opens System Settings → Privacy & Security → "Open Anyway" once. No auto-updates without signing: each new version is a manual download.
+1. **Identity.** Done 2026-11-19.
+2. **Check my setup + first start** (sections 4a and 4b), including Codex MCP sign-ins and the quiet chat line.
+3. **Left rail + simple mode + plain words** (sections 6 and 4c).
+4. **Glass**, after the W9 test.
+5. **Installer on Actions.** `team-release.yml`, first Beta on the fork's Releases. Proven by updating Beta 1 to Beta 2 on your laptop.
+6. **Windows CI.** `team-windows-tests.yml`, fix what fails.
+7. **Measure, then make us quiet.** Baseline against upstream, then the idle fixes from section 5, measured again.
+8. **Your manual checklist** round.
+9. **No-help test** with one classmate, fix the top three, repeat with a second.
+10. **Signing** (if SignPath approved), then **Stable 1.0**.
+
+Later, after slice 5 (installer on Actions): **one unsigned Mac build** for a single test with a friend who has a Mac. Unsigned means macOS blocks the first open; he opens System Settings → Privacy & Security → "Open Anyway" once. No auto-updates without signing: each new version is a manual download.
 
 Not in this stage: signed macOS and Linux builds of our app, Windows on ARM, the mobile app under our name, the Microsoft Store.
 

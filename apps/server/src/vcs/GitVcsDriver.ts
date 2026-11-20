@@ -50,6 +50,7 @@ import * as CheckoutCloner from "./CheckoutCloner.ts";
 import * as CheckpointUntrackedBlobs from "./checkpointUntrackedBlobs.ts";
 import * as VcsDriver from "./VcsDriver.ts";
 import * as VcsProcess from "./VcsProcess.ts";
+import { isBelowHomeRepository } from "../team/homeRepository.ts"; // team-layer
 
 export interface ExecuteGitInput {
   readonly operation: string;
@@ -617,6 +618,17 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
   const vcsProcess = yield* VcsProcess.VcsProcess;
   const random = yield* SecureRandom.SecureRandom;
   const hostPlatform = yield* HostProcess.Platform;
+  const homeDirectory = yield* HostProcess.HomeDirectory; // team-layer
+  // team-layer: folders below a repository at the home folder count as outside any repository.
+  const unlessBelowHome = <R extends { readonly rootPath: string }>(cwd: string, repository: R) =>
+    isBelowHomeRepository({
+      rootPath: repository.rootPath,
+      cwd,
+      homeDirectory,
+      platform: hostPlatform,
+    })
+      ? null
+      : repository;
   // Returns stdout, or null when there is no work tree. A non-repository exits 128 like a broken
   // one, so only Git's message (pinned to the C locale) or a missing cwd tells them apart.
   const probeWorkTree = Effect.fn("GitVcsDriver.probeWorkTree")(function* (
@@ -699,20 +711,20 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
         "rev-parse",
         "--git-common-dir",
       ]).pipe(Effect.orElseSucceed(() => null));
-      return {
+      return unlessBelowHome(cwd, {
         kind: "git" as const,
         rootPath: root.stdout.trim(),
         metadataPath: gitCommonDir?.stdout.trim() || null,
         freshness: yield* nowFreshness(),
-      };
+      });
     }
 
-    return {
+    return unlessBelowHome(cwd, {
       kind: "git" as const,
       rootPath: lines[1]!.trim(),
       metadataPath: lines[2]!.trim() || null,
       freshness: yield* nowFreshness(),
-    };
+    });
   });
 
   const listWorkspaceFiles: VcsDriver.VcsDriver["Service"]["listWorkspaceFiles"] = (cwd) =>
