@@ -7,6 +7,7 @@ import * as Schema from "effect/Schema";
 import type { ServerInstallation } from "@t3tools/contracts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { resolveCommandPath } from "@t3tools/shared/shell";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 import packageJson from "../../package.json" with { type: "json" };
 import {
@@ -140,7 +141,7 @@ function formatCliCommand(input: {
 }): string {
   const runner = detectCliRunner(input.entryPath);
   if (runner === null) {
-    return `t3 ${input.subcommand}`;
+    return `${TEAM_IDENTITY.cliName} ${input.subcommand}`; // team-layer
   }
   return `${runner} ${suggestedPackageSpec(input.version)} ${input.subcommand}`;
 }
@@ -188,8 +189,10 @@ export const resolveHostCliCommand = Effect.fn("invocation.resolveHostCliCommand
     // An empty subcommand names the root `t3` command.
     [prefix.trimEnd(), ...args.map((arg) => hostShellWord(platform, arg))].join(" ");
   const command = yield* resolveCliCommand(subcommand);
-  if (command !== `t3 ${subcommand}`) return { command: withArgs(command), launcher: false };
-  const onPath = yield* resolveCommandPath("t3");
+  // team-layer: Elbo's command is `elbo`; a `t3` on PATH belongs to T3 Code.
+  if (command !== `${TEAM_IDENTITY.cliName} ${subcommand}`)
+    return { command: withArgs(command), launcher: false };
+  const onPath = yield* resolveCommandPath(TEAM_IDENTITY.cliName);
   if (onPath !== null) {
     const shim = (yield* HostProcess.Environment).T3CODE_CLI_PATH?.trim();
     const fs = yield* FileSystem.FileSystem;

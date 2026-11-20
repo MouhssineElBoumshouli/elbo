@@ -17,6 +17,8 @@ export const TEAM_IDENTITY = {
   updateRepository: "MouhssineElBoumshouli/t3code",
   author: "Mouhssine El Boumshouli",
   cloudEnabled: false,
+  // Off means nothing about usage leaves the app: no analytics key, host, device id or owner lookup.
+  usageData: false,
 } as const;
 
 /** Stable is plain "Elbo"; upstream's nightly channel is our Beta. Takes desktop and web stage labels. */
@@ -31,6 +33,8 @@ export function teamDisplayName(stageLabel: string): string {
 export const TEAM_APP_LINK_PROTOCOL = new RegExp(
   `^(?:t3code|${TEAM_IDENTITY.protocol})(?:-[a-z]+)?:$`,
 );
+
+export const TEAM_PRIVACY_LINE = `${TEAM_IDENTITY.name} collects no usage data. It sends nothing about how you use it to us, to T3 Code or to anyone else. The AI tools you connect, such as Claude and Codex, have their own privacy policies.`;
 
 export const TEAM_ABOUT_LINE = `${TEAM_IDENTITY.name}, based on ${TEAM_IDENTITY.basedOn.name} v${TEAM_IDENTITY.basedOn.version}`;
 

@@ -9,6 +9,7 @@ import { Argument, Command } from "effect/cli";
 import * as CliError from "effect/cli/CliError";
 
 import * as NetService from "@t3tools/shared/Net";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 import packageJson from "../package.json" with { type: "json" };
 import { acpMcpBridgeCommand, acpMcpCallCommand } from "./cli/acpMcpBridge.ts";
 import { authCommand } from "./cli/auth.ts";
@@ -22,14 +23,7 @@ import { sharedServerCommandFlags } from "./cli/config.ts";
 import { projectCommand } from "./cli/project.ts";
 import { threadCommand } from "./cli/thread.ts";
 import { runDefaultServerCommand, serveCommand, startCommand } from "./cli/server.ts";
-import { updateCommand } from "./cli/update.ts";
-import {
-  confirmCliInstall,
-  inTerminalForeground,
-  installCommand,
-  offerCliInstall,
-} from "./cli/install.ts";
-import { uninstallCommand } from "./cli/uninstall.ts";
+import { confirmCliInstall, inTerminalForeground, offerCliInstall } from "./cli/install.ts";
 import { runServiceLauncherCli } from "./cli/serviceLauncher.ts";
 import { speechWorkerCommand } from "./cli/speechWorker.ts";
 import { claudeHistoryCommand } from "./cli/claudeHistory.ts";
@@ -38,6 +32,12 @@ import { serviceCommand } from "./cli/service.ts";
 import { servicePreflightCommand } from "./cli/servicePreflight.ts";
 // team-layer: `t3 team` commands (fork-only, see team/DESIGN.md).
 import { teamCommand } from "./cli/team.ts";
+import {
+  teamInstallCommand,
+  teamUninstallCommand,
+  teamUpdateCommand,
+  teamWithSubcommands,
+} from "./team/cliIdentity.ts";
 import { themeCommand } from "./cli/theme.ts";
 import { traceCommand } from "./cli/trace.ts";
 import { triageCommand } from "./cli/triage.ts";
@@ -62,7 +62,7 @@ const connectUnavailableCommand = Command.make("connect", {
   Command.withHandler(() =>
     Effect.fail(
       new CliError.ShowHelp({
-        commandPath: ["t3", "connect"],
+        commandPath: [TEAM_IDENTITY.cliName, "connect"], // team-layer
         errors: [new ConnectPublicConfigMissingError({ cause: connectPublicConfigMissingMessage })],
       }),
     ),
@@ -70,16 +70,18 @@ const connectUnavailableCommand = Command.make("connect", {
 );
 
 export const makeCli = ({ cloudEnabled = hasCloudPublicConfig } = {}) =>
-  Command.make("t3", { ...sharedServerCommandFlags }).pipe(
+  // team-layer: the command is `elbo`, so `--version`, help and usage lines say Elbo.
+  Command.make(TEAM_IDENTITY.cliName, { ...sharedServerCommandFlags }).pipe(
     Command.withDescription(
-      "Run T3 Code in this terminal and open it in your browser. To use it from your other devices, run `t3 up`.",
+      `Run ${TEAM_IDENTITY.name} in this terminal and open it in your browser. To use it from your other devices, run \`${TEAM_IDENTITY.cliName} up\`.`,
     ),
     Command.withHandler(runDefaultServerCommand),
-    Command.withSubcommands([
+    // team-layer: listed descriptions say Elbo.
+    teamWithSubcommands([
       Command.make("help").pipe(
         Command.withDescription("Show command help."),
         Command.withHandler(() =>
-          Effect.fail(new CliError.ShowHelp({ commandPath: ["t3"], errors: [] })),
+          Effect.fail(new CliError.ShowHelp({ commandPath: [TEAM_IDENTITY.cliName], errors: [] })),
         ),
       ),
       acpMcpBridgeCommand,
@@ -96,9 +98,10 @@ export const makeCli = ({ cloudEnabled = hasCloudPublicConfig } = {}) =>
       upCommand,
       statusCommand,
       serviceCommand,
-      updateCommand,
-      installCommand,
-      uninstallCommand,
+      // team-layer: upstream's update/install/uninstall manage T3 Code's `t3`, not Elbo.
+      teamUpdateCommand,
+      teamInstallCommand,
+      teamUninstallCommand,
       // bin.ts runs the bare service invocation; this keeps flags and help working like other commands.
       Command.make("__service-launcher").pipe(
         Command.unlisted,

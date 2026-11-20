@@ -19,6 +19,8 @@ import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
 
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity";
+
 import packageJson from "../../package.json" with { type: "json" };
 import * as ServerConfig from "../config.ts";
 import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
@@ -65,12 +67,9 @@ function retryDelayMs(failures: number, random: number): number {
 }
 
 const TelemetryEnvConfig = Config.all({
-  posthogKey: Config.String("T3CODE_POSTHOG_KEY").pipe(
-    Config.withDefault("phc_XOWci4oZP4VvLiEyrFqkFjP4CZn55mjYYBMREK5Wd6m"),
-  ),
-  posthogHost: Config.String("T3CODE_POSTHOG_HOST").pipe(
-    Config.withDefault("https://ingest.t3.codes"),
-  ),
+  // team-layer: no T3 PostHog key or ingest host in Elbo's build.
+  posthogKey: Config.String("T3CODE_POSTHOG_KEY").pipe(Config.withDefault("")),
+  posthogHost: Config.String("T3CODE_POSTHOG_HOST").pipe(Config.withDefault("")),
   enabled: Config.Boolean("T3CODE_TELEMETRY_ENABLED").pipe(Config.withDefault(true)),
   flushBatchSize: Config.Number("T3CODE_TELEMETRY_FLUSH_BATCH_SIZE").pipe(Config.withDefault(20)),
   maxBufferedEvents: Config.Number("T3CODE_TELEMETRY_MAX_BUFFERED_EVENTS").pipe(
@@ -128,6 +127,8 @@ export const make = Effect.gen(function* () {
   // A cached PATH does not establish consent from the current login shell.
   const telemetryEnabled = Effect.suspend(() => {
     if (!telemetryConfig.enabled || !policyAllows) return Effect.succeed(false);
+    // team-layer: without a key and host there is nowhere to send.
+    if (!telemetryConfig.posthogKey || !telemetryConfig.posthogHost) return Effect.succeed(false);
     if (!awaitingShellConsent) return Effect.succeed(true);
     if (hostEnvironment.T3CODE_DESKTOP_SHELL_DISCOVERY_PENDING === "1")
       return Effect.succeed(false);
@@ -361,4 +362,16 @@ export const make = Effect.gen(function* () {
   return AnalyticsService.of({ record, flush, recordOwners });
 });
 
-export const layer = Layer.effect(AnalyticsService, make);
+/** @public */
+export const layerUpstream = Layer.effect(AnalyticsService, make);
+
+// team-layer: Elbo sends no usage data. No identity read, no buffer, no flush loop, and no
+// environment variable can turn it back on.
+// Untraced: `record` runs for every event, and a span per no-op only adds cost.
+const ignore = Effect.fnUntraced(function* (..._args: ReadonlyArray<unknown>) {});
+const layerOff = Layer.succeed(
+  AnalyticsService,
+  AnalyticsService.of({ record: ignore, flush: Effect.void, recordOwners: ignore }),
+);
+
+export const layer = TEAM_IDENTITY.usageData ? layerUpstream : layerOff;

@@ -65,7 +65,12 @@
         "graphql.config.ts",
       ],
       // The generated operations export every selection's class.
-      "ignoreIssues": { "**/*.graphql.ts": ["exports", "types", "namespaceMembers"] },
+      "ignoreIssues": {
+        "**/*.graphql.ts": ["exports", "types", "namespaceMembers"],
+        // team-layer: Elbo's CLI swaps out upstream's `t3` install and update (src/team/cliIdentity.ts).
+        "src/cli/install.ts": ["exports"],
+        "src/cli/update.ts": ["exports"],
+      },
       // Keep the transitive Effect runtime pinned for standalone npm installs.
       // The Vite+ web build prerequisite.
       // Native and disk-loaded provider packages stay external to the bundle; the

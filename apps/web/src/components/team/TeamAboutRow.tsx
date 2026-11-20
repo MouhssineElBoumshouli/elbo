@@ -1,4 +1,5 @@
-import { TEAM_ABOUT_LINE, TEAM_IDENTITY } from "@t3tools/shared/teamIdentity";
+import type { ComponentProps } from "react";
+import { TEAM_ABOUT_LINE, TEAM_IDENTITY, TEAM_PRIVACY_LINE } from "@t3tools/shared/teamIdentity";
 
 import { SettingsRow } from "../settings/settingsLayout";
 
@@ -10,4 +11,9 @@ export function TeamAboutRow() {
       description={`Open source under the MIT license, like T3 Code. Source: github.com/${TEAM_IDENTITY.updateRepository}`}
     />
   );
+}
+
+/** Settings → Legal: says plainly that Elbo collects no usage data. */
+export function TeamPrivacyRow(props: Omit<ComponentProps<typeof SettingsRow>, "description">) {
+  return <SettingsRow {...props} description={TEAM_PRIVACY_LINE} />;
 }

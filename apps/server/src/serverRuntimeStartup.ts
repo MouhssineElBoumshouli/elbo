@@ -12,6 +12,7 @@ import {
 } from "@t3tools/contracts";
 import { formatHostForUrl, isWildcardHost } from "@t3tools/shared/hostClassification";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 import * as Cause from "effect/Cause";
 import * as Console from "effect/Console";
 import * as Context from "effect/Context";
@@ -144,6 +145,8 @@ export const makeCommandGate = Effect.gen(function* () {
 });
 
 const recordStartupHeartbeat = Effect.gen(function* () {
+  // team-layer: Elbo sends no usage data, so it also never reads the provider account ids.
+  if (!TEAM_IDENTITY.usageData) return;
   const analytics = yield* AnalyticsService.AnalyticsService;
   const projects = yield* ProjectService.ProjectService;
   const threads = yield* ThreadManagement.ThreadManagementService;

@@ -47,6 +47,7 @@ import { usePersistEnvironmentProviderInstanceMutation } from "../../hooks/useSe
 import { useCloudLinkState } from "../../cloud/cloudLinkState";
 import { hasCloudPublicConfig } from "../../cloud/publicConfig";
 import { PRIVACY_POLICY_URL } from "../../legalLinks";
+import { TEAM_IDENTITY, TEAM_PRIVACY_LINE } from "@t3tools/shared/teamIdentity"; // team-layer
 import { workspaceAreaProps } from "../../lib/workspaceFocus";
 import { retryClerkLoad, useClerkLoadFailed } from "../clerk/clerkLoadFailure";
 import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
@@ -327,6 +328,14 @@ export function WelcomePage({
 
 function TelemetryNotice({ environmentId }: { readonly environmentId: EnvironmentId }) {
   const telemetryOff = managedTelemetryOffMessage(useManagedPolicy(environmentId));
+  // team-layer: Elbo collects no usage data, so there is nothing to opt out of.
+  if (!TEAM_IDENTITY.usageData) {
+    return (
+      <p className="mt-auto pt-12 text-2xs leading-relaxed text-muted-foreground/70">
+        {TEAM_PRIVACY_LINE}
+      </p>
+    );
+  }
   return (
     <p className="mt-auto pt-12 text-2xs leading-relaxed text-muted-foreground/70">
       {telemetryOff ?? "T3 Code collects anonymous usage data to improve the app."}{" "}

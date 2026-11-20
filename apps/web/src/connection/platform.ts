@@ -32,6 +32,7 @@ import {
   type EnvironmentId,
   PRIMARY_LOCAL_ENVIRONMENT_ID,
 } from "@t3tools/contracts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -431,7 +432,11 @@ const layerCapabilities = Layer.effectContext(
     });
 
     return Context.make(ClientCapabilities.CloudSession, cloudSession).pipe(
-      Context.add(ClientCapabilities.AnalyticsDevice, analyticsDevice),
+      // team-layer: Elbo keeps no analytics device id; the default reports none.
+      Context.add(
+        ClientCapabilities.AnalyticsDevice,
+        TEAM_IDENTITY.usageData ? analyticsDevice : { id: Effect.succeedNone },
+      ),
       Context.add(ClientCapabilities.PrimaryEnvironmentAuth, primaryAuth),
       Context.add(ClientCapabilities.RelayDeviceIdentity, identity),
       Context.add(ClientCapabilities.ClientPresentation, presentation),
