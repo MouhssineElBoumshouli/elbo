@@ -2,6 +2,14 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-20 — Elbo's look: two directions (slice 3, design only)
+
+- **What changed:** static mockups in `team/mockups/slice3/` (`chat.html`, `setup.html`, `look.css`; `?look=glass` or `?look=solid`) and a note per direction in `team/mockups/slice3/README.md`. Both have the rail (Chats, Team, Setup with a "needs you" dot, Settings), simple mode (composer: agent, "Can edit files", team state, "More options"), plain words and Elbo's teal. **A · Glass:** Synara-like, desktop picture through the rail and chat list (Mica), the chat on a floating card, Figtree. **B · Solid and minimal:** flat warm greys, hairlines, Inter 14 px, no shadows. Check my setup in each: a "2 things need you" summary, AI and Tools groups, status pills, buttons on the right. Nothing in the app changed.
+- **Found while writing the cost notes:** upstream already has built-in themes (`BUILT_IN_THEMES` in `packages/shared/src/themePalettes.ts`: colors plus optional CSS). Elbo's colors can be "Elbo" light and dark themes in our own file, made the default with about two marked lines. Theme CSS can't fetch, so fonts are bundled in our own CSS file.
+- **Checked:** the 4 screenshots, looked at each (1440 × 900, light): `test-screenshots` branch, `2026-11-20-look/`. One fix after the first look: file chips had picked up the code font.
+- **Left:** your pick. Then slice 3 builds it: theme, fonts, rail, simple mode, word list. If you pick A, the window material is the W9 check on your laptop first, and it could also come in slice 4 on top of B. Dark mode isn't drawn in the mockups (both directions get dark themes when built).
+- **Unsure:** the rail label is "Setup" (the full "Check my setup" doesn't fit under an icon); the page title stays "Check my setup".
+
 ## 2026-11-20 — Check my setup + first start (slice 2)
 
 - **What changed:**

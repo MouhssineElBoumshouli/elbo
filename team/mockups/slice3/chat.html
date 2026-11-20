@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en" data-look="glass">
+  <head>
+    <meta charset="utf-8" />
+    <title>Elbo · chat (mockup)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <link rel="stylesheet" href="look.css" />
+    <script>
+      document.documentElement.dataset.look =
+        new URLSearchParams(location.search).get("look") === "solid" ? "solid" : "glass";
+    </script>
+  </head>
+  <body>
+    <div class="window">
+      <!-- The rail: four places, always the same, words under the icons. -->
+      <nav class="rail">
+        <div class="logo">
+          <svg viewBox="0 0 1024 1024" fill="none" stroke="#fff" stroke-width="148">
+            <path d="M 742 512 A 230 230 0 1 0 700.4 644" />
+            <path d="M 282 512 H 806" />
+          </svg>
+        </div>
+        <a class="on" href="#">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Chats
+        </a>
+        <a href="#">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Team
+        </a>
+        <a href="#">
+          <span class="dot"></span>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m3 17 2 2 4-4" />
+            <path d="m3 7 2 2 4-4" />
+            <path d="M13 6h8" />
+            <path d="M13 12h8" />
+            <path d="M13 18h8" />
+          </svg>
+          Setup
+        </a>
+        <span class="spacer"></span>
+        <a href="#">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+            />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          Settings
+        </a>
+      </nav>
+
+      <!-- Chats, by project. One dot for state, words for the rest. -->
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <h2>Chats</h2>
+          <button class="new-chat">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            New chat
+          </button>
+        </div>
+        <div class="group">pin-board · team</div>
+        <div class="chat on">
+          <div class="title"><span class="state working"></span>Add search to pins</div>
+          <div class="meta">Working · 2 files</div>
+        </div>
+        <div class="chat">
+          <div class="title"><span class="state waiting"></span>Fix login on Safari</div>
+          <div class="meta">Waiting for your answer</div>
+        </div>
+        <div class="chat">
+          <div class="title"><span class="state done"></span>Pin count endpoint</div>
+          <div class="meta">Done · merged yesterday</div>
+        </div>
+        <div class="group">thesis-notes · just me</div>
+        <div class="chat">
+          <div class="title"><span class="state done"></span>Summarise chapter 3</div>
+          <div class="meta">Done · 2 days ago</div>
+        </div>
+        <div class="chat">
+          <div class="title"><span class="state done"></span>Fix the bibliography</div>
+          <div class="meta">Done · last week</div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>Add search to pins</h1>
+            <div class="where">pin-board · on this computer · own copy “search-pins”</div>
+          </div>
+          <span class="grow"></span>
+          <span class="presence">
+            <span class="faces">
+              <i style="background: var(--yassine)">YA</i><i style="background: var(--sara)">SA</i>
+            </span>
+            2 teammates · synced 8 s ago
+          </span>
+          <button class="ghost-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
+            </svg>
+            Changes
+          </button>
+        </header>
+
+        <section class="thread">
+          <div class="column">
+            <div class="user">
+              Add a search box above the pin list. It should match titles and URLs, and ignore case.
+            </div>
+            <div class="agent">
+              <div class="worked">Worked for 1 min 12 s</div>
+              <p>
+                I added a search box above the list. It filters as you type and matches titles and
+                links, ignoring upper and lower case. Empty searches show every pin again.
+              </p>
+              <div class="card">
+                <div class="card-head">
+                  Changed 3 files <span class="sub">checked against your team</span>
+                  <span class="grow"></span>
+                  <span class="plus">+86</span> <span class="minus">−12</span>
+                  <button class="btn">Undo</button>
+                  <button class="btn primary">Review</button>
+                </div>
+                <div class="file">
+                  <span class="grow">src/pins/SearchBox.tsx</span><span class="plus">+54</span>
+                </div>
+                <div class="file">
+                  <span class="grow">src/pins/PinList.tsx</span>
+                  <span class="chip" style="--c: var(--yassine)"
+                    ><i>YA</i>Yassine is also editing</span
+                  >
+                  <span class="plus">+20</span> <span class="minus">−9</span>
+                </div>
+                <div class="file">
+                  <span class="grow">src/pins/search.ts</span><span class="plus">+12</span>
+                  <span class="minus">−3</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Simple mode: the agent, what it may do, and the team state. Everything else is behind "More". -->
+        <div class="composer-wrap">
+          <div class="composer">
+            <div class="placeholder">
+              Ask Elbo to change something, or type @ to point at a file
+            </div>
+            <div class="composer-row">
+              <span class="pill"><b>Claude</b></span>
+              <span class="pill">Can edit files</span>
+              <span class="pill team">1 file shared with Yassine</span>
+              <span class="more">More options</span>
+              <span class="grow"></span>
+              <button class="send">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-look="glass">
+  <head>
+    <meta charset="utf-8" />
+    <title>Elbo · Check my setup (mockup)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <link rel="stylesheet" href="look.css" />
+    <script>
+      document.documentElement.dataset.look =
+        new URLSearchParams(location.search).get("look") === "solid" ? "solid" : "glass";
+    </script>
+  </head>
+  <body>
+    <div class="window no-sidebar">
+      <nav class="rail">
+        <div class="logo">
+          <svg viewBox="0 0 1024 1024" fill="none" stroke="#fff" stroke-width="148">
+            <path d="M 742 512 A 230 230 0 1 0 700.4 644" />
+            <path d="M 282 512 H 806" />
+          </svg>
+        </div>
+        <a href="#">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Chats
+        </a>
+        <a href="#">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Team
+        </a>
+        <a class="on" href="#">
+          <span class="dot"></span>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m3 17 2 2 4-4" />
+            <path d="m3 7 2 2 4-4" />
+            <path d="M13 6h8" />
+            <path d="M13 12h8" />
+            <path d="M13 18h8" />
+          </svg>
+          Setup
+        </a>
+        <span class="spacer"></span>
+        <a href="#">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+            />
+          </svg>
+          Settings
+        </a>
+      </nav>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>Check my setup</h1>
+            <div class="where">This computer · checked 1 min ago</div>
+          </div>
+          <span class="grow"></span>
+          <button class="ghost-btn">Check again</button>
+        </header>
+
+        <section class="page">
+          <div class="column">
+            <div class="hero">
+              <div>
+                <div class="big">2 things need you</div>
+                <div class="small">Each has one button. Nothing to type.</div>
+              </div>
+            </div>
+
+            <div class="section-title">AI</div>
+            <div class="rows">
+              <div class="row">
+                <div class="badge" style="background: #f3e8de; color: #c2410c">C</div>
+                <div class="text">
+                  <div class="name">Claude</div>
+                  <div class="msg">
+                    Claude is signed out on this computer. Sign in again to use Claude here.
+                  </div>
+                  <div class="note">
+                    Claude is also installed in Ubuntu (WSL), with its own sign-in.
+                  </div>
+                </div>
+                <div class="actions">
+                  <button class="btn primary">Sign in</button>
+                  <button class="btn">Use the one in Ubuntu</button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="badge" style="background: #e6ebf1; color: #1f2937">X</div>
+                <div class="text">
+                  <div class="name">Codex</div>
+                  <div class="msg">Ready.</div>
+                </div>
+                <span class="status ok">● Ready</span>
+              </div>
+              <div class="row">
+                <div class="badge" style="background: var(--hover); color: var(--muted)">N</div>
+                <div class="text">
+                  <div class="name">Codex tool “notion”</div>
+                  <div class="msg">Needs sign-in.</div>
+                </div>
+                <div class="actions">
+                  <button class="btn primary">Sign in</button>
+                  <button class="btn">Don't use in this app</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-title">Tools</div>
+            <div class="rows">
+              <div class="row">
+                <div class="badge" style="background: var(--green-soft); color: var(--green)">
+                  G
+                </div>
+                <div class="text">
+                  <div class="name">Git</div>
+                  <div class="msg">Installed. Elbo uses it to save and compare your work.</div>
+                </div>
+                <span class="status ok">● Ready</span>
+              </div>
+              <div class="row">
+                <div class="badge" style="background: var(--green-soft); color: var(--green)">
+                  GH
+                </div>
+                <div class="text">
+                  <div class="name">GitHub</div>
+                  <div class="msg">Signed in. Team projects use it to share work.</div>
+                </div>
+                <span class="status ok">● Ready</span>
+              </div>
+              <div class="row">
+                <div class="badge" style="background: var(--hover); color: var(--muted)">i</div>
+                <div class="text">
+                  <div class="name">Your user folder</div>
+                  <div class="msg">
+                    It is a Git repository. Elbo treats project folders inside it as plain folders,
+                    so they stay fast.
+                  </div>
+                </div>
+                <span class="status info">Good to know</span>
+              </div>
+            </div>
+            <div class="footnote">
+              Agents can see this list too, and will point you to the right button.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
