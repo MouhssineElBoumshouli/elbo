@@ -68,7 +68,7 @@ html[data-theme-id="elbo"] {
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: 0.875rem;
-    box-shadow: 0 10px 30px -18px rgb(15 50 45 / 0.28);
+    box-shadow: 0 10px 30px -18px rgb(0 0 0 / 0.22);
   }
 
   /* Windows draws its window buttons at the top right: the card stays flush there. */

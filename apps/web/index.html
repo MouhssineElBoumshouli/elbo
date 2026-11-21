@@ -56,15 +56,15 @@
           elbo: {
             light: {
               background: "#ffffff",
-              foreground: "#1c2421",
-              accent: "#0f766e",
-              chrome: "#eef2f0",
+              foreground: "#1f1f1f",
+              accent: "#1a1a1a",
+              chrome: "#f3f3f3",
             },
             dark: {
-              background: "#1b2120",
-              foreground: "#e6ecea",
-              accent: "#2cc2b0",
-              chrome: "#131816",
+              background: "#1c1c1c",
+              foreground: "#ececec",
+              accent: "#ededed",
+              chrome: "#121212",
             },
           },
           "t3-chat": {
@@ -462,6 +462,19 @@
         object-fit: contain;
       }
 
+      /* team-layer: the mark's "e" is cut out in the splash background. */
+      #boot-shell-logo g {
+        stroke: #ffffff;
+      }
+
+      html.dark #boot-shell-logo g {
+        stroke: #000000;
+      }
+
+      html[data-theme-selected="true"] #boot-shell-logo g {
+        stroke: var(--boot-background);
+      }
+
       /* App CSS locks body and #root scrolling once main loads, so the error screen scrolls itself. */
       #boot-shell:has(> #boot-error) {
         height: 100%;
@@ -703,8 +716,15 @@
   <body>
     <div id="root">
       <div id="boot-shell">
-        <div id="boot-shell-card" aria-label="T3 Code splash screen">
-          <img id="boot-shell-logo" src="/apple-touch-icon.png" alt="T3 Code" />
+        <div id="boot-shell-card" aria-label="Elbo is starting">
+          <!-- team-layer: Elbo's mark in the text color (was T3 Code's icon). -->
+          <svg id="boot-shell-logo" viewBox="0 0 1024 1024" aria-hidden="true">
+            <rect width="1024" height="1024" rx="232" fill="currentColor" />
+            <g fill="none" stroke-width="148">
+              <path d="M 742 512 A 230 230 0 1 0 700.4 644" />
+              <path d="M 282 512 H 806" />
+            </g>
+          </svg>
         </div>
       </div>
     </div>

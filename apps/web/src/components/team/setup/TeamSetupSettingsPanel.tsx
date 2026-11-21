@@ -27,11 +27,7 @@ function Summary({ setup }: { readonly setup: TeamSetupState }) {
       data-team-setup-summary
       className={cn(
         "rounded-xl border px-5 py-4",
-        needsYou > 0
-          ? "border-warning/30 bg-warning/10"
-          : checking
-            ? "border-border bg-muted"
-            : "border-success/25 bg-success/8",
+        needsYou > 0 ? "border-warning/30 bg-warning/10" : "border-border bg-muted",
       )}
     >
       <div className="text-base font-semibold">{title}</div>

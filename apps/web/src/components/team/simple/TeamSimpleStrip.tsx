@@ -1,10 +1,12 @@
 /**
  * team-layer: the row under a new chat's message box in simple mode (team/WINDOWS_RELEASE_PLAN.md
- * section 4c): the team state, what the agent may do, and "More options", which brings back
- * upstream's worktree and branch pickers. "Fewer options" there leads back here.
+ * section 4c): the team state, what the agent may do (read-only), and "More options", which brings
+ * back upstream's strip: the access picker and, where they apply, the machine, worktree and branch
+ * pickers. "Fewer options" there leads back here.
  */
 import { findProjectTeam } from "@t3tools/client-runtime/state/teamMarkers";
 import type { EnvironmentId, ProjectId } from "@t3tools/contracts";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "~/lib/utils";
@@ -47,8 +49,10 @@ function TeamStatePill(props: {
 export function TeamSimpleStrip(props: {
   readonly environmentId: EnvironmentId;
   readonly projectId: ProjectId;
-  /** Upstream's permissions control for a new chat; its label is in plain words here. */
+  /** Upstream's permissions control for a new chat; read-only plain words here. */
   readonly trailing?: ReactNode;
+  /** Whether upstream's strip has a control this one hides; no "More options" otherwise. */
+  readonly moreOptions: boolean;
 }) {
   return (
     <ComposerSurface.ContextStrip
@@ -56,9 +60,11 @@ export function TeamSimpleStrip(props: {
       className="gap-1.5 text-xs font-normal text-foreground/70 dark:text-muted-foreground"
     >
       <TeamStatePill environmentId={props.environmentId} projectId={props.projectId} />
-      <button type="button" className={LINK} onClick={() => setTeamSimpleMode(false)}>
-        More options
-      </button>
+      {props.moreOptions ? (
+        <button type="button" className={LINK} onClick={() => setTeamSimpleMode(false)}>
+          More options
+        </button>
+      ) : null}
       {props.trailing}
     </ComposerSurface.ContextStrip>
   );
@@ -69,5 +75,19 @@ export function TeamFewerOptions() {
     <button type="button" className={LINK} onClick={() => setTeamSimpleMode(true)}>
       Fewer options
     </button>
+  );
+}
+
+/** What the agent may do, in simple mode: words only, the picker is under "More options". */
+export function TeamAccessWords(props: { readonly icon: LucideIcon; readonly label: string }) {
+  const Icon = props.icon;
+  return (
+    <span
+      data-team-access-words
+      className="ms-auto flex min-w-0 shrink-0 items-center gap-1 px-1.5 text-xs text-muted-foreground"
+    >
+      <Icon aria-hidden="true" className="size-3" />
+      <span className="truncate">{props.label}</span>
+    </span>
   );
 }

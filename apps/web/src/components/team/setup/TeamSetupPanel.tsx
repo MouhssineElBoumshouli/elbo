@@ -14,6 +14,7 @@ import {
   type TeamSetupRow,
 } from "@t3tools/shared/teamSetupRows";
 import { useNavigate } from "@tanstack/react-router";
+import { FolderGit2Icon, GithubIcon, PlugIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { usePersistEnvironmentProviderInstanceMutation } from "../../../hooks/useSettings";
@@ -23,6 +24,7 @@ import { useEnvironmentScope } from "../../../state/session";
 import { teamSetup } from "../../../state/teamSetup";
 import { useAtomCommand } from "../../../state/use-atom-command";
 import { cn } from "../../../lib/utils";
+import { ClaudeAI, GitIcon, OpenAI } from "../../Icons";
 import { Button } from "../../ui/button";
 import { toastManager } from "../../ui/toast";
 import { TeamSetupTerminal, type TeamSetupRun } from "./TeamSetupTerminal";
@@ -65,42 +67,42 @@ export function useTeamSetupRows(environmentId: EnvironmentId) {
   };
 }
 
-const STATE_LOOK: Record<TeamSetupRow["state"], { badge: string; pill: string; word: string }> = {
-  ready: { badge: "bg-success/12 text-success", pill: "bg-success/12 text-success", word: "Ready" },
-  needsAction: {
-    badge: "bg-warning/14 text-warning-foreground",
-    pill: "bg-warning/14 text-warning-foreground",
-    word: "Needs you",
-  },
-  info: {
-    badge: "bg-muted text-muted-foreground",
-    pill: "bg-muted text-muted-foreground",
-    word: "Good to know",
-  },
-  off: {
-    badge: "bg-muted text-muted-foreground",
-    pill: "bg-muted text-muted-foreground",
-    word: "Off",
-  },
-  checking: {
-    badge: "bg-muted text-muted-foreground",
-    pill: "bg-muted text-muted-foreground",
-    word: "Checking…",
-  },
+const STATE_LOOK: Record<TeamSetupRow["state"], { pill: string; word: string }> = {
+  ready: { pill: "bg-success/12 text-success", word: "Ready" },
+  needsAction: { pill: "bg-warning/14 text-warning-foreground", word: "Needs you" },
+  info: { pill: "bg-muted text-muted-foreground", word: "Good to know" },
+  off: { pill: "bg-muted text-muted-foreground", word: "Off" },
+  checking: { pill: "bg-muted text-muted-foreground", word: "Checking…" },
 };
 
+/** Each row's mark: the agent's logo, or an icon for the tool; the state shows in the pill. */
+function RowMark({ row }: { readonly row: TeamSetupRow }) {
+  if (row.driver === "codex") return <OpenAI className="size-4.5 text-foreground" />;
+  if (row.driver === "claudeAgent") return <ClaudeAI className="size-4.5 text-[#d97757]" />;
+  if (row.group === "agentTool") return <PlugIcon className="size-4.5" />;
+  if (row.id === "git") return <GitIcon className="size-4.5" />;
+  if (row.id === "gh") return <GithubIcon className="size-4.5 text-foreground" />;
+  if (row.id === "home-repository") return <FolderGit2Icon className="size-4.5" />;
+  return (
+    <span className="text-xs font-bold">
+      {row.name
+        .replace(/[^\p{L}\p{N}]/gu, "")
+        .slice(0, 1)
+        .toUpperCase()}
+    </span>
+  );
+}
+
 function RowBadge({ row }: { readonly row: TeamSetupRow }) {
-  const letters =
-    row.name === "GitHub CLI" ? "GH" : row.name.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 1);
   return (
     <div
       aria-hidden
       className={cn(
-        "grid size-9 shrink-0 place-items-center rounded-lg text-xs font-bold",
-        STATE_LOOK[row.state].badge,
+        "grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground",
+        row.state === "off" ? "bg-muted opacity-60" : "bg-muted",
       )}
     >
-      {letters.toUpperCase()}
+      <RowMark row={row} />
     </div>
   );
 }

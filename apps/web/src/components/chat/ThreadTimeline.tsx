@@ -12,6 +12,7 @@ import {
 import { MessagesTimeline } from "./MessagesTimeline";
 import type { TeamCardRow } from "@t3tools/client-runtime/work-log/team-cards"; // team-layer
 import { withTeamCardEntries } from "../team/teamTimeline"; // team-layer
+import { withTeamToolNotices } from "../team/teamToolNotices"; // team-layer
 
 /**
  * The timeline with the streamed text. ChatView reads the thread through its quiet
@@ -45,7 +46,8 @@ export function ThreadTimeline({
     ...entriesInput,
     visibleTurnItems,
   });
-  const entries = draftEntries ?? withTeamCardEntries(serverEntries, teamCards); // team-layer
+  const entries =
+    draftEntries ?? withTeamCardEntries(withTeamToolNotices(serverEntries), teamCards); // team-layer
   const displayedEntries = resolveThreadSwitchTimeline({
     loading: entries.length === 0 && syncing,
     activeThreadKey,

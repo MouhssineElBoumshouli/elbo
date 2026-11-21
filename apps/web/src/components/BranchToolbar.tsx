@@ -731,10 +731,15 @@ export const BranchToolbar = memo(function BranchToolbar({
     );
   }
 
-  // team-layer: simple mode keeps worktree and branch behind "More options" (WINDOWS_RELEASE_PLAN 4c).
+  // team-layer: simple mode keeps these controls behind "More options" (WINDOWS_RELEASE_PLAN 4c).
   if (teamSimpleMode)
     return (
-      <TeamSimpleStrip environmentId={environmentId} projectId={projectId} trailing={trailing} />
+      <TeamSimpleStrip
+        environmentId={environmentId}
+        projectId={projectId}
+        trailing={trailing}
+        moreOptions={trailing !== undefined || showGitControls || showEnvironmentIndicator}
+      />
     );
 
   return (

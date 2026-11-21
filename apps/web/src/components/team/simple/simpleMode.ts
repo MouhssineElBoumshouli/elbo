@@ -16,6 +16,8 @@ export function readTeamSimpleMode(stored: string | null): boolean {
   return TEAM_SIMPLE_MODE_DEFAULT.on;
 }
 
+export const readTeamSimpleModeNow = (): boolean => read();
+
 function read(): boolean {
   try {
     return readTeamSimpleMode(window.localStorage.getItem(STORAGE_KEY));
@@ -46,6 +48,15 @@ function subscribe(listener: () => void) {
 export function useTeamSimpleMode(): boolean {
   return useSyncExternalStore(subscribe, read, () => TEAM_SIMPLE_MODE_DEFAULT.on);
 }
+
+/** For stores outside React that derive from simple mode; returns the unsubscribe. */
+export function onTeamSimpleModeChange(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** Simple mode starts each chat with the details panel closed, until "Changes" opens it. */
+export const teamThreadPanelStartsOpen = (): boolean => !read();
 
 /** What the agent may do, in plain words; upstream's names stay in the menu. */
 const ACCESS_WORDS: Readonly<Record<RuntimeMode, string>> = {

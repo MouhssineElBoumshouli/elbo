@@ -3,6 +3,7 @@ import { type EnvironmentId, RunId, ThreadId } from "@t3tools/contracts";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { useClosedViewStore } from "./closedViewStore";
+import { TEAM_SIMPLE_MODE_DEFAULT } from "./components/team/simple/simpleMode"; // team-layer
 import { reopenClosedView } from "./reopenClosedView";
 import {
   hostRightPanel,
@@ -18,6 +19,9 @@ import {
 
 const refA = scopeThreadRef("env-1" as EnvironmentId, ThreadId.make("thread-A"));
 const refB = scopeThreadRef("env-1" as EnvironmentId, ThreadId.make("thread-B"));
+
+// team-layer: these cases cover upstream's details panel; Elbo's simple mode has its own case.
+TEAM_SIMPLE_MODE_DEFAULT.on = false;
 
 beforeEach(() => {
   useClosedViewStore.setState({ entries: [] });
@@ -1276,5 +1280,27 @@ describe("rightPanelStore", () => {
     store.reconcileBrowserSurfaces(refA, ["tab-a", "tab-b"]);
     expect(surfaceIds()).toEqual(["browser:tab-a", "terminal:term-1", "diff", "browser:tab-b"]);
     expect(store.getUserActionRevision(refA)).toBe(revision);
+  });
+
+  // team-layer: Elbo's simple mode starts each chat with the details panel closed.
+  it("starts the details panel closed in simple mode until it is opened", () => {
+    const inlineOpen = (ref: typeof refA) =>
+      selectThreadPanelVisibility(
+        useRightPanelStore.getState().threadPanelVisibilityByThreadKey,
+        ref,
+      ).inlineOpen;
+    TEAM_SIMPLE_MODE_DEFAULT.on = true;
+    try {
+      expect(inlineOpen(refA)).toBe(false);
+      useRightPanelStore.getState().toggleThreadPanel(refA, "inline");
+      expect(inlineOpen(refA)).toBe(true);
+      useRightPanelStore.getState().toggleThreadPanel(refA, "inline");
+      expect(inlineOpen(refA)).toBe(false);
+      useRightPanelStore.getState().toggleThreadPanel(refA, "inline");
+    } finally {
+      TEAM_SIMPLE_MODE_DEFAULT.on = false;
+    }
+    expect(inlineOpen(refA)).toBe(true);
+    expect(inlineOpen(refB)).toBe(true);
   });
 });

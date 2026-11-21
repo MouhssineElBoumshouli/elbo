@@ -1,3 +1,4 @@
+import { useTeamWords } from "../team/simple/teamWords"; // team-layer
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/models";
 import { scopedThreadKey, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import type { ContextMenuSource } from "@t3tools/contracts";
@@ -50,6 +51,7 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
   ) => void;
 }) {
   const { group, collapsed, hiddenThreads } = props;
+  const words = useTeamWords(); // team-layer
   const rowId = sidebarFolderRowId(group.projectKey);
   const localLastVisitedAtById = useUiStateStore((state) => state.threadLastVisitedAtById);
   const dot = collapsed
@@ -116,14 +118,16 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
                 data-sidebar-action-for={rowId}
                 size="icon-xs"
                 variant="ghost-muted"
-                aria-label={`New thread in ${group.displayName}`}
+                aria-label={`${words.newChatIn} ${group.displayName}`}
                 onClick={() => props.onNewThread(group)}
               />
             }
           >
             <SquarePenIcon aria-hidden />
           </TooltipTrigger>
-          <TooltipPopup>New thread in {group.displayName}</TooltipPopup>
+          <TooltipPopup>
+            {words.newChatIn} {group.displayName}
+          </TooltipPopup>
         </Tooltip>
       </span>
     </li>

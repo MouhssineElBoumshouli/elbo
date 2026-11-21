@@ -8,6 +8,10 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { useClosedViewStore } from "./closedViewStore";
+import {
+  onTeamSimpleModeChange,
+  teamThreadPanelStartsOpen,
+} from "./components/team/simple/simpleMode"; // team-layer
 import { resolveStorage } from "./lib/storage";
 import type { ThreadPanelPresentation } from "./rightPanelLayout";
 import type { ChatFileAttachment } from "./types";
@@ -212,6 +216,15 @@ const DEFAULT_THREAD_PANEL_VISIBILITY: ThreadPanelVisibility = {
   inlineOpen: true,
   popoverOpen: false,
 };
+// team-layer: Elbo's simple mode starts each chat with the details panel closed.
+const TEAM_CLOSED_THREAD_PANEL_VISIBILITY: ThreadPanelVisibility = {
+  inlineOpen: false,
+  popoverOpen: false,
+};
+const defaultThreadPanelVisibility = () =>
+  teamThreadPanelStartsOpen()
+    ? DEFAULT_THREAD_PANEL_VISIBILITY
+    : TEAM_CLOSED_THREAD_PANEL_VISIBILITY;
 
 const singletonSurface = (
   kind: Exclude<RightPanelKind, "file" | "preview" | "terminal" | "pull-request" | "side-chat">,
@@ -346,9 +359,10 @@ const updateThreadPanelVisibilityMap = (
   threadKey: string,
   updater: (current: ThreadPanelVisibility) => ThreadPanelVisibility,
 ): Record<string, ThreadPanelVisibility> => {
-  const current = byThreadKey[threadKey] ?? DEFAULT_THREAD_PANEL_VISIBILITY;
+  const fallback = defaultThreadPanelVisibility(); // team-layer
+  const current = byThreadKey[threadKey] ?? fallback;
   const next = updater(current);
-  if (next.inlineOpen && !next.popoverOpen) {
+  if (next.inlineOpen === fallback.inlineOpen && !next.popoverOpen) {
     if (!(threadKey in byThreadKey)) return byThreadKey;
     const { [threadKey]: _removed, ...rest } = byThreadKey;
     return rest;
@@ -1215,6 +1229,9 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
   ),
 );
 
+// team-layer: the details panel's default follows simple mode; selectors re-read it on a flip.
+onTeamSimpleModeChange(() => useRightPanelStore.setState({}));
+
 useRightPanelStore.subscribe((next, previous) => {
   if (next.closeRevisionByThreadKey === previous.closeRevisionByThreadKey) return;
   for (const [threadKey, revision] of Object.entries(next.closeRevisionByThreadKey)) {
@@ -1253,8 +1270,8 @@ export function selectThreadPanelVisibility(
   byThreadKey: Record<string, ThreadPanelVisibility>,
   ref: ScopedThreadRef | null | undefined,
 ): ThreadPanelVisibility {
-  if (!ref) return DEFAULT_THREAD_PANEL_VISIBILITY;
-  return byThreadKey[scopedThreadKey(ref)] ?? DEFAULT_THREAD_PANEL_VISIBILITY;
+  if (!ref) return defaultThreadPanelVisibility(); // team-layer
+  return byThreadKey[scopedThreadKey(ref)] ?? defaultThreadPanelVisibility();
 }
 
 export function selectThreadPanelOpen(

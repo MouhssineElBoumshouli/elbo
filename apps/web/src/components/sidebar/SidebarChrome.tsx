@@ -15,6 +15,7 @@ import { primaryServerKeybindingsAtom } from "../../state/server";
 import { cn } from "../../lib/utils";
 import { usePullRequestsSupported } from "../../state/environments";
 import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
 import {
   resolveEnvironmentIdentificationPillLabel,
   resolveSidebarStageBackdropVariant,
@@ -224,6 +225,8 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     select: (location) => isSidebarUtilityPage(location.pathname),
   });
   const pullRequestsSupported = usePullRequestsSupported();
+  // team-layer: in simple mode the rail's Settings stands in for this row (wide windows only).
+  const teamHidesIcons = useTeamSimpleMode() && !isMobile;
   const closeMobileSidebar = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -262,7 +265,7 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             <span>Back</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
-      ) : (
+      ) : teamHidesIcons ? null /* team-layer */ : (
         <>
           <SidebarUtilityItem
             icon={<SettingsIcon />}

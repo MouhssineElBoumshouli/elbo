@@ -1,3 +1,5 @@
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
+import { useTeamWords } from "../team/simple/teamWords"; // team-layer
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
@@ -84,6 +86,8 @@ export const ChatHeader = memo(function ChatHeader({
   onOpenProjectSettings,
   onFindInThread,
 }: ChatHeaderProps) {
+  const words = useTeamWords(); // team-layer
+  const teamSimpleMode = useTeamSimpleMode(); // team-layer
   const activeProjectName = activeProject?.isScratch ? "No project" : activeProject?.title;
   const activeProjectCwd = activeProject?.workspaceRoot ?? null;
   const interfaceFont = useClientSettings((settings) => settings.fontFamilySans);
@@ -253,6 +257,7 @@ export const ChatHeader = memo(function ChatHeader({
       className={cn(
         "flex min-w-0 flex-1 items-center gap-2 sm:gap-3",
         rightPanelOpen ? "pr-10" : "pr-24",
+        teamSimpleMode && (rightPanelOpen ? "pr-26" : "pr-40"), // team-layer: room for "Changes"
       )}
       onContextMenu={handleHeaderContextMenu}
     >
@@ -268,7 +273,7 @@ export const ChatHeader = memo(function ChatHeader({
                   render={
                     <button
                       type="button"
-                      aria-label={`New thread in ${activeProjectName}`}
+                      aria-label={`${words.newChatIn} ${activeProjectName}`}
                       onClick={onNewThreadInProject}
                       className="inline-flex min-w-0 max-w-full cursor-pointer items-center gap-1.5 rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     />
@@ -282,7 +287,9 @@ export const ChatHeader = memo(function ChatHeader({
                     variant="cap-aligned"
                   />
                 </TooltipTrigger>
-                <TooltipPopup side="top">New thread in {activeProjectName}</TooltipPopup>
+                <TooltipPopup side="top">
+                  {words.newChatIn} {activeProjectName}
+                </TooltipPopup>
               </Tooltip>
             </WorkspaceBreadcrumbItem>
             <WorkspaceBreadcrumbSeparator>

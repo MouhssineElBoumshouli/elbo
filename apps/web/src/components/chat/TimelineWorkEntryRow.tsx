@@ -1,3 +1,4 @@
+import { TeamToolNoticeRow } from "../team/TeamToolNoticeRow"; // team-layer
 import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
 import { WorkLogDetails, WorkLogRow } from "./WorkLog";
 import {
@@ -156,6 +157,7 @@ type WorkEntryRowProps = {
 
 export const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: WorkEntryRowProps) {
   const ctx = use(TimelineRowCtx);
+  if (props.workEntry.teamToolSignIn) return <TeamToolNoticeRow label={props.workEntry.label} />; // team-layer
   const item = props.workEntry.projectedItem?.item;
   const childThreadId =
     item?.type === "notification" ? notificationChildThreadId(item.source) : undefined;

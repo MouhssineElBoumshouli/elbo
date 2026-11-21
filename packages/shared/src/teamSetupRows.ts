@@ -32,6 +32,8 @@ export interface TeamSetupRow {
   readonly message: string;
   readonly note?: string;
   readonly instanceId?: ServerProvider["instanceId"];
+  /** The agent a provider row is for, so the page can show its logo. */
+  readonly driver?: ServerProvider["driver"];
   /** The Codex tool a "Don't use" or "Use again" is for. */
   readonly codexTool?: string;
   readonly actions: ReadonlyArray<TeamSetupAction>;
@@ -108,6 +110,7 @@ function providerRow(provider: ServerProvider, facts: TeamSetupFacts | null): Te
     group: "agent" as const,
     name,
     instanceId: provider.instanceId,
+    driver: provider.driver,
   };
   if (!provider.enabled || provider.status === "disabled") {
     return {

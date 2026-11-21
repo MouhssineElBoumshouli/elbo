@@ -1,5 +1,6 @@
 import type { EnvironmentId, RuntimeMode } from "@t3tools/contracts";
 import { useTeamAccessWord } from "./team/simple/simpleMode"; // team-layer
+import { TeamAccessWords } from "./team/simple/TeamSimpleStrip"; // team-layer
 import { useAtomValue } from "@effect/atom-react";
 
 import { shortcutLabelForCommand } from "../keybindings";
@@ -34,7 +35,9 @@ export function ComposerContextPermissions(props: {
   const options = resolveRuntimeModeOptions(modes, useManagedPolicy(props.environmentId));
   const composerMenuProps = useComposerMenuProps();
   const { icon: Icon } = runtimeModeConfig[mode];
-  const label = useTeamAccessWord(mode) ?? runtimeModeConfig[mode].label; // team-layer: plain words
+  const teamWords = useTeamAccessWord(mode); // team-layer: read-only plain words in simple mode
+  if (teamWords !== null) return <TeamAccessWords icon={Icon} label={teamWords} />; // team-layer
+  const label = runtimeModeConfig[mode].label;
   return (
     <Menu>
       <Tooltip>

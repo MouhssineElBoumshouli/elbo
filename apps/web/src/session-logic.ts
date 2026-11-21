@@ -97,6 +97,8 @@ export interface WorkLogEntry {
   readonly structuredPayload?: OrchestrationV2TurnItem;
   readonly sourceItemType?: OrchestrationV2TurnItem["type"];
   readonly projectedItem?: OrchestrationV2ProjectedTurnItem;
+  /** team-layer: the Codex tools a merged sign-in notice names (team/teamToolNotices.ts). */
+  readonly teamToolSignIn?: ReadonlyArray<string>;
 }
 
 export type PendingApproval = ThreadPendingApproval;
