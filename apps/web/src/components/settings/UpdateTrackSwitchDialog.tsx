@@ -59,7 +59,7 @@ export function UpdateTrackSwitchDialog({
             {AsyncResult.isFailure(release)
               ? npmReleaseFailureMessage(release.cause)
               : AsyncResult.isSuccess(release)
-                ? `Could not find the latest ${label} release in this environment's npm registry.`
+                ? `There is no ${label} release yet.` // team-layer: Elbo's releases are on GitHub, not npm.
                 : "Checking releases…"}
           </AlertDialogDescription>
         </AlertDialogHeader>

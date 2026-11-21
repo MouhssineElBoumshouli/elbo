@@ -81,7 +81,7 @@ describe("prepareLocalTrackSwitch", () => {
 
 describe("nothingToMove", () => {
   const skippedRemote = {
-    skipped: "its server predates database checks; update it on Nightly first",
+    skipped: "its server predates database checks; update it on Beta first",
   };
   const stableSwitch = {
     label: "Stable",

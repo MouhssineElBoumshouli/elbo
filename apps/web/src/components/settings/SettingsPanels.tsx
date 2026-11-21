@@ -340,7 +340,7 @@ function AboutVersionSection() {
           {...searchableSetting("update-track")}
           description={
             nightlyDeniedBy !== undefined ? (
-              `${managedUpdatesMessage(nightlyDeniedBy)} Nightly builds are not available${
+              `${managedUpdatesMessage(nightlyDeniedBy)} ${channelSwitchLabel("nightly")} builds are not available${
                 selectedUpdateChannel === "nightly"
                   ? "; switch to Stable to keep getting updates."
                   : "."
@@ -392,7 +392,7 @@ function AboutVersionSection() {
                   value="nightly"
                   disabled={nightlyDeniedBy !== undefined && selectedUpdateChannel !== "nightly"}
                 >
-                  Nightly
+                  {channelSwitchLabel("nightly") /* team-layer: Beta */}
                 </SelectItem>
               </SelectPopup>
             </Select>

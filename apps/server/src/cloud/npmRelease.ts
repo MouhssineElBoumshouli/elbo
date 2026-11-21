@@ -127,6 +127,7 @@ export const make = Effect.fn("NpmRelease.make")(function* () {
   });
 });
 
+/** @public team-layer: upstream's npm lookup; Elbo provides team/TeamReleases.ts instead (ws.ts). */
 export const layer = Layer.effect(NpmRelease, make()).pipe(
   Layer.provide([ProcessRunner.layer, FetchHttpClient.layer]),
 );

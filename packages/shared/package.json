@@ -11,6 +11,10 @@
       "types": "./src/teamGlass.ts",
       "import": "./src/teamGlass.ts"
     },
+    "./teamRelease": {
+      "types": "./src/teamRelease.ts",
+      "import": "./src/teamRelease.ts"
+    },
     "./teamTheme": {
       "types": "./src/teamTheme.ts",
       "import": "./src/teamTheme.ts"

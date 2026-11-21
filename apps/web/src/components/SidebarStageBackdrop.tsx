@@ -7,7 +7,7 @@ import { resolveServerBackedAppStageLabel } from "../branding.logic";
 import { primaryServerConfigAtom } from "../state/server";
 
 export type SidebarStageBackdropVariant = "nightly" | "dev";
-export type EnvironmentIdentificationPillLabel = "Dev" | "Nightly";
+export type EnvironmentIdentificationPillLabel = "Dev" | "Beta"; // team-layer: Nightly shows as Beta
 
 const STAGE_BACKDROP_VIEW_BOX = "0 0 8192 96";
 
@@ -29,7 +29,7 @@ export function resolveEnvironmentIdentificationPillLabel(
 ): EnvironmentIdentificationPillLabel | null {
   const normalized = stageLabel.trim().toLowerCase();
   if (normalized === "dev") return "Dev";
-  if (normalized === "nightly") return "Nightly";
+  if (normalized === "nightly") return "Beta"; // team-layer
   return null;
 }
 

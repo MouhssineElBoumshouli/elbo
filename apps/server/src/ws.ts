@@ -289,6 +289,7 @@ import * as TeamQuestions from "./team/TeamQuestions.ts"; // team-layer
 import * as TeamNotes from "./team/TeamNotes.ts"; // team-layer
 import * as TeamMergeFix from "./team/TeamMergeFix.ts"; // team-layer
 import * as TeamSetup from "./team/setup/TeamSetup.ts"; // team-layer
+import * as TeamReleases from "./team/TeamReleases.ts"; // team-layer
 
 const CONFIG_DISCOVERY_TIMEOUT = Duration.seconds(5);
 const isProviderUploadFeedbackError = Schema.is(ProviderUploadFeedbackError);
@@ -3742,4 +3743,4 @@ export const layer = Layer.unwrap(
       ),
     );
   }),
-).pipe(Layer.provide(NpmRelease.layer));
+).pipe(Layer.provide(TeamReleases.layer)); // team-layer: Elbo reads its GitHub Releases, not npm.

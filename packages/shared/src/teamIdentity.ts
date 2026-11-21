@@ -3,6 +3,8 @@
 export const TEAM_IDENTITY = {
   name: "Elbo",
   basedOn: { name: "T3 Code", version: "0.1.10" },
+  // The next Stable. Betas build as `<nextVersion>-nightly.<date>.<run>`; bump it after each Stable.
+  nextVersion: "1.0.0",
   appId: "io.github.mouhssineelboumshouli.elbo",
   devAppId: "io.github.mouhssineelboumshouli.elbo.dev",
   // Also names the per-user install folder (%LOCALAPPDATA%\Programs\elbo) and the updater cache.

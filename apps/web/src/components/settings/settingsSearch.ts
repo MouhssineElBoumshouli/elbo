@@ -887,7 +887,7 @@ export const SETTINGS_SEARCH_ITEMS = [
     id: "update-track",
     title: "Update track",
     to: "/settings/about",
-    searchTerms: ["release channel stable latest nightly prerelease"],
+    searchTerms: ["release channel stable latest nightly prerelease beta"], // team-layer: beta
     releaseChannelOnly: true,
   },
   {

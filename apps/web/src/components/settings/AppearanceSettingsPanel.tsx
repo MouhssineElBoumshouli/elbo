@@ -40,7 +40,7 @@ import { ThreadDetailsItemsRow } from "./ThreadDetailsItemsRow";
 
 const ENVIRONMENT_IDENTIFICATION_LABELS: Record<EnvironmentIdentificationMode, string> = {
   artwork: "Artwork",
-  "nightly-artwork": "Nightly artwork",
+  "nightly-artwork": "Beta artwork", // team-layer: Nightly shows as Beta
   "dev-artwork": "Dev artwork",
   pill: "Version pill",
   none: "None",
@@ -54,14 +54,14 @@ function environmentIdentificationOptions(
   if (stageVariant === "dev") {
     return [
       ["artwork", "Dev artwork"],
-      ["nightly-artwork", "Nightly artwork"],
+      ["nightly-artwork", "Beta artwork"], // team-layer
       ["pill", "Version pill"],
       ["none", "None"],
     ];
   }
   if (stageVariant === "nightly") {
     return [
-      ["artwork", "Nightly artwork"],
+      ["artwork", "Beta artwork"], // team-layer
       ["dev-artwork", "Dev artwork"],
       ["pill", "Version pill"],
       ["none", "None"],
@@ -69,7 +69,7 @@ function environmentIdentificationOptions(
   }
   return [
     ["artwork", "None"],
-    ["nightly-artwork", "Nightly artwork"],
+    ["nightly-artwork", "Beta artwork"], // team-layer
     ["dev-artwork", "Dev artwork"],
   ];
 }
@@ -120,8 +120,8 @@ export function AppearanceSettingsPanel() {
       ? "Only built-in themes show artwork, so this theme shows the version pill."
       : "Only built-in themes show artwork."
     : environmentStageVariant
-      ? "Choose how Dev and Nightly environments are identified."
-      : "Show Dev or Nightly artwork in the sidebar header.";
+      ? "Choose how Dev and Beta environments are identified." // team-layer: Beta
+      : "Show Dev or Beta artwork in the sidebar header.";
   const glassOpacityRatio =
     (settings.glassOpacity - MIN_GLASS_OPACITY) / (MAX_GLASS_OPACITY - MIN_GLASS_OPACITY);
   const glassOpacitySliderStyle = {
