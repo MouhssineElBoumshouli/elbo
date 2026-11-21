@@ -82,22 +82,44 @@ html[data-theme-id="elbo"]
 }
 
 /*
- * Glass (Settings → Appearance, Windows 11 only; team/DESIGN_DIRECTION.md section 3). The desktop
- * draws Mica behind a transparent window and sets this attribute; the page only turns its window
- * background and sidebar colors translucent. The chat column stays opaque, nothing blurs here.
- * Both selectors match the specificity of index.css's theme blocks, which this file follows.
+ * Glass (Settings → Appearance, Windows 11 only; team/DESIGN_DIRECTION.md section 3). Windows draws
+ * Mica or Acrylic behind a transparent window and the page sets this attribute; the page only turns
+ * its window background and sidebar colors translucent. The chat column stays opaque, nothing blurs
+ * here. Both selectors match the specificity of index.css's theme blocks, which this file follows.
  */
-html[data-window-material="os"]:not([data-theme-id=""]),
-html[data-window-material="os"] [data-app-sidebar] {
+html[data-window-material]:not([data-theme-id=""]),
+html[data-window-material] [data-app-sidebar] {
   --app-chrome-background: transparent;
-  --sidebar: color-mix(in srgb, var(--app-theme-sidebar, var(--color-zinc-50)) 55%, transparent);
+  --sidebar: color-mix(
+    in srgb,
+    var(--app-theme-sidebar, var(--color-zinc-50)) var(--team-glass-sidebar),
+    transparent
+  );
   --sidebar-stage-fade: transparent;
 }
 
+/* How much of the sidebar color stays over the material; Windows adds its own tint on top. */
+html[data-window-material="mica"] {
+  --team-glass-sidebar: 30%;
+}
+
+html[data-window-material="acrylic"] {
+  --team-glass-sidebar: 45%;
+}
+
 /* useTheme's syncBrowserChromeTheme and the boot script paint html and body inline. */
-html[data-window-material="os"],
-html[data-window-material="os"] body {
+html[data-window-material],
+html[data-window-material] body {
   background-color: transparent !important;
+}
+
+/* Upstream's sidebar art and grain are opaque pictures; on glass they read as the desktop. */
+html[data-window-material] .sidebar-stage-backdrop {
+  display: none;
+}
+
+html[data-window-material] [data-app-sidebar] .surface-grain {
+  background-image: none;
 }
 
 /* The rail is a column in the sidebar wrapper; the fixed sidebar and its toggle move past it. */

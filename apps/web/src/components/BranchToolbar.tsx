@@ -1,6 +1,6 @@
 import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
-import { useTeamComposerStrip } from "./team/simple/simpleMode"; // team-layer
-import { TeamFewerOptions, TeamSimpleStrip } from "./team/simple/TeamSimpleStrip"; // team-layer
+import { useTeamSimpleMode } from "./team/simple/simpleMode"; // team-layer
+import { TeamSimpleStrip } from "./team/simple/TeamSimpleStrip"; // team-layer
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { readLocalApi } from "../localApi";
 import { stackedThreadToast, toastManager } from "./ui/toast";
@@ -679,14 +679,15 @@ export const BranchToolbar = memo(function BranchToolbar({
     canPickEnvironment: hasMultipleEnvironments,
   });
   const [attachStrip, labelsOverflow] = useLabelsOverflow();
-  const teamStrip = useTeamComposerStrip(); // team-layer
+  const teamSimple = useTeamSimpleMode(); // team-layer
 
   if (!activeProject) return null;
 
-  if (layout === "panel") {
+  // team-layer: a function, so simple mode's "⋯" popover reuses these rows.
+  const panelRows = (section: typeof panelSection) => {
     return (
       <div className="flex w-full flex-col" data-thread-panel-run-context>
-        {panelSection !== "branch" ? (
+        {section !== "branch" ? (
           <RunContextSelector
             displayMode="panel"
             workspaceRoot={activeProject.workspaceRoot}
@@ -710,7 +711,7 @@ export const BranchToolbar = memo(function BranchToolbar({
             onAddToMachine={onAddToMachine}
           />
         ) : null}
-        {panelSection !== "workspace" ? (
+        {section !== "workspace" ? (
           <BranchToolbarBranchSelector
             displayMode="panel"
             className="w-full"
@@ -729,16 +730,45 @@ export const BranchToolbar = memo(function BranchToolbar({
         ) : null}
       </div>
     );
-  }
+  };
+  if (layout === "panel") return panelRows(panelSection);
 
-  // team-layer: simple mode keeps these controls behind "More options" (WINDOWS_RELEASE_PLAN 4c).
-  if (teamStrip === "simple")
+  // team-layer: simple mode keeps the rarely used controls in a "⋯" popover (permissions sit by
+  // the model picker), listing only the ones this chat has.
+  if (teamSimple)
     return (
       <TeamSimpleStrip
         environmentId={environmentId}
         projectId={projectId}
-        trailing={trailing}
-        moreOptions={trailing !== undefined || showGitControls || showEnvironmentIndicator}
+        more={[
+          ...(showGitControls
+            ? [
+                // The panel row names the machine too, even with only one.
+                { label: "Machine and worktree", rows: panelRows("workspace") },
+                { label: "Branch", rows: panelRows("branch") },
+              ]
+            : []),
+          ...(!showGitControls && showEnvironmentIndicator && availableEnvironments
+            ? [
+                {
+                  label: "Machine",
+                  rows: (
+                    <BranchToolbarEnvironmentSelector
+                      autoEnvironmentLabel={autoEnvironmentLabel}
+                      onAutoEnvironment={onAutoEnvironment}
+                      envLocked={envLocked}
+                      environmentId={environmentId}
+                      availableEnvironments={availableEnvironments}
+                      {...(showEnvironmentPicker ? { onEnvironmentChange } : {})}
+                      {...(addTargets.length > 0
+                        ? { onAddToMachine: () => onAddToMachine(null) }
+                        : {})}
+                    />
+                  ),
+                },
+              ]
+            : []),
+        ]}
       />
     );
 
@@ -833,7 +863,6 @@ export const BranchToolbar = memo(function BranchToolbar({
         />
       ) : null}
       {trailing}
-      {teamStrip === "options" ? <TeamFewerOptions /> : null} {/* team-layer */}
     </ComposerSurface.ContextStrip>
   );
 });

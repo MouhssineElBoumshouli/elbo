@@ -12,6 +12,8 @@ import { resolveModelPickerSelectedModel } from "./ModelPickerContent";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import { runtimeModeConfig } from "./runtimeModeConfig";
 import { useComposerMenuState } from "./useComposerMenuState";
+import { ChevronDownIcon } from "lucide-react"; // team-layer
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
 
 export type RuntimeModeOption = {
   mode: RuntimeMode;
@@ -34,6 +36,7 @@ export const ComposerFooterModeControls = memo(function ComposerFooterModeContro
 }) {
   const size = props.size ?? "sm";
   const accessDisplay = props.accessDisplay ?? "label";
+  const teamSimple = useTeamSimpleMode(); // team-layer
   const composerFloatingLayerProps = useComposerMenuProps();
   const [open, setOpen] = useComposerMenuState(props.hidden);
   const permissionsChipRef = useRef<HTMLButtonElement>(null);
@@ -80,6 +83,10 @@ export const ComposerFooterModeControls = memo(function ComposerFooterModeContro
           >
             {runtimeModeOption.label}
           </span>
+          {/* team-layer: simple mode marks the chip as a menu, so it never reads as plain text. */}
+          {teamSimple && accessDisplay === "label" ? (
+            <ChevronDownIcon aria-hidden="true" className="-ms-0.5 size-3.5 opacity-70" />
+          ) : null}
         </TooltipTrigger>
         <TooltipPopup side="top">{permissionsTooltip}</TooltipPopup>
       </Tooltip>

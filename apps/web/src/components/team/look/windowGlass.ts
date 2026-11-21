@@ -1,12 +1,14 @@
 // team-layer: Settings → Appearance → Glass (Windows 11), team/DESIGN_DIRECTION.md section 3. Off
-// by default, per device. While it shows, the desktop puts Mica behind a transparent window and
-// <html data-window-material="os"> lets elbo.css make the window background and sidebar translucent.
-import { teamGlassActive } from "@t3tools/shared/teamGlass";
+// by default, per device; the style is Frosted (Acrylic) or Subtle (Mica). While it shows, Windows
+// draws the material behind a transparent window and <html data-window-material="acrylic|mica">
+// lets elbo.css make the window background and sidebar translucent.
+import { type TeamWindowMaterial, teamWindowMaterial } from "@t3tools/shared/teamGlass";
 import { useSyncExternalStore } from "react";
 
 import { deviceFlag } from "../deviceFlag";
 
 const glass = deviceFlag("elbo:window-glass:v1", () => false);
+const frosted = deviceFlag("elbo:window-glass-frosted:v1", () => true);
 const REDUCED_TRANSPARENCY = "(prefers-reduced-transparency: reduce)";
 
 const bridge = () =>
@@ -17,6 +19,8 @@ export const teamGlassOffered = (): boolean => bridge()?.supported === true;
 
 export const setTeamGlass = glass.set;
 export const useTeamGlass = glass.use;
+export const setTeamGlassFrosted = frosted.set;
+export const useTeamGlassFrosted = frosted.use;
 
 function reducedTransparency(): boolean {
   return window.matchMedia(REDUCED_TRANSPARENCY).matches;
@@ -37,20 +41,22 @@ export function useTeamReducedTransparency(): boolean {
 export function startTeamWindowGlass(): void {
   const desktop = bridge();
   if (desktop?.supported !== true) return;
-  let shown: boolean | null = null;
+  let shown: TeamWindowMaterial | null = null;
   const sync = () => {
-    const active = teamGlassActive({
+    const material = teamWindowMaterial({
       on: glass.read(),
+      frosted: frosted.read(),
       supported: true,
       reducedTransparency: reducedTransparency(),
     });
-    if (active === shown) return;
-    shown = active;
-    if (active) document.documentElement.dataset.windowMaterial = "os";
-    else delete document.documentElement.dataset.windowMaterial;
-    void desktop.set(active);
+    if (material === shown) return;
+    shown = material;
+    if (material === "none") delete document.documentElement.dataset.windowMaterial;
+    else document.documentElement.dataset.windowMaterial = material;
+    void desktop.set(material);
   };
   glass.subscribe(sync);
+  frosted.subscribe(sync);
   subscribeReducedTransparency(sync);
   sync();
 }

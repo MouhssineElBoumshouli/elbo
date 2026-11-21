@@ -313,7 +313,7 @@ contextBridge.exposeInMainWorld("desktopBridge", {
   // team-layer: glass on Windows 11 (team/windowGlass.ts).
   teamWindowGlass: {
     supported: teamGlassSupported(clientPlatform, process.getSystemVersion()),
-    set: (on) => ipcRenderer.invoke(IpcChannels.TEAM_SET_WINDOW_GLASS_CHANNEL, on),
+    set: (material) => ipcRenderer.invoke(IpcChannels.TEAM_SET_WINDOW_GLASS_CHANNEL, material),
   },
   onWindowFullscreenStateChange: (listener) => {
     const wrappedListener = (_event: Electron.IpcRendererEvent, fullscreen: unknown) => {

@@ -1,6 +1,5 @@
 import type { EnvironmentId, RuntimeMode } from "@t3tools/contracts";
-import { useTeamAccessWord } from "./team/simple/simpleMode"; // team-layer
-import { TeamAccessWords } from "./team/simple/TeamSimpleStrip"; // team-layer
+import { useTeamSimpleMode } from "./team/simple/simpleMode"; // team-layer
 import { useAtomValue } from "@effect/atom-react";
 
 import { shortcutLabelForCommand } from "../keybindings";
@@ -35,8 +34,8 @@ export function ComposerContextPermissions(props: {
   const options = resolveRuntimeModeOptions(modes, useManagedPolicy(props.environmentId));
   const composerMenuProps = useComposerMenuProps();
   const { icon: Icon } = runtimeModeConfig[mode];
-  const teamWords = useTeamAccessWord(mode); // team-layer: read-only plain words in simple mode
-  if (teamWords !== null) return <TeamAccessWords icon={Icon} label={teamWords} />; // team-layer
+  const teamSimple = useTeamSimpleMode(); // team-layer: permissions sit by the model picker there
+  if (teamSimple) return null; // team-layer
   const label = runtimeModeConfig[mode].label;
   return (
     <Menu>

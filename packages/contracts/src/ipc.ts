@@ -1167,7 +1167,7 @@ export interface DesktopBridge {
   /** team-layer: Elbo's glass; `supported` only on Windows 11 22H2 and later. */
   teamWindowGlass?: {
     readonly supported: boolean;
-    readonly set: (on: boolean) => Promise<void>;
+    readonly set: (material: "none" | "mica" | "acrylic") => Promise<void>;
   };
   getUpdateState: () => Promise<DesktopUpdateState>;
   /** `minimumVersion` is a track switch's checked release; nothing older is offered after. */

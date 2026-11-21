@@ -30,6 +30,7 @@ import {
 } from "./ComposerModelEffort";
 import type { useComposerProviderModel } from "./useComposerProviderModel";
 import { resolveComposerControlsOwnership } from "./composerControlsOwnership";
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
 
 /**
  * The composer footer controls: the model picker (which also holds effort, speed and
@@ -132,6 +133,7 @@ export function ComposerControlsBar(props: {
     getModelDisabledReason,
   } = props;
   const accessMatchesDefault = compatibleRuntimeMode === defaultRuntimeMode;
+  const teamSimple = useTeamSimpleMode(); // team-layer
   const {
     accessDisplay,
     showModeBlock,
@@ -140,7 +142,8 @@ export function ComposerControlsBar(props: {
     overflowShowsPermissions,
     pickerOwnsModeShortcut,
   } = resolveComposerControlsOwnership({
-    matchesDefault: accessMatchesDefault || props.permissionsShownInStrip,
+    // team-layer: simple mode always shows the permissions chip, its only home there.
+    matchesDefault: !teamSimple && (accessMatchesDefault || props.permissionsShownInStrip),
     collapsed: composerControlsCollapsed,
     measuredHiddenBlockCount,
   });

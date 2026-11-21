@@ -1,8 +1,9 @@
-// team-layer: Mica behind the main window on Windows 11 (team/DESIGN_DIRECTION.md section 3). The
-// page asks for it (Settings → Appearance → Glass) and keeps its chat column opaque; the material
-// only shows through a transparent window background. Unfocused, Windows draws it solid itself.
+// team-layer: Windows 11's Mica or Acrylic behind the main window (team/DESIGN_DIRECTION.md
+// section 3). The page asks for it (Settings → Appearance → Glass) and keeps its chat column
+// opaque; the material only shows through a transparent window background. Unfocused, Windows
+// draws both solid itself.
 import * as HostProcess from "@t3tools/shared/HostProcess";
-import { teamGlassSupported } from "@t3tools/shared/teamGlass";
+import { TEAM_WINDOW_MATERIALS, teamGlassSupported } from "@t3tools/shared/teamGlass";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Electron from "electron";
@@ -20,17 +21,17 @@ export const teamWindowHasGlass = (window: Electron.BrowserWindow): boolean =>
 
 export const setTeamWindowGlass = DesktopIpc.makeIpcMethod({
   channel: TEAM_SET_WINDOW_GLASS_CHANNEL,
-  payload: Schema.Boolean,
+  payload: Schema.Literals(TEAM_WINDOW_MATERIALS),
   result: Schema.Void,
-  handler: Effect.fn("desktop.ipc.team.setWindowGlass")(function* (on, event) {
+  handler: Effect.fn("desktop.ipc.team.setWindowGlass")(function* (material, event) {
     if (!teamGlassSupported(yield* HostProcess.Platform, NodeOS.release())) return;
     const window = Electron.BrowserWindow.getAllWindows().find(
       (candidate) => candidate.webContents.id === event?.sender.id,
     );
     if (window === undefined || window.isDestroyed()) return;
-    if (on) {
+    if (material !== "none") {
       glassWindows.add(window);
-      window.setBackgroundMaterial("mica");
+      window.setBackgroundMaterial(material);
       window.setBackgroundColor("#00000000");
       return;
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { teamGlassActive, teamGlassSupported } from "./teamGlass.ts";
+import { teamGlassSupported, teamWindowMaterial } from "./teamGlass.ts";
 
 describe("glass", () => {
   it("is offered on Windows 11 22H2 and later only", () => {
@@ -13,11 +13,12 @@ describe("glass", () => {
     expect(teamGlassSupported("linux", "6.8.0")).toBe(false);
   });
 
-  it("stays solid while Windows' transparency effects are off", () => {
-    const supported = true;
-    expect(teamGlassActive({ on: true, supported, reducedTransparency: false })).toBe(true);
-    expect(teamGlassActive({ on: true, supported, reducedTransparency: true })).toBe(false);
-    expect(teamGlassActive({ on: false, supported, reducedTransparency: false })).toBe(false);
-    expect(teamGlassActive({ on: true, supported: false, reducedTransparency: false })).toBe(false);
+  it("uses the chosen style, and stays solid while Windows' transparency effects are off", () => {
+    const base = { on: true, frosted: false, supported: true, reducedTransparency: false };
+    expect(teamWindowMaterial(base)).toBe("mica");
+    expect(teamWindowMaterial({ ...base, frosted: true })).toBe("acrylic");
+    expect(teamWindowMaterial({ ...base, frosted: true, reducedTransparency: true })).toBe("none");
+    expect(teamWindowMaterial({ ...base, on: false, frosted: true })).toBe("none");
+    expect(teamWindowMaterial({ ...base, supported: false })).toBe("none");
   });
 });
