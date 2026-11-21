@@ -5,6 +5,7 @@ import { defaultInclude, defineConfig } from "vite-plus";
 
 import { isDesktopRuntimeExternalDependency } from "../../scripts/lib/desktop-external-packages.ts";
 import { loadRepoEnv } from "../../scripts/lib/public-config.ts";
+import { bundleIntoSandboxedPreload } from "./src/team/sandboxedPreload.ts"; // team-layer
 
 const repoEnv = loadRepoEnv();
 const domTests = ["src/preview/PickPreload.test.ts"];
@@ -125,7 +126,8 @@ export default defineConfig({
       entry: ["src/preload.ts"],
       deps: {
         // Sandboxed preloads cannot resolve imports inside ASAR; bundle Clerk's bridge.
-        alwaysBundle: (id) => id === "@clerk/electron" || id.startsWith("@clerk/electron/"),
+        // team-layer: and workspace packages (team/sandboxedPreload.ts, checked by its test).
+        alwaysBundle: bundleIntoSandboxedPreload,
       },
     },
     {
