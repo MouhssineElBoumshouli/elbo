@@ -2,6 +2,16 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-21 — Fix: installer .2 failed at start (PrimaryEnvironmentProtocolUnsupportedError)
+
+- **Cause:** the glass change imported `@t3tools/shared/teamGlass` in the main window's preload. The preload build only bundles Clerk, so `preload.cjs` kept `require("@t3tools/shared/teamGlass")`. A sandboxed preload can only `require("electron")`, so it threw before `contextBridge.exposeInMainWorld("desktopBridge", …)`. With no bridge, the page had no backend URL, used its `elbo://app` origin, and `resolveWindowOriginPrimaryTarget` refused it. Not the transparent window, startup order or a lock: your logs show the backend started and answered (`backend ready` at `http://127.0.0.1:3773/`, `/oauth/token` 200), and the installed `app.asar` contains the bad require. My W9 check used a standalone Electron and the web self-test a browser, so neither loaded the real preload.
+- **Fix:** the preload now bundles every `@t3tools/` package. The rule lives in `apps/desktop/src/team/sandboxedPreload.ts` and `vite.config.ts` uses it (`team-layer:`).
+- **Files:** new `apps/desktop/src/team/sandboxedPreload.ts` (+ test); `apps/desktop/vite.config.ts` (hook).
+- **Checked:** new test walks the preload's imports (relative files and bundled workspace packages) and fails on any package left as a runtime require. It failed before the fix (`@t3tools/shared/teamGlass` left over) and passes after. `vp run check:changed` all pass. Rebuilt `preload.cjs` requires only `electron`. Sandboxed Electron 44.10.1 in WSL loading each preload: the one from your installed app gives `module not found: @t3tools/shared/teamGlass` and no `desktopBridge` (your bug); the new one loads with no error and exposes `desktopBridge.getLocalEnvironmentBootstraps`. Inside the new installer's `app.asar`: no `require("@t3tools/…")`, bridge present. Windows: read-only reads of `~\.elbo\userdata\logs` and the installed `app.asar`.
+- **Cleanup on your laptop:** removed `%APPDATA%\elbo-glass-check` (7 MB Electron profile my W9 check app left; nothing else in it). `%TEMP%\elbo-glass-check` (Electron copy, script, shots) was already removed by that session. No Electron/Elbo processes were running. Not touched: `%LOCALAPPDATA%\electron` (dated 2026-09-23, not from this round), anything in `~\.elbo`.
+- **Installer:** unsigned `Elbo-1.0.0-preview.20261121.3-x64.exe` (SHA-256 `6ec623c774059ac2627a5550be86e5659950fb4fd47e91071e8fbd798a34a722`) in your Downloads. Not run on Windows by me (running Electron on your Windows was outside the read-only checks, and was blocked).
+- **Left / unsure:** the glass checks from the previous entry are still open, since .2 never started. The test covers the main preload only; the other preloads import no packages today.
+
 ## 2026-11-21 — Glass (slice 4), More options fix, accents follow Elbo's color
 
 - **What changed:**
