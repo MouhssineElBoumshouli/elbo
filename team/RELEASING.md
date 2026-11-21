@@ -9,7 +9,7 @@ Everything on `main` that is pushed goes out.
 - **Button:** GitHub → Actions → **Team release** → **Run workflow** → branch `main`, channel `beta` → **Run workflow**.
 - **Or one command:** `gh workflow run team-release.yml -f channel=beta`
 
-It takes about 30–40 minutes. Watch it with `gh run watch` or on the Actions page. When it is green, the Beta is on the Releases page as a pre-release, and Beta installs show the update button within a few minutes (or at once with "Check for updates").
+It takes about 10–15 minutes. Watch it with `gh run watch` or on the Actions page. When it is green, the Beta is on the Releases page as a pre-release, and Beta installs show the update button within a few minutes (or at once with "Check for updates").
 
 ## Release a Stable
 
