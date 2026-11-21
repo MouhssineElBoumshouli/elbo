@@ -12,6 +12,7 @@ import { exposeClerkBridge } from "@clerk/electron/preload";
 import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
 
 import * as IpcChannels from "./ipc/channels.ts";
+import { teamGlassSupported } from "@t3tools/shared/teamGlass"; // team-layer
 import { mergeLegacyLocalStorage } from "./legacyLocalStorageMerge.ts";
 
 const SNAP_SHOT_EVENT_TYPES = new Set([
@@ -309,6 +310,11 @@ contextBridge.exposeInMainWorld("desktopBridge", {
   getWindowFullscreenState: () =>
     ipcRenderer.sendSync(IpcChannels.GET_WINDOW_FULLSCREEN_STATE_CHANNEL) === true,
   getWindowZoomFactor: () => webFrame.getZoomFactor(),
+  // team-layer: glass on Windows 11 (team/windowGlass.ts).
+  teamWindowGlass: {
+    supported: teamGlassSupported(clientPlatform, process.getSystemVersion()),
+    set: (on) => ipcRenderer.invoke(IpcChannels.TEAM_SET_WINDOW_GLASS_CHANNEL, on),
+  },
   onWindowFullscreenStateChange: (listener) => {
     const wrappedListener = (_event: Electron.IpcRendererEvent, fullscreen: unknown) => {
       if (typeof fullscreen !== "boolean") return;

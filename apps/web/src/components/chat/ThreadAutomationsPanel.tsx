@@ -33,7 +33,7 @@ import {
 
 const STATUS_DOT_CLASS: Record<ScheduledTask["lastRunStatus"], string> = {
   never: "bg-muted-foreground/40",
-  running: "bg-sky-500",
+  running: "bg-sky-500 team-accent-bg", // team-layer: look/elbo.css
   succeeded: "bg-emerald-500",
   failed: "bg-destructive",
 };

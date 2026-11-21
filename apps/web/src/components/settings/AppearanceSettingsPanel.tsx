@@ -25,6 +25,7 @@ import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings"
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { ThemeLibrary } from "./ThemeSettings";
+import { TeamGlassRow } from "../team/look/TeamGlassRow"; // team-layer: Glass (Windows 11) row
 import {
   SettingResetButton,
   SettingsPageContainer,
@@ -163,6 +164,7 @@ export function AppearanceSettingsPanel() {
       </SettingsSection>
 
       <SettingsSection id="appearance-interface" title="Interface">
+        <TeamGlassRow />
         <SettingsRow
           {...searchableSetting("setting-appearance-contrast")}
           description="Adjust the contrast of colors and borders across the interface."

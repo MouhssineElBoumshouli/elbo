@@ -799,7 +799,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
             ? {
                 label: "Input",
                 icon: "input" as const,
-                className: "text-indigo-600 dark:text-indigo-300",
+                className: "text-indigo-600 dark:text-indigo-300 team-needs-you-text", // team-layer
               }
             : status === "request"
               ? {

@@ -7,6 +7,10 @@
       "types": "./src/teamIdentity.ts",
       "import": "./src/teamIdentity.ts"
     },
+    "./teamGlass": {
+      "types": "./src/teamGlass.ts",
+      "import": "./src/teamGlass.ts"
+    },
     "./teamTheme": {
       "types": "./src/teamTheme.ts",
       "import": "./src/teamTheme.ts"

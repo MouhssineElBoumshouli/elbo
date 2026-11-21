@@ -1,8 +1,8 @@
 /**
  * team-layer: the row under a new chat's message box in simple mode (team/WINDOWS_RELEASE_PLAN.md
- * section 4c): the team state, what the agent may do (read-only), and "More options", which brings
- * back upstream's strip: the access picker and, where they apply, the machine, worktree and branch
- * pickers. "Fewer options" there leads back here.
+ * section 4c): the team state, what the agent may do (read-only), and "More options", which shows
+ * upstream's strip: the access picker and, where they apply, the machine, worktree and branch
+ * pickers. "Fewer options" there leads back here; simple mode stays on either way.
  */
 import { findProjectTeam } from "@t3tools/client-runtime/state/teamMarkers";
 import type { EnvironmentId, ProjectId } from "@t3tools/contracts";
@@ -14,7 +14,7 @@ import { useTeamFeed } from "~/state/teamFeed";
 
 import { ComposerSurface } from "../../chat/ComposerSurface";
 import { syncLabel } from "../TeamPresenceChip";
-import { setTeamSimpleMode } from "./simpleMode";
+import { setTeamComposerOptions } from "./simpleMode";
 
 const LINK =
   "shrink-0 cursor-pointer rounded-sm px-1 text-xs text-muted-foreground underline decoration-border underline-offset-3 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset";
@@ -61,7 +61,7 @@ export function TeamSimpleStrip(props: {
     >
       <TeamStatePill environmentId={props.environmentId} projectId={props.projectId} />
       {props.moreOptions ? (
-        <button type="button" className={LINK} onClick={() => setTeamSimpleMode(false)}>
+        <button type="button" className={LINK} onClick={() => setTeamComposerOptions(true)}>
           More options
         </button>
       ) : null}
@@ -72,7 +72,7 @@ export function TeamSimpleStrip(props: {
 
 export function TeamFewerOptions() {
   return (
-    <button type="button" className={LINK} onClick={() => setTeamSimpleMode(true)}>
+    <button type="button" className={LINK} onClick={() => setTeamComposerOptions(false)}>
       Fewer options
     </button>
   );

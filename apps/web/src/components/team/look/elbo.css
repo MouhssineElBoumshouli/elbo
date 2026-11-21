@@ -3,7 +3,7 @@
  * Loaded after index.css and unlayered, so it wins over upstream's layered utilities. Colors come
  * from the Elbo theme (packages/shared/src/teamTheme.ts); type, corners and the chat card are
  * scoped to it, so other themes keep upstream's look. The rail's room is not: the rail shows in
- * every theme. Solid colors only: no backdrop blur, nothing that repaints while idle.
+ * every theme. No backdrop blur and nothing that repaints while idle; glass is the OS's material.
  */
 
 /* Figtree, bundled so it works offline (SIL Open Font License, fonts/Figtree-OFL.txt). */
@@ -37,6 +37,67 @@
 html[data-theme-id="elbo"] {
   --font-sans: "Figtree Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --radius: 0.75rem;
+  /* Elbo's accent stands in for upstream's blue and teal; green, red and amber keep their meaning. */
+  --info: var(--app-theme-accent);
+  --info-foreground: var(--app-theme-accent);
+}
+
+/* Upstream's hard-coded sky, teal and indigo status colors, marked `team-*` where they are used. */
+html[data-theme-id="elbo"] .team-accent-text {
+  color: var(--info-foreground);
+}
+
+html[data-theme-id="elbo"] .team-accent-bg {
+  background-color: var(--info);
+}
+
+html[data-theme-id="elbo"] .team-accent-border {
+  border-color: color-mix(in srgb, var(--info) 60%, transparent);
+}
+
+html[data-theme-id="elbo"] .team-needs-you-text {
+  color: var(--warning-foreground);
+}
+
+html[data-theme-id="elbo"] .team-needs-you-bg {
+  background-color: var(--warning);
+}
+
+/* White on the info color would vanish on dark mode's light accent. */
+html[data-theme-id="elbo"] .bg-info.text-white {
+  color: var(--app-theme-accent-foreground);
+}
+
+/* Links in messages no longer differ by color, so they keep a quiet underline. */
+html[data-theme-id="elbo"]
+  .chat-markdown
+  a:not(
+    .chat-markdown-file-link,
+    :has([data-slot="context-chip-label"]),
+    [data-markdown-image-link]
+  ) {
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, currentcolor 35%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+/*
+ * Glass (Settings → Appearance, Windows 11 only; team/DESIGN_DIRECTION.md section 3). The desktop
+ * draws Mica behind a transparent window and sets this attribute; the page only turns its window
+ * background and sidebar colors translucent. The chat column stays opaque, nothing blurs here.
+ * Both selectors match the specificity of index.css's theme blocks, which this file follows.
+ */
+html[data-window-material="os"]:not([data-theme-id=""]),
+html[data-window-material="os"] [data-app-sidebar] {
+  --app-chrome-background: transparent;
+  --sidebar: color-mix(in srgb, var(--app-theme-sidebar, var(--color-zinc-50)) 55%, transparent);
+  --sidebar-stage-fade: transparent;
+}
+
+/* useTheme's syncBrowserChromeTheme and the boot script paint html and body inline. */
+html[data-window-material="os"],
+html[data-window-material="os"] body {
+  background-color: transparent !important;
 }
 
 /* The rail is a column in the sidebar wrapper; the fixed sidebar and its toggle move past it. */

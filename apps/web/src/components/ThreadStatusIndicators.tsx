@@ -536,7 +536,7 @@ export function terminalStatusFromRunningIds(
   }
   return {
     label: "Terminal process running",
-    colorClass: "text-teal-600 dark:text-teal-300/90",
+    colorClass: "text-teal-600 dark:text-teal-300/90 team-accent-text", // team-layer: look/elbo.css
     pulse: true,
   };
 }

@@ -367,8 +367,9 @@ const GITHUB_ALERT_PRESENTATIONS: Record<
   note: {
     label: "Note",
     Icon: InfoIcon,
-    borderClassName: "border-blue-500/70",
-    titleClassName: "text-blue-600 dark:text-blue-400",
+    // team-layer: team-accent-* follows Elbo's accent (look/elbo.css).
+    borderClassName: "border-blue-500/70 team-accent-border",
+    titleClassName: "text-blue-600 dark:text-blue-400 team-accent-text",
   },
   tip: {
     label: "Tip",

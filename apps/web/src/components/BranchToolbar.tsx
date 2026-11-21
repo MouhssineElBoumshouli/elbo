@@ -1,5 +1,5 @@
 import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
-import { useTeamSimpleMode } from "./team/simple/simpleMode"; // team-layer
+import { useTeamComposerStrip } from "./team/simple/simpleMode"; // team-layer
 import { TeamFewerOptions, TeamSimpleStrip } from "./team/simple/TeamSimpleStrip"; // team-layer
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { readLocalApi } from "../localApi";
@@ -679,7 +679,7 @@ export const BranchToolbar = memo(function BranchToolbar({
     canPickEnvironment: hasMultipleEnvironments,
   });
   const [attachStrip, labelsOverflow] = useLabelsOverflow();
-  const teamSimpleMode = useTeamSimpleMode(); // team-layer
+  const teamStrip = useTeamComposerStrip(); // team-layer
 
   if (!activeProject) return null;
 
@@ -732,7 +732,7 @@ export const BranchToolbar = memo(function BranchToolbar({
   }
 
   // team-layer: simple mode keeps these controls behind "More options" (WINDOWS_RELEASE_PLAN 4c).
-  if (teamSimpleMode)
+  if (teamStrip === "simple")
     return (
       <TeamSimpleStrip
         environmentId={environmentId}
@@ -833,7 +833,7 @@ export const BranchToolbar = memo(function BranchToolbar({
         />
       ) : null}
       {trailing}
-      <TeamFewerOptions /> {/* team-layer */}
+      {teamStrip === "options" ? <TeamFewerOptions /> : null} {/* team-layer */}
     </ComposerSurface.ContextStrip>
   );
 });

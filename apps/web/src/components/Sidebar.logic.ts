@@ -1204,8 +1204,9 @@ export function resolveThreadStatusPill(input: {
   if (thread.hasPendingUserInput || thread.pendingSubagentRequest === "user_input") {
     return {
       label: "Awaiting Input",
-      colorClass: "text-indigo-600 dark:text-indigo-300/90",
-      dotClass: "bg-indigo-500 dark:bg-indigo-300/90",
+      // team-layer: waiting on the person is Elbo's "needs you" amber (look/elbo.css).
+      colorClass: "text-indigo-600 dark:text-indigo-300/90 team-needs-you-text",
+      dotClass: "bg-indigo-500 dark:bg-indigo-300/90 team-needs-you-bg",
       pulse: false,
     };
   }
@@ -1225,8 +1226,9 @@ export function resolveThreadStatusPill(input: {
   ) {
     return {
       label: "Working",
-      colorClass: "text-sky-600 dark:text-sky-300/80",
-      dotClass: "bg-sky-500 dark:bg-sky-300/80",
+      // team-layer: team-accent-* follows Elbo's accent (look/elbo.css).
+      colorClass: "text-sky-600 dark:text-sky-300/80 team-accent-text",
+      dotClass: "bg-sky-500 dark:bg-sky-300/80 team-accent-bg",
       pulse: true,
     };
   }
@@ -1238,8 +1240,9 @@ export function resolveThreadStatusPill(input: {
   ) {
     return {
       label: "Connecting",
-      colorClass: "text-sky-600 dark:text-sky-300/80",
-      dotClass: "bg-sky-500 dark:bg-sky-300/80",
+      // team-layer: team-accent-* follows Elbo's accent (look/elbo.css).
+      colorClass: "text-sky-600 dark:text-sky-300/80 team-accent-text",
+      dotClass: "bg-sky-500 dark:bg-sky-300/80 team-accent-bg",
       pulse: true,
     };
   }

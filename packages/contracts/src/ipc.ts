@@ -1164,6 +1164,11 @@ export interface DesktopBridge {
   getWindowFullscreenState: () => boolean;
   onWindowFullscreenStateChange: (listener: (fullscreen: boolean) => void) => () => void;
   getWindowZoomFactor: () => number;
+  /** team-layer: Elbo's glass; `supported` only on Windows 11 22H2 and later. */
+  teamWindowGlass?: {
+    readonly supported: boolean;
+    readonly set: (on: boolean) => Promise<void>;
+  };
   getUpdateState: () => Promise<DesktopUpdateState>;
   /** `minimumVersion` is a track switch's checked release; nothing older is offered after. */
   setUpdateChannel: (
