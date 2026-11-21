@@ -13,7 +13,8 @@ import { ProviderModelPicker } from "./ProviderModelPicker";
 import { runtimeModeConfig } from "./runtimeModeConfig";
 import { useComposerMenuState } from "./useComposerMenuState";
 import { ChevronDownIcon } from "lucide-react"; // team-layer
-import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
+import { readTeamSimpleModeNow, useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
+import { teamAccessLabel, TeamPermissionList } from "../team/simple/TeamPermissionList"; // team-layer
 
 export type RuntimeModeOption = {
   mode: RuntimeMode;
@@ -81,7 +82,7 @@ export const ComposerFooterModeControls = memo(function ComposerFooterModeContro
             data-composer-control-label
             className={accessDisplay === "icon" ? "sr-only" : undefined}
           >
-            {runtimeModeOption.label}
+            {teamSimple ? teamAccessLabel(runtimeModeOption.mode) : runtimeModeOption.label}
           </span>
           {/* team-layer: simple mode marks the chip as a menu, so it never reads as plain text. */}
           {teamSimple && accessDisplay === "label" ? (
@@ -110,6 +111,23 @@ export const ComposerFooterModeControls = memo(function ComposerFooterModeContro
  * or the overflow menu.
  */
 export function ComposerPermissionsSection(props: {
+  runtimeMode: RuntimeMode;
+  runtimeModeOptions: ReadonlyArray<RuntimeModeOption>;
+  onRuntimeModeChange: (mode: RuntimeMode) => void;
+}) {
+  // team-layer: simple mode lists the modes with their names and descriptions.
+  if (readTeamSimpleModeNow())
+    return (
+      <TeamPermissionList
+        runtimeMode={props.runtimeMode}
+        options={props.runtimeModeOptions}
+        onChange={props.onRuntimeModeChange}
+      />
+    );
+  return <UpstreamPermissionsSection {...props} />;
+}
+
+function UpstreamPermissionsSection(props: {
   runtimeMode: RuntimeMode;
   runtimeModeOptions: ReadonlyArray<RuntimeModeOption>;
   onRuntimeModeChange: (mode: RuntimeMode) => void;

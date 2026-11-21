@@ -556,3 +556,10 @@ describe("branch name prefix", () => {
     expect(DEFAULT_SERVER_SETTINGS.branchNamePrefix).toBe("elbo");
   });
 });
+
+// team-layer: new chats ask before running commands; Full access is one click away.
+describe("default permissions", () => {
+  it("asks before commands", () => {
+    expect(DEFAULT_SERVER_SETTINGS.defaultRuntimeMode).toBe("auto-accept-edits");
+  });
+});

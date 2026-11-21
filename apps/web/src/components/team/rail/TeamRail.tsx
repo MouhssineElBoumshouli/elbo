@@ -1,7 +1,8 @@
 /**
  * team-layer: the left rail (team/WINDOWS_RELEASE_PLAN.md section 6): Chats, Team (Today when
  * solo), Setup with a dot while something needs the person, and Settings. Always the same four
- * places, words under the icons. Wide windows only; phones keep the sidebar sheet.
+ * places, words under the icons. Wide windows only; phones keep the sidebar sheet. Below
+ * {@link NARROW_QUERY} the chat list folds away: "Chats" opens it and opening a chat folds it again.
  */
 import { findProjectTeam } from "@t3tools/client-runtime/state/teamMarkers";
 import type { EnvironmentId } from "@t3tools/contracts";
@@ -17,6 +18,7 @@ import {
 import { memo, useEffect } from "react";
 
 import { useHandleNewThread } from "~/hooks/useHandleNewThread";
+import { useMediaQuery } from "~/hooks/useMediaQuery";
 import { cn } from "~/lib/utils";
 import { usePrimaryEnvironmentId } from "~/state/environments";
 import { useTeamFeed } from "~/state/teamFeed";
@@ -90,6 +92,12 @@ function SetupEntry(props: {
 /** The chat "Chats" leads back to, kept across the rail's re-renders. */
 let lastChatHref: string | null = null;
 
+const NARROW_QUERY = "(max-width: 1099px)";
+/** The list was open when the window got narrow, so it opens again when the window widens. */
+let foldedOpenList = false;
+/** "Chats" went to a chat on a narrow window, so the list opens when it gets there. */
+let openListAfterNavigation = false;
+
 export const TeamRail = memo(function TeamRail() {
   const navigate = useNavigate();
   const router = useRouter();
@@ -97,6 +105,7 @@ export const TeamRail = memo(function TeamRail() {
   const active = teamRailActive(pathname);
   const environmentId = usePrimaryEnvironmentId();
   const { open, setOpen } = useSidebar();
+  const narrow = useMediaQuery(NARROW_QUERY);
   const { activeThread, activeDraftThread } = useHandleNewThread();
   const target = teamHomeTarget({
     thread: activeThread,
@@ -116,9 +125,37 @@ export const TeamRail = memo(function TeamRail() {
     return router.subscribe("onResolved", record);
   }, [router]);
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- folds the chat list when the window gets narrow and reopens it when it widens
+  useEffect(() => {
+    if (narrow) {
+      if (!open) return;
+      foldedOpenList = true;
+      setOpen(false);
+    } else if (foldedOpenList) {
+      foldedOpenList = false;
+      setOpen(true);
+    }
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- reacts to the width only; the user may open the list while narrow
+  }, [narrow]);
+
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- a narrow window folds the list again once a chat opens from it
+  useEffect(() => {
+    if (!narrow) return;
+    return router.subscribe("onResolved", () => {
+      setOpen(openListAfterNavigation);
+      openListAfterNavigation = false;
+    });
+  }, [narrow, router, setOpen]);
+
   const openChats = () => {
-    if (!open) setOpen(true);
-    if (active !== "chats" || pathname === "/usage") void navigate({ href: lastChatHref ?? "/" });
+    const leave = active !== "chats" || pathname === "/usage";
+    if (narrow && open && !leave) {
+      setOpen(false);
+      return;
+    }
+    if (narrow && leave) openListAfterNavigation = true;
+    else if (!open) setOpen(true);
+    if (leave) void navigate({ href: lastChatHref ?? "/" });
   };
 
   return (

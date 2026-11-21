@@ -1,3 +1,4 @@
+import { APP_BASE_NAME } from "../../branding"; // team-layer
 import { useAuth } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
 import { offersLinkedEnvironments } from "@t3tools/client-runtime/link-request";
@@ -76,7 +77,8 @@ export function UseInAnotherAppDialogHost() {
 
 function UseInAnotherAppDialog({ requested }: { readonly requested: EnvironmentId | null }) {
   const { environment, label } = useAccessEnvironment(requested);
-  const title = `Use T3 Code in another app (MCP) · ${label ?? "T3 Code"}`;
+  // team-layer: Elbo's name, not T3 Code's.
+  const title = `Use ${APP_BASE_NAME} in another app (MCP) · ${label ?? APP_BASE_NAME}`;
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : close())}>
       <WizardPopup>

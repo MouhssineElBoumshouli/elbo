@@ -1,4 +1,5 @@
 import { useTeamWords } from "../team/simple/teamWords"; // team-layer
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
 import { useAtomMount } from "@effect/atom-react";
 import { asLaunchingThread } from "@t3tools/client-runtime/state/thread-inbox";
 import { ThreadHoverCard, ThreadHoverCardPopup } from "../ThreadHoverCard";
@@ -659,6 +660,8 @@ function ThreadRenameInput(props: {
 
 const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowProps) {
   const words = useTeamWords(); // team-layer
+  // team-layer: simple mode rows show title, project and status only (no branch line or AI icon).
+  const teamBareRow = useTeamSimpleMode();
   const {
     isRenaming,
     onCancelRename,
@@ -1188,11 +1191,12 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
   const diff = latestRunDiff(thread);
   // Only the trailing icons would remain, so the row moves them to the title line instead.
   const metaLineEmpty =
-    !checkoutThread.branch &&
-    !showsScratchMachine &&
-    prBadge === null &&
-    diff === null &&
-    runningTerminalIds.length === 0;
+    teamBareRow || // team-layer
+    (!checkoutThread.branch &&
+      !showsScratchMachine &&
+      prBadge === null &&
+      diff === null &&
+      runningTerminalIds.length === 0);
   const metaLine = metaLineEmpty ? null : (
     <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-secondary-label text-xs">
       {checkoutThread.branch ? (
@@ -1234,15 +1238,16 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
       </span>
     </div>
   );
-  const titleLineIcons = metaLineEmpty ? (
-    <span aria-hidden className="inline-flex shrink-0 items-center gap-1">
-      {remoteMachineIcon}
-      <SidebarProviderStack
-        thread={thread}
-        providerEntryByInstanceId={props.providerEntryByInstanceId}
-      />
-    </span>
-  ) : null;
+  const titleLineIcons =
+    metaLineEmpty && !teamBareRow ? (
+      <span aria-hidden className="inline-flex shrink-0 items-center gap-1">
+        {remoteMachineIcon}
+        <SidebarProviderStack
+          thread={thread}
+          providerEntryByInstanceId={props.providerEntryByInstanceId}
+        />
+      </span>
+    ) : null;
 
   if (variant !== "card") {
     const multiline = variant === "folder-multiline";

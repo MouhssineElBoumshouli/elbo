@@ -36,7 +36,7 @@ import {
 } from "./model.ts";
 import { ModelSelection } from "./modelSelection.ts";
 import { ProjectScript, type ProjectMutation } from "./project.ts";
-import { DEFAULT_RUNTIME_MODE, RuntimeMode } from "./providerPolicy.ts";
+import { RuntimeMode } from "./providerPolicy.ts";
 import { BrowserProfile, BrowserProfileId, DEFAULT_BROWSER_PROFILE_ID } from "./browserProfile.ts";
 import {
   BrowserRecordingFrameRate,
@@ -1425,8 +1425,9 @@ export const ServerSettings = Schema.Struct({
   fallbackModelSelection: Schema.NullOr(ModelSelection).pipe(
     Schema.withDecodingDefault(Effect.succeed(null)),
   ),
+  // team-layer: new chats ask before running commands (Elbo's safer default); a saved choice stays.
   defaultRuntimeMode: RuntimeMode.pipe(
-    Schema.withDecodingDefault(Effect.succeed(DEFAULT_RUNTIME_MODE)),
+    Schema.withDecodingDefault(Effect.succeed("auto-accept-edits" as const)),
   ),
 
   projectSettingsOverrides: Schema.Record(
