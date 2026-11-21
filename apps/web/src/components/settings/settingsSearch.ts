@@ -103,7 +103,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/chat": msg("Chat"),
   "/settings/diffs": msg("Diffs & pull requests"),
   "/settings/keybindings": msg("Keybindings"),
-  "/settings/snap-shot": msg("SnapShots"),
+  "/settings/snap-shot": msg("Snapshots"), // team-layer: was "SnapShots"
   "/settings/providers": msg("Providers"),
   "/settings/threads": msg("Threads"),
   "/settings/browser": msg("Browser"),
@@ -335,9 +335,9 @@ export const SETTINGS_SEARCH_ITEMS = [
   {
     // Prefixed because the slider control already owns the `glass-opacity` id.
     id: "setting-glass-opacity",
-    title: "Glass opacity",
+    title: "Menu opacity", // team-layer: was "Glass opacity", next to Elbo's Glass (Windows 11)
     to: "/settings/appearance",
-    searchTerms: ["transparent transparency solid menus dialogs composer"],
+    searchTerms: ["glass transparent transparency solid menus dialogs composer"],
   },
   {
     id: "diff-color-scheme",
@@ -944,7 +944,7 @@ export const SETTINGS_SEARCH_ITEMS = [
   ...KEYBINDING_SEARCH_ITEMS,
   {
     id: "snap-shot-enabled",
-    title: "SnapShots",
+    title: "Snapshots", // team-layer
     searchTerms: ["window capture screenshot"],
     to: "/settings/snap-shot",
   },

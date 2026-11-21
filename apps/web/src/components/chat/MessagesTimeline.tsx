@@ -131,6 +131,7 @@ import {
 } from "./TimelineAssistantRows";
 import { V2EventTimelineRow } from "./TimelineV2EventRow";
 import { TeamCardTimelineRow } from "../team/TeamCardTimelineRow"; // team-layer
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
 import { startTimelinePositionRestore } from "./useTimelinePositionRestore";
 import {
   attachTimelineViewport,
@@ -771,7 +772,9 @@ const ConversationTimeline = memo(function ConversationTimeline({
   );
   // Run status/timestamps change per stream event; keep them out of shared row context.
   const runs = useStableHandoffRuns(runsProp);
-  const minimapItems = deriveTimelineMinimapItems(rows);
+  // team-layer: simple mode has no jump-to-message ticks beside the chat.
+  const teamSimple = useTeamSimpleMode();
+  const minimapItems = teamSimple ? [] : deriveTimelineMinimapItems(rows);
   const minimapRowIndices = minimapItems.map((item) => item.rowIndex);
   const restoreRowIndex =
     restoringThreadPosition && rememberedPosition?.atEnd === false

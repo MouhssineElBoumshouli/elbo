@@ -26,6 +26,7 @@ import {
 import { getVirtualizedScrollFadeClassName } from "./ui/scroll-area";
 import { ProjectPinButton } from "./ProjectPinButton";
 import { SearchMatchHintLine, ThreadSearchMatchExcerpt } from "./ThreadSearchMatch";
+import { teamGroupLabel, useTeamWords } from "./team/simple/teamWords"; // team-layer
 
 interface CommandPaletteResultsProps {
   emptyStateMessage?: string;
@@ -48,6 +49,7 @@ function CommandPaletteEmptyState(props: { emptyStateMessage?: string; isActions
 }
 
 export function CommandPaletteResults(props: CommandPaletteResultsProps) {
+  const words = useTeamWords(); // team-layer
   if (props.groups.length === 0) {
     return <CommandPaletteEmptyState {...props} />;
   }
@@ -56,7 +58,9 @@ export function CommandPaletteResults(props: CommandPaletteResultsProps) {
     <CommandList>
       {props.groups.map((group) => (
         <CommandGroup items={group.items} key={group.value}>
-          {group.label ? <CommandGroupLabel>{group.label}</CommandGroupLabel> : null}
+          {group.label ? (
+            <CommandGroupLabel>{teamGroupLabel(group.label, words)}</CommandGroupLabel>
+          ) : null}
           <CommandCollection>
             {(item) =>
               item.disabled ? (
@@ -103,6 +107,7 @@ interface CommandPaletteVirtualizedResultsProps extends Omit<CommandPaletteResul
  * unmounted rows. */
 export function CommandPaletteVirtualizedResults(props: CommandPaletteVirtualizedResultsProps) {
   const { listRef } = props;
+  const words = useTeamWords(); // team-layer
   const [scrollFade, setScrollFade] = useState({ top: false, bottom: false });
   const updateScrollFade = () => {
     const metrics = listRef.current?.getState();
@@ -131,7 +136,7 @@ export function CommandPaletteVirtualizedResults(props: CommandPaletteVirtualize
         renderItem={({ item: row }) =>
           row.kind === "label" ? (
             <div className={row.first ? undefined : "pt-1.5"}>
-              <CommandListHeading>{row.label}</CommandListHeading>
+              <CommandListHeading>{teamGroupLabel(row.label, words)}</CommandListHeading>
             </div>
           ) : row.itemIndex === null ? (
             <DisabledCommandPaletteResultRow item={row.item} />

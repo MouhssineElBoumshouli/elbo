@@ -1,3 +1,4 @@
+import { useTeamWords } from "../team/simple/teamWords"; // team-layer
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { useState } from "react";
 
@@ -17,13 +18,13 @@ export function NotificationSettings() {
   const updateSettings = useUpdateScopedSettings();
   const [permissionMessage, setPermissionMessage] = useState<string | null>(null);
   const [requesting, setRequesting] = useState(false);
+  const words = useTeamWords(); // team-layer
 
   return (
     <SettingsRow
       {...searchableSetting("thread-notifications")}
       description={
-        permissionMessage ??
-        "System alerts when a thread finishes, fails, or needs input or approval. Applies to this device while T3 Code is open."
+        permissionMessage ?? words.notificationsDescription // team-layer: Elbo, and plain words
       }
       control={
         <Select

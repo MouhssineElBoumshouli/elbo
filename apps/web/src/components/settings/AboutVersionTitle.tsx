@@ -1,3 +1,4 @@
+import { teamVersionLabel } from "@t3tools/shared/teamIdentity"; // team-layer
 import { APP_VERSION } from "../../branding";
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { InlineButton } from "../ui/button";
@@ -5,6 +6,7 @@ import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 export function AboutVersionTitle() {
+  const shownVersion = teamVersionLabel(APP_VERSION); // team-layer
   const { copyToClipboard } = useCopyToClipboard<void>({
     target: "version",
     onError: (error) => {
@@ -30,7 +32,7 @@ export function AboutVersionTitle() {
                 aria-label={`Copy version ${APP_VERSION}`}
                 onClick={() => copyToClipboard(APP_VERSION, undefined)}
               >
-                {APP_VERSION}
+                {shownVersion}
               </InlineButton>
             }
           />

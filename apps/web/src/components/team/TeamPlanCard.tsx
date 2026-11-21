@@ -6,13 +6,12 @@
  */
 import { planHolders } from "@t3tools/client-runtime/state/teamMarkers";
 import type { TeamPlanActivityPayload } from "@t3tools/contracts";
-import { teamPlanSummary } from "@t3tools/contracts";
 import { memo } from "react";
 
 import { PierreEntryIcon } from "~/components/chat/PierreEntryIcon";
 import { MiddleTruncate } from "~/components/ui/middle-truncate";
 
-import { TeamHolderMarks, TeamHolderNames } from "./TeamHolderMarks";
+import { TeamEditingNames, TeamHolderMarks, teamHoldersPhrase } from "./TeamHolderMarks";
 
 export const TeamPlanCard = memo(function TeamPlanCard(props: {
   readonly plan: TeamPlanActivityPayload;
@@ -23,6 +22,9 @@ export const TeamPlanCard = memo(function TeamPlanCard(props: {
     holders: planHolders(file.holders),
   }));
   const held = files.filter((file) => file.holders.length > 0).length;
+  const holders = files.flatMap((file) => file.holders);
+  const holdersPhrase = teamHoldersPhrase(holders);
+  const plural = holdersPhrase.includes(" and ") || holdersPhrase.endsWith(" chats");
   return (
     <section
       aria-label="Planned files"
@@ -30,11 +32,17 @@ export const TeamPlanCard = memo(function TeamPlanCard(props: {
       className="rounded-lg bg-secondary text-xs dark:bg-input/20"
     >
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-3 pt-2 pb-1.5">
-        <span className="font-medium text-foreground">{teamPlanSummary(files.length)}</span>
+        <span className="font-medium text-foreground">
+          Plan: {files.length} {files.length === 1 ? "file" : "files"}
+        </span>
         <span className="text-muted-foreground">
           {held === 0
-            ? `${props.plan.solo ? "no other chat holds" : "nobody else holds"} ${files.length === 1 ? "it" : "them"}`
-            : `${held} held ${props.plan.solo ? "by another chat" : "by others"}`}
+            ? files.length === 1
+              ? "free"
+              : "all free"
+            : `${holdersPhrase} ${plural ? "are" : "is"} working on ${
+                files.length === 1 ? "it" : held === files.length ? "them" : `${held} of them`
+              }`}
         </span>
       </div>
       <ul className="pb-1.5">
@@ -53,7 +61,7 @@ export const TeamPlanCard = memo(function TeamPlanCard(props: {
               <span className="ml-auto flex min-w-0 shrink items-center gap-1.5 text-muted-foreground">
                 <TeamHolderMarks holders={file.holders} />
                 <span className="truncate">
-                  held by <TeamHolderNames holders={file.holders} />
+                  <TeamEditingNames holders={file.holders} />
                 </span>
               </span>
             ) : null}

@@ -1,5 +1,8 @@
 import { isClearComposerCommand, parseSideChatCommand } from "@t3tools/shared/composerTrigger";
 import { armFreshSession, disarmFreshSession, readFreshSessionArm } from "./freshSessionArms";
+import { readTeamSimpleModeNow } from "../team/simple/simpleMode"; // team-layer
+import { requestTeamMoreMenu } from "../team/simple/TeamSimpleStrip"; // team-layer
+import { teamWordsNow } from "../team/simple/teamWords"; // team-layer
 import {
   mergeDirectPreviewAnnotation,
   resolveBackgroundDraftWorkspaceOptions,
@@ -825,7 +828,9 @@ export function useComposerSend(input: ComposerSendInput) {
       freshContext: freshArm !== undefined,
     });
     if (missingWorktreeBaseBranch) {
-      setThreadError(threadIdForSend, "Select a base branch before sending in New worktree mode.");
+      // team-layer: plain words, and simple mode opens the "⋯" popover where the branch is.
+      setThreadError(threadIdForSend, teamWordsNow().missingBaseBranch);
+      if (readTeamSimpleModeNow()) requestTeamMoreMenu();
       return;
     }
     // Records bind attachments by the id each side knows: the local id for the optimistic

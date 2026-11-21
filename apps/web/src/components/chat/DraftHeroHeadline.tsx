@@ -1,3 +1,4 @@
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
 import type { DraftId } from "~/composerDraftStore";
 import { composerDraftHasUserContent, useComposerDraftStore } from "~/composerDraftStore";
 import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@t3tools/contracts";
@@ -315,8 +316,14 @@ export function DraftHeroHeadline({
   );
 
   const noProjectShortcut = shortcutLabelForCommand(keybindings, "chat.newWithoutProject");
+  const teamSimple = useTeamSimpleMode(); // team-layer
+  // team-layer: simple mode offers it only while no project is chosen.
+  const teamHideNoProject = teamSimple && hasResolvedProject;
   const orStartWithoutProject =
-    scratchWorkspaceRoot !== null && !isScratchDraft && (hasResolvedProject || canChooseProject) ? (
+    scratchWorkspaceRoot !== null &&
+    !isScratchDraft &&
+    !teamHideNoProject &&
+    (hasResolvedProject || canChooseProject) ? (
       <Tooltip>
         <TooltipTrigger
           render={

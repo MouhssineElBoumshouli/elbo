@@ -62,7 +62,7 @@ const holderKey = (holder: TeamHolder) =>
     : `chat:${holder.environmentId}/${holder.threadId}`;
 
 /** "Yassine, your chat "Search page"": holders by name, in words. */
-export function TeamHolderNames(props: { readonly holders: ReadonlyArray<TeamHolder> }) {
+function TeamHolderNames(props: { readonly holders: ReadonlyArray<TeamHolder> }) {
   return (
     <>
       {props.holders.map((holder, index) => (
@@ -73,6 +73,33 @@ export function TeamHolderNames(props: { readonly holders: ReadonlyArray<TeamHol
       ))}
     </>
   );
+}
+
+/** "Yassine is editing", "Yassine, your chat "Search page" are editing". */
+export function TeamEditingNames(props: { readonly holders: ReadonlyArray<TeamHolder> }) {
+  return (
+    <>
+      <TeamHolderNames holders={props.holders} /> {props.holders.length === 1 ? "is" : "are"}{" "}
+      editing
+    </>
+  );
+}
+
+/** Who holds any of these files, in a short phrase: "Sara", "Sara and another of your chats". */
+export function teamHoldersPhrase(holders: ReadonlyArray<TeamHolder>): string {
+  const members = [
+    ...new Set(holders.flatMap((holder) => (holder.kind === "member" ? [holder.name] : []))),
+  ];
+  const chats = new Set(
+    holders.flatMap((holder) => (holder.kind === "chat" ? [holderKey(holder)] : [])),
+  ).size;
+  const names = [
+    ...members,
+    ...(chats > 0 ? [chats === 1 ? "another of your chats" : `${chats} of your chats`] : []),
+  ];
+  return names.length <= 1
+    ? (names[0] ?? "")
+    : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }
 
 /** "Also held by Yassine, your chat "Search page"", for a tooltip. */

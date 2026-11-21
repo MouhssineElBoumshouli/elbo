@@ -37,9 +37,19 @@
 html[data-theme-id="elbo"] {
   --font-sans: "Figtree Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --radius: 0.75rem;
-  /* Elbo's accent stands in for upstream's blue and teal; green, red and amber keep their meaning. */
+}
+
+/* Elbo's accent stands in for upstream's blue and teal; green, red and amber keep their meaning.
+   `.dark` matches upstream's dark block (`:root` under the dark variant), which sets its own blue. */
+html[data-theme-id="elbo"],
+html.dark[data-theme-id="elbo"] {
   --info: var(--app-theme-accent);
   --info-foreground: var(--app-theme-accent);
+}
+
+/* The chat ends above the message box: nothing scrolls under or below it. */
+html[data-theme-id="elbo"] [data-chat-composer-overlay="true"]:not([data-chat-composer-hero]) {
+  background-color: var(--background);
 }
 
 /* Upstream's hard-coded sky, teal and indigo status colors, marked `team-*` where they are used. */

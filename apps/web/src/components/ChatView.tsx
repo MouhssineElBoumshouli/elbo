@@ -3563,6 +3563,7 @@ export default function ChatView(props: ChatViewProps) {
               }}
               inert={isRevertingCheckpoint}
               data-chat-composer-overlay="true"
+              data-chat-composer-hero={isDraftHeroState ? "true" : undefined} // team-layer: elbo.css
               className={
                 isDraftHeroState
                   ? "pointer-events-none absolute inset-0 z-20 flex items-center [@media(max-height:34rem)]:items-end"

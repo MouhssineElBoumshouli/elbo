@@ -1,3 +1,4 @@
+import { useTeamWords } from "../team/simple/teamWords"; // team-layer
 import {
   PanelBottomIcon,
   PanelRightIcon,
@@ -88,6 +89,7 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
     </Tooltip>
   );
 
+  const words = useTeamWords(); // team-layer
   return (
     <div
       className="flex h-full shrink-0 items-center gap-1 [-webkit-app-region:no-drag]"
@@ -111,7 +113,7 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
           </TooltipTrigger>
           <TooltipPopup side="bottom">
             {terminalAvailable
-              ? `Toggle terminal drawer${terminalShortcutLabel ? ` (${terminalShortcutLabel})` : ""}`
+              ? `${words.terminalTooltip}${terminalShortcutLabel ? ` (${terminalShortcutLabel})` : ""}` // team-layer
               : "Terminal drawer is unavailable"}
           </TooltipPopup>
         </Tooltip>
@@ -134,7 +136,7 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
           </TooltipTrigger>
           <TooltipPopup side="bottom">
             {rightPanelAvailable
-              ? `Toggle right panel${rightPanelShortcutLabel ? ` (${rightPanelShortcutLabel})` : ""}`
+              ? `${words.rightPanelTooltip}${rightPanelShortcutLabel ? ` (${rightPanelShortcutLabel})` : ""}` // team-layer
               : rightPanelUnavailableLabel}
           </TooltipPopup>
         </Tooltip>

@@ -115,12 +115,12 @@ export function TeamNotes(props: {
     <div className="flex flex-col gap-3" data-team-notes>
       <p className="text-xs text-muted-foreground">
         {team.solo
-          ? "Notes to future you. Kept on this computer; if this project becomes a team, the team can read them."
-          : "Not private: notes are kept in the team state in this repo, so anyone with access to the repo can read them."}
+          ? "Kept on this computer. If this project becomes a team, your team can read them."
+          : "Your team can read these notes."}
       </p>
       <NoteForm team={team} pathPrefix={pathPrefix} act={act} />
       {team.solo ? (
-        <NoteList title="Notes to future me" count={lists.forYou.length}>
+        <NoteList title="Notes to future you" count={lists.forYou.length}>
           {lists.forYou.map((note) => item(note, false))}
         </NoteList>
       ) : (
@@ -439,11 +439,11 @@ function NoteForm(props: {
             disabled={!hasPath || pending}
             onCheckedChange={(checked) => setForAgents(checked === true)}
           />
-          Agents should know this
+          Tell the AI too
           <span className="text-muted-foreground">
             {hasPath
-              ? "· told to an agent when it plans or edits there, once per chat"
-              : "· needs a file or folder"}
+              ? "· when a chat works on that file or folder"
+              : "· add a file or folder above first"}
           </span>
         </label>
         <Button size="compact" disabled={pending || text.trim().length === 0} onClick={send}>

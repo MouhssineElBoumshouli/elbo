@@ -6,6 +6,8 @@ import {
   WorkspaceBreadcrumbSeparator,
 } from "../WorkspaceBreadcrumb";
 import { SETTINGS_SECTION_LABELS } from "./settingsSearch";
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
+import { teamSettingsTitle } from "../team/simple/teamSettings"; // team-layer
 
 const SETTINGS_LABEL = msg("Settings");
 
@@ -22,7 +24,9 @@ function settingsBreadcrumbLabel(pathname: string): string | null {
 
 export function SettingsBreadcrumb({ pathname }: { pathname: string }) {
   const m = useMessages();
-  const sectionLabel = settingsBreadcrumbLabel(pathname);
+  const teamSimple = useTeamSimpleMode(); // team-layer
+  const pathLabel = settingsBreadcrumbLabel(pathname);
+  const sectionLabel = pathLabel === null ? null : teamSettingsTitle(pathLabel, teamSimple); // team-layer
 
   return (
     <WorkspaceBreadcrumb ariaLabel="Settings breadcrumb">

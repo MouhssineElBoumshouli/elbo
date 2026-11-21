@@ -533,8 +533,8 @@ export function TeamMergingList(props: {
     return (
       <p className="text-xs text-muted-foreground">
         {team.solo
-          ? "Nothing to report. After each turn, chats with their own worktree are combined with each other and with the main branch to find clashes before you merge."
-          : "Nothing to report. After each turn, your chats are combined with teammates' pushed branches and the main branch to find clashes before you merge."}
+          ? "No clashes between your chats and the main branch."
+          : "No clashes with your teammates' work or the main branch."}
       </p>
     );
   }

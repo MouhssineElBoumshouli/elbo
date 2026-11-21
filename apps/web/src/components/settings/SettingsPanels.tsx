@@ -461,7 +461,7 @@ export function useSettingsRestore(onRestored?: () => void) {
     ...(settings.appearanceContrast !== DEFAULT_UNIFIED_SETTINGS.appearanceContrast
       ? ["Contrast"]
       : []),
-    ...(settings.glassOpacity !== DEFAULT_UNIFIED_SETTINGS.glassOpacity ? ["Glass opacity"] : []),
+    ...(settings.glassOpacity !== DEFAULT_UNIFIED_SETTINGS.glassOpacity ? ["Menu opacity"] : []),
     ...(settings.diffColorScheme !== DEFAULT_UNIFIED_SETTINGS.diffColorScheme
       ? ["Diff colors"]
       : []),
@@ -908,8 +908,9 @@ export function GeneralSettingsPanel() {
           {...setting("working-shelf")}
           description={
             <T>
+              {/* team-layer: without upstream's note about the Labs sidebar. */}
               Fold working and monitoring threads into a Working section. They return to the top of
-              the inbox when they need you. The boring sidebar in Labs has no Working section.
+              the inbox when they need you.
             </T>
           }
           resetAction={

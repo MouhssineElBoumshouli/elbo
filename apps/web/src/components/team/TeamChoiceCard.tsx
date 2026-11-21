@@ -41,7 +41,7 @@ import { teamFeed, useTeamFeed } from "~/state/teamFeed";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { formatRelativeTimeLabel } from "~/timestampFormat";
 
-import { TeamHolderMarks, TeamHolderNames } from "./TeamHolderMarks";
+import { TeamHolderMarks, TeamEditingNames } from "./TeamHolderMarks";
 
 const CHOICE_LABELS = {
   anotherWay: "Find another way",
@@ -89,8 +89,8 @@ export const TeamChoiceCard = memo(function TeamChoiceCard(props: {
   const where = card.edited === true ? "this chat changed" : "in this plan";
   const title =
     names === null
-      ? `Another chat holds ${fileWords} ${where}`
-      : `${names} ${names.includes(" and ") ? "hold" : "holds"} ${fileWords} ${where}`;
+      ? `Another chat is editing ${fileWords} ${where}`
+      : `${names} ${names.includes(" and ") ? "are" : "is"} editing ${fileWords} ${where}`;
   const waitFor = names ?? "that chat";
   const labels = card.edited === true ? EDITED_CHOICE_LABELS : CHOICE_LABELS;
   const made = card.made;
@@ -194,7 +194,7 @@ export const TeamChoiceCard = memo(function TeamChoiceCard(props: {
             <span className="ml-auto flex min-w-0 shrink items-center gap-1.5 text-muted-foreground">
               <TeamHolderMarks holders={file.holders} />
               <span className="truncate">
-                held by <TeamHolderNames holders={file.holders} />
+                <TeamEditingNames holders={file.holders} />
               </span>
             </span>
           </li>

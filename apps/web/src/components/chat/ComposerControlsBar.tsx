@@ -219,7 +219,9 @@ export function ComposerControlsBar(props: {
         MODEL_TRIGGER_STATES,
         composerControlsCollapsed ? "min-w-13 shrink text-xs!" : "min-w-13",
       )}
-      triggerSuffix={effort.suffix}
+      // team-layer: simple mode names the AI and the model ("Codex · Luna"); effort stays in the menu.
+      triggerSuffix={teamSimple ? undefined : effort.suffix}
+      teamPlainLabel={teamSimple}
       triggerDetail={effort.detail}
       triggerShortcuts={
         pickerOwnsModeShortcut ? "composer.effort composer.mode" : "composer.effort"

@@ -1,3 +1,4 @@
+import { teamPlainModelLabel } from "../team/simple/teamWords"; // team-layer
 import {
   ANTIGRAVITY_DEFAULT_MODEL,
   type ProviderInstanceId,
@@ -110,6 +111,8 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   popupAlign?: "start" | "end";
   triggerClassName?: string;
   triggerLabel?: string;
+  /** team-layer: "Codex · Luna" instead of the model's short name. */
+  teamPlainLabel?: boolean;
   triggerAriaLabel?: string;
   onOpenChange?: (open: boolean) => void;
   onOpenProviderSetup?: (instanceId: ProviderInstanceId) => void;
@@ -270,7 +273,13 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
     .filter(Boolean)
     .join(" · ");
 
-  const triggerText = props.triggerLabel ?? multipleLabel ?? triggerTitle;
+  const triggerText =
+    props.triggerLabel ??
+    multipleLabel ??
+    // team-layer: the AI and the model in plain words.
+    (props.teamPlainLabel && activeEntry && selectedModel
+      ? teamPlainModelLabel(activeEntry.displayName, triggerTitle)
+      : triggerTitle);
   const triggerTextProps = {
     className: cn(
       "min-w-0 flex-1 overflow-hidden truncate",

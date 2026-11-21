@@ -1,3 +1,5 @@
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
+import { teamSettingsTitle } from "../team/simple/teamSettings"; // team-layer
 import { SettingsGroup } from "./SettingsGroup";
 import { AuthSettingsWriteScope } from "@t3tools/contracts";
 import { usePrimaryEnvironmentId, usePrimaryEnvironment } from "../../state/environments";
@@ -339,6 +341,7 @@ export function SettingsRow({
   children?: ReactNode;
 }) {
   const targetRef = useSettingsSearchTarget<HTMLDivElement>(rowProps.id);
+  const teamSimple = useTeamSimpleMode(); // team-layer: plain titles
   const primarySettingsAvailable = usePrimarySettingsAvailable();
   const context = useOptionalSettingsScope();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
@@ -513,7 +516,9 @@ export function SettingsRow({
       <div className="flex flex-col gap-3 @min-[32rem]/settings-row:grid @min-[32rem]/settings-row:grid-cols-[minmax(0,1fr)_auto] @min-[32rem]/settings-row:items-center @min-[32rem]/settings-row:gap-8">
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex min-h-5 items-center gap-1.5">
-            <h3 className="text-sm font-medium text-foreground">{title}</h3>
+            <h3 className="text-sm font-medium text-foreground">
+              {typeof title === "string" ? teamSettingsTitle(title, teamSimple) : title}
+            </h3>
             {renderedInheritance ? (
               <span
                 className={cn(

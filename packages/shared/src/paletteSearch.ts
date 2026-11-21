@@ -927,13 +927,14 @@ export interface SearchMatchHint {
 // "t3 connect" would match nearly every thread.
 // Only before more text, so typing "t3/" does not empty the list for a keystroke.
 const WORKTREE_BRANCH_PREFIX_PATTERN = new RegExp(
-  `^(?:(?:${WORKTREE_BRANCH_PREFIX}|t3code)/(?=\\S)|${WORKTREE_BRANCH_PREFIX}-(?=[0-9a-f]{8}$))`,
+  // team-layer: T3 Code's "t3" prefix too, for branches made before the rename.
+  `^(?:(?:${WORKTREE_BRANCH_PREFIX}|t3|t3code)/(?=\\S)|(?:${WORKTREE_BRANCH_PREFIX}|t3)-(?=[0-9a-f]{8}$))`,
 );
 
 // The flat prefix anywhere in a query, while its hex is still being typed, so
 // "t3-abcd" and "connect t3-abcd1234" still reach the stripped branch field.
 const FLAT_BRANCH_QUERY_PREFIX_PATTERN = new RegExp(
-  `(^| )${WORKTREE_BRANCH_PREFIX}-(?=[0-9a-f]{1,8}(?: |$))`,
+  `(^| )(?:${WORKTREE_BRANCH_PREFIX}|t3)-(?=[0-9a-f]{1,8}(?: |$))`, // team-layer: and "t3"
   "g",
 );
 

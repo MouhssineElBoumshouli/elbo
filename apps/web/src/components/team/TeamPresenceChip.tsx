@@ -21,6 +21,7 @@ import { useTeamFeed } from "~/state/teamFeed";
 import { formatRelativeTimeLabel } from "~/timestampFormat";
 
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { TeamFace } from "./TeamHolderMarks";
 import { MergePairList } from "./TeamMerging";
 import { TeamAnswerForm, TeamQuestionText } from "./TeamQuestionCard";
@@ -90,53 +91,65 @@ export const TeamPresenceChip = memo(function TeamPresenceChip(props: {
 
   return (
     <Popover>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            data-team-presence
-            aria-label={`Team ${team.name}: ${teammates.length} teammates, ${label.text}`}
-            className="inline-flex h-6 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border/70 px-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-          />
-        }
-      >
-        {teammates.length > 0 ? (
-          <span className="flex items-center -space-x-1">
-            {teammates.slice(0, MAX_FACES).map((teammate) => (
-              <TeamFace
-                key={teammate.member.memberId}
-                initials={teammate.initials}
-                hue={teammate.hue}
-                className={
-                  pairsWith(teammate.member.memberId).some((pair) => pair.status === "clash")
-                    ? "ring-1 ring-warning"
-                    : "ring-1 ring-background"
-                }
-              />
-            ))}
-            {teammates.length > MAX_FACES ? (
-              <span className="pl-1.5 text-3xs">+{teammates.length - MAX_FACES}</span>
-            ) : null}
+      {/* team-layer: the teammates' names on hover (the faces alone are initials). */}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <button
+                  type="button"
+                  data-team-presence
+                  aria-label={`Team ${team.name}: ${teammates.length} teammates, ${label.text}`}
+                  className="inline-flex h-6 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border/70 px-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                />
+              }
+            />
+          }
+        >
+          {teammates.length > 0 ? (
+            <span className="flex items-center -space-x-1">
+              {teammates.slice(0, MAX_FACES).map((teammate) => (
+                <TeamFace
+                  key={teammate.member.memberId}
+                  initials={teammate.initials}
+                  hue={teammate.hue}
+                  className={
+                    pairsWith(teammate.member.memberId).some((pair) => pair.status === "clash")
+                      ? "ring-1 ring-warning"
+                      : "ring-1 ring-background"
+                  }
+                />
+              ))}
+              {teammates.length > MAX_FACES ? (
+                <span className="pl-1.5 text-3xs">+{teammates.length - MAX_FACES}</span>
+              ) : null}
+            </span>
+          ) : null}
+          <span className="flex items-center gap-1">
+            <span
+              aria-hidden
+              className={cn("size-1.5 rounded-full", label.warn ? "bg-warning" : "bg-success")}
+            />
+            {label.text}
           </span>
-        ) : null}
-        <span className="flex items-center gap-1">
-          <span
-            aria-hidden
-            className={cn("size-1.5 rounded-full", label.warn ? "bg-warning" : "bg-success")}
-          />
-          {label.text}
-        </span>
-        {questions.length > 0 ? (
-          <span className="font-medium text-warning-foreground">
-            · {questions.length} {questions.length === 1 ? "question" : "questions"}
-          </span>
-        ) : null}
-        {clashes > 0 ? (
-          <span className="font-medium text-warning-foreground">
-            · {clashes} {clashes === 1 ? "clash" : "clashes"}
-          </span>
-        ) : null}
-      </PopoverTrigger>
+          {questions.length > 0 ? (
+            <span className="font-medium text-warning-foreground">
+              · {questions.length} {questions.length === 1 ? "question" : "questions"}
+            </span>
+          ) : null}
+          {clashes > 0 ? (
+            <span className="font-medium text-warning-foreground">
+              · {clashes} {clashes === 1 ? "clash" : "clashes"}
+            </span>
+          ) : null}
+        </TooltipTrigger>
+        <TooltipPopup side="bottom">
+          {teammates.length > 0
+            ? teammates.map((teammate) => teammate.member.displayName).join(", ")
+            : team.name}
+        </TooltipPopup>
+      </Tooltip>
       <PopoverPopup side="bottom" align="end" width="md" padding="compact">
         <PopoverTitle>{team.name}</PopoverTitle>
         <p className="mt-0.5 text-xs text-muted-foreground">{syncSentence(team.sync)}</p>

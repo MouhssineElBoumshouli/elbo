@@ -57,10 +57,10 @@ import { syncLabel } from "./TeamPresenceChip";
 
 const MAX_PATHS = 3;
 const TASK_STATUS: Record<TeamTask["status"], string> = {
-  todo: "to do",
-  in_progress: "in progress",
-  in_review: "in review",
-  done: "done",
+  todo: "To do",
+  in_progress: "In progress",
+  in_review: "In review",
+  done: "Done",
 };
 
 const lastVisitKey = (environmentId: EnvironmentId, projectId: ProjectId) =>
@@ -202,7 +202,7 @@ export function TeamHomePage(props: {
               </h1>
               <span className="text-sm text-muted-foreground">{project?.title}</span>
               {solo ? (
-                <Badge variant="outline">just you</Badge>
+                <Badge variant="outline">Just you</Badge>
               ) : sync ? (
                 <Badge variant={sync.warn ? "warning" : "success"}>{sync.text}</Badge>
               ) : null}
@@ -217,11 +217,14 @@ export function TeamHomePage(props: {
                   ? "In the last day"
                   : `Since ${formatDayAwareTimestamp(catchUp.since, timestampFormat, Date.parse(visit.now))}`}
               </span>
-              <span className="text-muted-foreground"> · </span>
               {catchUp.sentences.length === 0 ? (
-                <span className="text-muted-foreground">Nothing new.</span>
+                <span className="text-muted-foreground"> · Nothing new.</span>
               ) : (
-                <span>{catchUp.sentences.join(" ")}</span>
+                <ul className="mt-1 list-disc space-y-0.5 ps-5">
+                  {catchUp.sentences.map((sentence) => (
+                    <li key={sentence}>{sentence}</li>
+                  ))}
+                </ul>
               )}
             </div>
 
@@ -327,9 +330,9 @@ function PersonCard(props: {
       ))}
       {notes.length > 0 ? <div className="truncate text-muted-foreground">{notes[0]}</div> : null}
       <div className="truncate font-mono text-2xs text-muted-foreground">
-        {pathList(paths) === null ? "holds nothing" : `holds ${pathList(paths)}`}
+        {pathList(paths) === null ? "No files yet" : `Working on ${pathList(paths)}`}
       </div>
-      {ownBranch ? <div className="text-warning-foreground">own branch, not merged yet</div> : null}
+      {ownBranch ? <div className="text-warning-foreground">Own branch, not merged yet</div> : null}
       {latest ? (
         <div className="truncate text-muted-foreground">
           Handoff {formatRelativeTimeLabel(latest.createdAt)}: {latest.headline}
@@ -430,7 +433,7 @@ function SoloChats(props: {
                   ? [titles.get(`${holder.environmentId}/${holder.threadId}`) ?? "another chat"]
                   : [],
               );
-        const status = chat.awaitsYou ? "waiting for you" : chat.working ? "working" : "idle";
+        const status = chat.awaitsYou ? "Waiting for you" : chat.working ? "Working" : "Idle";
         return (
           <button
             key={chat.key}
@@ -464,7 +467,7 @@ function SoloChats(props: {
               </span>
             </div>
             <div className="truncate font-mono text-2xs text-muted-foreground">
-              {pathList(paths) === null ? "holds nothing" : `holds ${pathList(paths)}`}
+              {pathList(paths) === null ? "No files yet" : `Working on ${pathList(paths)}`}
             </div>
             {overlaps.length > 0 ? (
               <div className="truncate text-warning-foreground">

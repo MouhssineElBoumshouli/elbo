@@ -1,3 +1,11 @@
+import { useTeamSimpleMode } from "../team/simple/simpleMode"; // team-layer
+import {
+  setTeamAdvancedSettings,
+  teamSettingsNavGroups,
+  teamSettingsTitle,
+  useTeamAdvancedSettings,
+} from "../team/simple/teamSettings"; // team-layer
+import { Switch } from "../ui/switch"; // team-layer
 import {
   lazy,
   Suspense,
@@ -134,6 +142,13 @@ function SettingsSectionIcon({ to }: { to: SettingsPath }) {
 export function SettingsSidebarNav({ pathname }: { pathname: string }) {
   const gt = useGT();
   const m = useMessages();
+  // team-layer: simple mode shows the everyday sections until "Show advanced settings" is on.
+  const teamSimple = useTeamSimpleMode();
+  const teamAdvanced = useTeamAdvancedSettings();
+  const navGroups = teamSettingsNavGroups(SETTINGS_NAV_GROUPS, {
+    simple: teamSimple,
+    advanced: teamAdvanced,
+  });
   const navArea = workspaceAreaProps("settings-nav", 0, gt("Settings sections"));
   const navigate = useNavigate();
   const currentHash = useLocation({ select: (location) => location.hash });
@@ -355,10 +370,10 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                       <SettingsSectionIcon to={item.to} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-sidebar-foreground">
-                          {m(item.title)}
+                          {m(teamSettingsTitle(item.title, teamSimple))}
                         </span>
                         <span className="block truncate text-2xs text-sidebar-muted-foreground/75">
-                          {m(SETTINGS_SECTION_LABELS[item.to])}
+                          {m(teamSettingsTitle(SETTINGS_SECTION_LABELS[item.to], teamSimple))}
                         </span>
                       </span>
                     </SidebarMenuButton>
@@ -380,7 +395,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                   </SidebarMenu>
                 )}
                 <div onKeyDown={handleSettingsSectionKeyDown} className="flex flex-col gap-4">
-                  {SETTINGS_NAV_GROUPS.map((group, index) => (
+                  {navGroups.map((group, index) => (
                     <div
                       key={group.heading}
                       className="flex flex-col gap-1 max-md:border-t max-md:border-sidebar-border max-md:pt-4 max-md:first:border-t-0 max-md:first:pt-0"
@@ -415,7 +430,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                                       !compactSearchOpen && "max-md:sr-only",
                                     )}
                                   >
-                                    {m(SETTINGS_SECTION_LABELS[to])}
+                                    {m(teamSettingsTitle(SETTINGS_SECTION_LABELS[to], teamSimple))}
                                   </span>
                                 </SidebarMenuButton>
                               </SidebarMenuItem>
@@ -426,6 +441,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                     </div>
                   ))}
                 </div>
+                {teamSimple ? <TeamAdvancedSettingsSwitch /> : null}
               </div>
             )}
           </div>
@@ -440,5 +456,16 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
         </Suspense>
       </SidebarFooter>
     </nav>
+  );
+}
+
+// team-layer: the way to the rest of the settings in simple mode, and back.
+function TeamAdvancedSettingsSwitch() {
+  const on = useTeamAdvancedSettings();
+  return (
+    <label className="flex items-center justify-between gap-2 px-2 text-xs text-sidebar-muted-foreground max-md:hidden">
+      Show advanced settings
+      <Switch checked={on} onCheckedChange={setTeamAdvancedSettings} />
+    </label>
   );
 }

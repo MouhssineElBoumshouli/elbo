@@ -239,9 +239,7 @@ export function TeamSetupRows({
         .map((group) => (
           <section key={group.title ?? "rows"} className="flex flex-col gap-2">
             {group.title ? (
-              <h3 className="ms-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                {group.title}
-              </h3>
+              <h3 className="ms-1 text-xs font-semibold text-muted-foreground">{group.title}</h3>
             ) : null}
             <div className="divide-y divide-border overflow-hidden rounded-xl border bg-card">
               {group.rows.map((row) => (

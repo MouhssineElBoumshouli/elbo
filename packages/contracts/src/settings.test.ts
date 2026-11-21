@@ -549,3 +549,10 @@ describe("server model preferences", () => {
     expect(decodeServerSettingsPatch(input)).toEqual(input);
   });
 });
+
+// team-layer: new branches are named elbo/…; a prefix someone saved stays.
+describe("branch name prefix", () => {
+  it("defaults to elbo", () => {
+    expect(DEFAULT_SERVER_SETTINGS.branchNamePrefix).toBe("elbo");
+  });
+});

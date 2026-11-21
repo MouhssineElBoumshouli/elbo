@@ -17,7 +17,7 @@ function Summary({ setup }: { readonly setup: TeamSetupState }) {
     needsYou > 0
       ? [
           needsYou === 1 ? "1 thing needs you" : `${needsYou} things need you`,
-          "Each has one button. Nothing to type.",
+          needsYou === 1 ? "Fix it with one click." : "Fix each with one click.",
         ]
       : checking
         ? ["Checking…", "Looking at your AI and tools."]

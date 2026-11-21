@@ -50,3 +50,11 @@ export const T3_CODE_IDENTITY = {
   cliName: "t3",
   installerArtifactName: "T3-Code-${version}-${arch}.${ext}",
 } as const;
+
+/**
+ * The version About shows. Elbo's releases start at 1.0.0; a build without one (the dev server,
+ * a source run) carries upstream's 0.x package version, which would read as older than T3 Code.
+ */
+export function teamVersionLabel(version: string): string {
+  return version.startsWith("0.") ? `${TEAM_IDENTITY.nextVersion} (dev build)` : version;
+}

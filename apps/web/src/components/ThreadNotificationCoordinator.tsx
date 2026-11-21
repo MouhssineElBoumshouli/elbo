@@ -42,6 +42,7 @@ import {
 import { toastManager } from "./ui/toast";
 import type { TeamCardEntry } from "@t3tools/contracts"; // team-layer
 import { readTeamThreadCards, subscribeTeamThreadCards, teamAwaitsUser } from "~/state/teamFeed"; // team-layer
+import { teamWordsNow } from "./team/simple/teamWords"; // team-layer
 
 interface NotificationState extends ThreadNotificationObservation {
   readonly raw: OrchestrationV2ThreadShell;
@@ -146,18 +147,19 @@ export function startThreadNotifications(
       return;
     const { notificationMode: mode, inAppNotificationsEnabled } = getClientSettings();
     const active = activeThread();
+    const words = teamWordsNow(); // team-layer: plain words in simple mode
     const title =
       kind === "completion"
-        ? "Thread completed"
+        ? words.chatFinished
         : status === "approval"
           ? "Approval needed"
           : status === "limited"
             ? "Usage limit reached"
             : status === "failed"
-              ? "Thread failed"
+              ? words.chatFailed
               : status === "request"
                 ? "Guest request"
-                : "Input needed";
+                : words.chatNeedsInput;
     if (hasNotificationSound(mode)) {
       void playNotificationSound(kind, () =>
         hasNotificationSound(getClientSettings().notificationMode),
@@ -191,7 +193,7 @@ export function startThreadNotifications(
             ),
         },
         actionProps: {
-          children: "Open thread",
+          children: words.openChat,
           onClick: () => {
             toastManager.close(toastId);
             void router.navigate({

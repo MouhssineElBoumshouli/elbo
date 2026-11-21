@@ -241,6 +241,13 @@ describe("isTemporaryWorktreeBranch", () => {
     );
   });
 
+  // team-layer: Elbo names new branches elbo/…, and still knows T3 Code's t3/… ones.
+  it("names new temporary refs elbo/ and still matches t3/ ones", () => {
+    expect(buildTemporaryWorktreeBranchName(() => "deadbeef")).toBe("elbo/deadbeef");
+    expect(isTemporaryWorktreeBranch("t3/deadbeef")).toBe(true);
+    expect(isTemporaryWorktreeBranch("t3-deadbeef")).toBe(true);
+  });
+
   it("matches legacy t3code temporary worktree refs", () => {
     expect(isTemporaryWorktreeBranch("t3code/deadbeef")).toBe(true);
     expect(isTemporaryWorktreeBranch("t3code-deadbeef")).toBe(true);

@@ -8,7 +8,7 @@ export function TeamSimpleModeRow() {
   return (
     <SettingsRow
       title="Simple mode"
-      description="Under a new chat, show only the team state and what the AI may do. Worktree and branch choices wait behind “More options”. This device only."
+      description="Plain words and fewer controls: a shorter sidebar and settings, and the machine, worktree and branch under “⋯” below the message box. This device only."
       control={<Switch checked={on} onCheckedChange={setTeamSimpleMode} aria-label="Simple mode" />}
     />
   );
