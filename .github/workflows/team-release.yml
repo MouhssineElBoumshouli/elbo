@@ -22,6 +22,9 @@ concurrency:
   group: team-release
   cancel-in-progress: false
 
+# Every job runs on Ubuntu 24.04 like upstream's: the AppImage step refuses newer glibc, and the
+# Linux CLI archive the Windows app embeds for WSL must run on older WSL distros.
+
 permissions:
   # The Windows build reads this run's artifact list to wait for the Linux CLI archive it embeds.
   actions: read
@@ -31,7 +34,7 @@ jobs:
   preflight:
     name: Preflight
     if: github.repository == 'MouhssineElBoumshouli/t3code'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
       ref: ${{ steps.resolve.outputs.ref }}
@@ -109,7 +112,7 @@ jobs:
   build_bundle:
     name: Build JS bundle
     needs: [preflight]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - name: Checkout
@@ -159,7 +162,7 @@ jobs:
       clerk_cli_oauth_client_id: ""
       relay_url: ""
       label: Linux x64
-      runner: ubuntu-latest
+      runner: ubuntu-24.04
       platform: linux
       target: AppImage
       arch: x64
@@ -182,7 +185,7 @@ jobs:
       clerk_cli_oauth_client_id: ""
       relay_url: ""
       label: Windows x64
-      runner: ubuntu-latest
+      runner: ubuntu-24.04
       verify_runner: windows-2025
       platform: win
       target: nsis
@@ -193,7 +196,7 @@ jobs:
   release:
     name: Publish GitHub Release
     needs: [preflight, desktop_linux_x64, desktop_win_x64]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: write
