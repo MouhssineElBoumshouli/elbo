@@ -2,6 +2,32 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-21 — Glass (slice 4), More options fix, accents follow Elbo's color
+
+- **What changed:**
+  1. **More options keeps simple mode.** It is now its own per-device choice (`elbo:composer-options:v1`): it shows the access picker and the machine/worktree/branch pickers plus "Fewer options", and nothing else changes. "New chat", "Done", the hidden icon row and the closed details panel stay. Simple mode itself only turns off in Settings → General (then upstream's strip shows, with no "Fewer options").
+  2. **Teal and blue follow ELBO_ACCENT** (Elbo theme only): upstream's info color (message links, running/queued dots, info badges and alerts, the modified-file icon mix) is the accent; the hard-coded sky "Working"/"Connecting" status, the teal running-terminal icon, the sky running-automation dot and the blue Note callout are marked `team-accent-*` and follow it too. Message links got a quiet underline, since they no longer differ by color. "Awaiting input" (indigo) is now the needs-you amber. Green, red and amber stay. Project icon colors (your own pick per project) stay.
+  3. **Glass (Windows 11)** in Settings → Appearance → Interface, off by default, per device. Shown only in the desktop app on Windows 11 22H2+ (build 22621; checked in the preload from the OS build, and again on the desktop side). On: the desktop sets `backgroundMaterial "mica"` and a transparent background on that window; the page sets `<html data-window-material="os">` and `elbo.css` makes the window background transparent and the sidebar and rail 55% of their color. The chat card stays solid; no `backdrop-filter`. Unfocused: Windows draws Mica solid itself. Windows' Transparency effects off: the page doesn't set the attribute, the window goes back to solid, and the row says why and where to turn them on. Theme changes keep the transparent background (`syncWindowAppearance` hook). Works with any theme, tested with Elbo.
+- **W9 check, done on your laptop** (standalone Electron 44.10.1 with T3's title bar settings, Mica switched on at runtime): Windows 11 23H2 (22631) takes runtime Mica fine; window buttons sit normally over it; maximized/unmaximized show no black edges; turning it off brings back a solid page. **Your Transparency effects are off** (`EnableTransparency=0` in the registry, read only), so I could not see real Mica: Windows drew its solid fallback. Electron's `prefersReducedTransparency` and the page's `prefers-reduced-transparency` both follow that setting (both said `true`). I did not change your Windows settings.
+- **Files:** new `packages/shared/src/teamGlass.ts` (+ test), `apps/desktop/src/team/windowGlass.ts`, `apps/web/src/components/team/deviceFlag.ts`, `team/look/windowGlass.ts`, `team/look/TeamGlassRow.tsx`; changed `simpleMode.ts` (+ test), `TeamSimpleStrip.tsx`, `elbo.css`, shared `package.json`. Hooks (`team-layer:`): desktop `preload.ts`, `ipc/channels.ts`, `ipc/DesktopIpcHandlers.ts`, `window/DesktopWindow.ts`; contracts `ipc.ts` (optional `teamWindowGlass` on the bridge); web `appInit.tsx`, `AppearanceSettingsPanel.tsx`, `BranchToolbar.tsx`, `Sidebar.logic.ts`, `ThreadStatusIndicators.tsx`, `ThreadAutomationsPanel.tsx`, `ChatMarkdown.tsx`, `SidebarThreadRow.tsx`.
+- **Checked:** new tests: glass offered on 22621+ only (not 22000, Windows 10, Mac, Linux, garbage), solid while transparency effects are off; More options gives the options strip with simple mode still on. `vp run check:changed` all pass (format, lint, knip, typecheck 41 packages, 12 test files / 231 tests, react compiler). **Live self-test** (dev server, `~/.t3-dev`, headless Chromium): More options in a `plain-demo1` new chat → "Full access" + Fewer options, while "New chat", "Done", no icon row and the closed panel stayed; "Input" shows amber. Glass simulated in the browser (attribute set by hand + a gradient standing in for Mica), light and dark: rail and sidebar see-through, chat card solid; this needed one fix found live (upstream paints html/body backgrounds inline; overridden under the attribute only). Web: Settings → Appearance has no Glass row and no attribute. Pictures: `test-screenshots`, `2026-11-21-glass/` (3 browser, 2 from the Windows check, plus the check script).
+- **Installer:** unsigned `Elbo-1.0.0-preview.20261121.2-x64.exe` (SHA-256 `782bbeed3cb1b85f7c2a08226e35cc3806f12486d4faa66a7beddca5ef36571a`) in your Downloads, built like last round. Its web bundle has the Glass row and the glass CSS; its desktop main and preload have the glass IPC. Not run on Windows by me.
+- **For you to check on Windows:**
+  1. Settings → Appearance → "Glass (Windows 11)" is there, off. With your Transparency effects off, turning it on says why it stays solid.
+  2. Windows Settings → Personalization → Colors → Transparency effects on. Without restarting Elbo the desktop picture should show softly behind the rail and the chat list, the chat stays solid.
+  3. Click another window: Elbo goes solid; click back: glass again.
+  4. Maximize, snap left/right, restore: no black edges, the window buttons look right.
+  5. Light and dark (Settings → Appearance), and Elbo vs another theme.
+  6. Glass off again: solid like before, no flash of black.
+  7. Scroll a long chat and the chat list with glass on, then off: does it stay as smooth? Watch Task Manager's GPU column too.
+  8. Restart Elbo with glass on: does it open with glass, and is there a solid flash first?
+  9. More options under a new chat: only the pickers appear; the rest stays simple.
+- **Left / unsure:**
+  - Glass starts after the page loads (the page tells the window), so a short solid first frame on start is possible. If it shows, the desktop can remember the choice and set Mica when it creates the window.
+  - The right panel (Changes) stays solid inside the chat card, not 65% as in the design doc: simpler, and the card scrolls on a solid layer.
+  - Text on the see-through sidebar uses grayscale anti-aliasing (Chromium does that on transparent layers); check whether it looks softer.
+  - No command palette entry for glass (only Settings). macOS vibrancy not done (no Mac build).
+
 ## 2026-11-21 — Calm cleanup round (slice 3 follow-up)
 
 - **What changed** (your 7 points):
