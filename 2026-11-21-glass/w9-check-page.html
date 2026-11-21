@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;height:100%;background:transparent;font:14px "Segoe UI",sans-serif}
+.app{display:flex;height:100%}
+.rail{width:64px;background:var(--side)}
+.side{width:260px;background:var(--side);padding:48px 12px 0;box-sizing:border-box;color:var(--fg)}
+.main{flex:1;margin:0 0 8px 0;background:var(--card);color:var(--fg);padding:48px 16px 0;border-bottom-left-radius:14px;border-left:1px solid var(--line)}
+:root{--side:rgb(243 243 243 / .55);--card:#fff;--fg:#1f1f1f;--line:#e6e6e6}
+:root.dark{--side:rgb(18 18 18 / .5);--card:#1c1c1c;--fg:#ececec;--line:#2e2e2e}
+:root.solid{--side:#f3f3f3}:root.solid.dark{--side:#121212}
+</style></head><body><div class="app"><div class="rail"></div><div class="side">Chats<br><br>New chat<br>Fix the login bug<br>Team notes</div><div class="main">Chat column (opaque card)</div></div>
+<script>
+const p=new URLSearchParams(location.search);
+if(p.get('dark'))document.documentElement.classList.add('dark');
+if(p.get('solid'))document.documentElement.classList.add('solid');
+window.__info={reduced:matchMedia('(prefers-reduced-transparency: reduce)').matches,known:matchMedia('(prefers-reduced-transparency)').media!=='not all'};
+</script></body></html>
