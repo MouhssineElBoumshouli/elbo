@@ -8,7 +8,7 @@ export function TeamAboutRow() {
   return (
     <SettingsRow
       title={TEAM_ABOUT_LINE}
-      description={`Open source under the MIT license, like T3 Code. Source: github.com/${TEAM_IDENTITY.updateRepository}`}
+      description={`Open source under the MIT license, like T3 Code. Source and updates: github.com/${TEAM_IDENTITY.updateRepository}/releases`}
     />
   );
 }
