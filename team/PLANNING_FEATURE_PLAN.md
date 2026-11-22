@@ -1,6 +1,6 @@
 # Planning feature: design
 
-Status: design only, nothing built. 2026-11-22. For review with Mouhssine and the reviewer.
+Status: design only, nothing built. 2026-11-22. Reviewed; the open questions are decided (section 12).
 Worked example: [PLANNING_EXAMPLE_ATTENDANCE.md](PLANNING_EXAMPLE_ATTENDANCE.md). Mockups: `test-screenshots`, `2026-11-22-planning-mockups/`.
 
 ## 1. What it is
@@ -36,23 +36,23 @@ The project manager runs the session and writes the final plan. A panel has 3 to
 ### Solo and team
 
 - **Solo:** the experts are your team. You answer, you push back, you decide.
-- **Team:** everyone sees the plan as it forms, comments and votes on decisions through Notes (section 7). The person who started the session confirms the result, or the team picks one decider at the start.
+- **Team:** everyone sees the plan as it forms, comments and votes on decisions through Notes (section 7). The team picks one decider at the start; the default is the person who started the session. The decider confirms the result.
 
 ## 3. Size
 
 After the questions, the project manager proposes a size. You can change it.
 
-| Size   | When                                 | Plan                                                                     | Session                                                               |
-| ------ | ------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| Small  | a weekend, 1 person, under ~20 hours | one page: goal, must-haves, stack in one line, top 3 risks, a to-do list | 2 experts, no cross-review, about 5 minutes                           |
-| Medium | a few weeks, 1 to 3 people           | all sections, short; 3 to 6 decisions                                    | 3 to 4 experts, one cross-review round                                |
-| Large  | a semester or a product, 3+ people   | all sections in full, a schedule by week, 8+ decisions                   | 4 to 5 experts, cross-review, second opinion if two AIs are connected |
+| Size   | When                                 | Plan                                                                     | Session                                                                                             |
+| ------ | ------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Small  | a weekend, 1 person, under ~20 hours | one page: goal, must-haves, stack in one line, top 3 risks, a to-do list | 2 experts, no cross-review, about 5 minutes                                                         |
+| Medium | a few weeks, 1 to 3 people           | all sections, short; 3 to 6 decisions                                    | 3 to 4 experts, one cross-review round                                                              |
+| Large  | a semester or a product, 3+ people   | all sections in full, a schedule by week, 8+ decisions                   | 4 to 5 experts, cross-review; a second opinion is offered (off by default) if two AIs are connected |
 
 ## 4. The flow, screen by screen
 
 Pictures 1 to 4 in the mockups folder.
 
-1. **Where it starts.** _New project_ now asks "What are you making?" with two buttons: **Plan it first** (picked by default for an empty folder) and **Start building**. An existing project gets "Plan the next part" in the command palette and on Team home / Today. Agents can offer it too: when you ask a chat to "build me an app for…" in an empty project, the agent suggests planning first (one line, never forced).
+1. **Where it starts.** _New project_ now asks "What are you making?" with two buttons: **Plan it first** (the default for an empty folder) and **Start building** right next to it, one click away. An existing project gets "Plan the next part" in the command palette and on Team home / Today. Agents can offer it too: when you ask a chat to "build me an app for…" in an empty project, the agent suggests planning first (one line, never forced).
 2. **Questions** (picture 1). About 10 plain questions, one screen, most with choices to tap. Each has "Not sure, suggest something":
    1. What are you making, in one or two sentences?
    2. Who will use it? (classmates, a teacher, the public, just me…)
@@ -91,7 +91,7 @@ Steps:
 
 - **Default: one chat, roles per turn.** Each step's prompt starts with the same brief, so the provider's prompt cache covers most of the input. Works the same on every provider, and the whole session is one chat you can open and read.
 - **Large projects with Claude:** the drafts in step 3 can run as Claude's own subagents in parallel (faster, same total tokens). Codex runs them one after another in the same chat. The result format is the same.
-- **Two AIs connected (Claude and Codex):** for large projects, the cross-review in step 4 can run on the other AI as a "second opinion". Different models miss different things. Optional and off by default for small and medium.
+- **Two AIs connected (Claude and Codex):** the cross-review in step 4 can run on the other AI as a "second opinion". Different models miss different things. It is off by default and offered only for large plans; small and medium never offer it.
 - **Only one AI connected:** everything works. The second opinion is just not offered.
 
 ### Token cost (estimates, characters / 4, no tokenizer run)
@@ -118,7 +118,7 @@ How we keep it low:
 Plain Markdown files shipped with Elbo, one per expert, about 15 to 30 lines each, written as questions an expert must answer or mark "not relevant, because…". They are the main source of quality and are easy to improve after each eval run (section 10). Examples:
 
 - **Security engineer:** How do people log in, and can they reset a password safely? Can one user see or change another user's data by changing an id in a link? Where do secrets live (never in the repo, never in the app bundle)? What personal data is stored, who can see it, how long is it kept (GDPR for EU students)? Is every input checked on the server? Are there limits on login attempts and sign-ups? Which dependencies are risky or unmaintained? What happens if the database leaks?
-- **Software architect:** Does the team already know this stack? If not, how many hours to learn, and does that fit the deadline? Can it be hosted on the stated budget? What are the main parts and what data moves between them? What breaks first with 10x the users (only for large)? What is the simplest thing that meets the must-haves?
+- **Software architect:** Does the team already know this stack? If not, how many hours to learn, and does that fit the deadline? Can it be hosted on the stated budget? What are the main parts and what data moves between them? What breaks first with 10x the users (only for large)? What is the simplest thing that meets the must-haves? Is the code shaped as a functional core and an imperative shell: pure logic in small functions (data in, data out) that can be tested with no database or network, and I/O in a thin outer layer that calls it? Are files kept small (split one before it grows past about 400 lines), with no comments that repeat the code and no second copy of the same logic?
 - **Project manager:** Are the must-haves small enough for the hours available, with a 30% buffer? Is there a version that can be shown halfway? Does each task have one owner and one area? Is anyone's work blocked by someone else's for more than a few days?
 - **Designer:** Who is the main user and on which device? What are the 3 to 5 main screens? What does an empty, loading and error screen show? Contrast, text size, keyboard use? Does the look match the "feel" answer?
 - **AI engineer:** Could this work without AI? What does one use cost, and per month at the expected use? What happens when the AI is wrong? What user data goes to the AI provider? How will we test its answers?
@@ -161,6 +161,9 @@ Small plans use 1, 2, 3 (one line), 10 (top 3) and 9 (a to-do list).
 ## 10. Testing that the plans are good, before building the UI
 
 1. **Headless runner first.** A dev-only command (`elbo plan --brief <file> --out <dir>`) runs the whole method on one provider and writes the plan and decision files. No UI. This is slice 1.
+
+   Every test run (the runner, the eval cases, the baseline, the judge) goes through Elbo's providers on Mouhssine's Claude and Codex subscriptions, the same way a normal chat does. No API keys. So the eval drives a provider session instead of calling a model API like the other evals in `evals/`, and its cost shows up as subscription usage, not a bill.
+
 2. **A new eval, `evals/project-plans/`,** in the shape `evals/README.md` asks for. Cases are briefs: the attendance app, a portfolio website, a hackathon pitch in 24 hours, a research survey project, a club shop, an ML class project, a "weekend" to-do app, a group project where one member knows nothing. Each case names its source.
 3. **Checks per case**, graded by a model judge with a fixed rubric, plus a few code checks:
    - the stack uses skills the team has, or the learning time fits the deadline;
@@ -188,8 +191,9 @@ Small plans use 1, 2, 3 (one line), 10 (top 3) and 9 (a to-do list).
 
 Slices 1 and 2 decide whether the idea works. If the plans are not clearly better than a plain chat, we stop there and change the method, not the screens.
 
-## 12. Questions for you
+## 12. Decided (2026-11-22)
 
-1. Should "Plan it first" be the default for an empty folder, or should both buttons look equal?
-2. In a team, who confirms the plan: the starter, or a decider picked at the start?
-3. Is a second opinion from the other AI worth the extra cost for large plans, or should it be off by default everywhere?
+1. **Start:** "Plan it first" is the default for an empty folder, with "Start building" right next to it, one click away.
+2. **Who confirms:** a team picks a decider at the start; the default is the person who started the session.
+3. **Second opinion:** off by default, and offered only for large plans.
+4. **Testing plans:** runs use Mouhssine's Claude and Codex subscriptions through the providers, like normal chats, not API keys (section 10).

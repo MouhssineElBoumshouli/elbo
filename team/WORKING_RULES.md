@@ -8,6 +8,15 @@ This repo is a fork of T3 Code. We are adding a team layer: a shared Brain, shar
 - When you must edit an upstream file, keep the edit small and mark it with a comment starting with "team-layer:".
 - This keeps it easy to pull in updates from upstream T3 Code.
 
+## Code shape
+
+- **Functional core, imperative shell.** Pure logic is small functions: data in, data out. Reading files, git, the network, the database and the clock happen in a thin outer layer that calls the core.
+- **Core logic is testable with no database or network.** If a test needs a server, a repo or a fake network to check a rule, the rule lives in the wrong place.
+- **Small files.** A team file past about 400 lines gets split before anything new is added to it.
+- **No comments that repeat the code.** A comment says why, or names a trap the code can't show.
+- **No duplicate implementations.** Before writing a helper, look for one; reuse it or move it somewhere both callers can reach.
+- Apply this to the team code you touch, as part of the change. Never as a big rewrite.
+
 ## After every step
 
 1. Run typecheck and tests only for what you changed.
