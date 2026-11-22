@@ -47,6 +47,11 @@ describe("runMethod", () => {
       Effect.gen(function* () {
         const fake = fakeAsk({
           size: { size: "medium", panel: ["designer"] },
+          drafts: {
+            architect: draftFor("architect", {
+              checklist: [{ id: "A1", relevant: true, answer: "Yes." }],
+            }),
+          },
           reviews: [
             [
               {
@@ -79,6 +84,10 @@ describe("runMethod", () => {
         assert.deepStrictEqual(
           result.decisions.map((r) => r.decision.title),
           ["Fixed by architect"],
+        );
+        assert.deepStrictEqual(
+          result.drafts.find((d) => d.expert === "architect")?.draft.checklist,
+          [{ id: "A1", relevant: true, answer: "Yes." }],
         );
       }),
   );

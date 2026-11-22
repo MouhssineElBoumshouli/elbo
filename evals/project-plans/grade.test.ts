@@ -50,6 +50,19 @@ describe("pushedBack", () => {
     assert.isFalse(
       pushedBack("Each microservice runs in its own Kubernetes pod.", mistake("microservices")),
     );
+    // Both sides of the round 2 run, missed by the first pattern.
+    assert.isTrue(
+      pushedBack(
+        "- **Use microservices, Docker and Kubernetes.** (raised by the project manager): Several deployments exceed this team's skills and time. Better: Use one Django application with clear folders.",
+        mistake("microservices"),
+      ),
+    );
+    assert.isTrue(
+      pushedBack(
+        "- Build one Python/Django application with separate accounts, recipes and photos modules. Defer microservices, the API gateway, Docker and Kubernetes.",
+        mistake("microservices"),
+      ),
+    );
     assert.isTrue(
       pushedBack(
         "2,000 photos at 5 MB is 10 GB, far over the 500 MB plan.",

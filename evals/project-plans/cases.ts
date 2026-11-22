@@ -52,7 +52,7 @@ export const planCases: ReadonlyArray<PlanCase> = [
         id: "microservices",
         topic: /micro-?services|kubernetes|k8s/i,
         pushBack:
-          /monolith|single (app|application|service|server|codebase|program|project)|one (app|application|server|codebase|service|program|project)|overkill|too (much|complex|big|heavy)|not need|instead|drop|skip|avoid/i,
+          /monolith|(single|one) ([\w/-]+ )?(app|application|service|server|codebase|program|project)\b|overkill|too (much|complex|big|heavy)|not need|instead|drop|skip|avoid|defer|exceeds?\b/i,
       },
       {
         id: "free-tier-photos",

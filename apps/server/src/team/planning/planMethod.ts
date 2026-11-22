@@ -129,7 +129,8 @@ export const runMethod = Effect.fn("planning.runMethod")(function* <E>(input: {
         ? fixed.fixes.find((entry) => entry.expert === drafted.expert)
         : undefined;
       if (!fix) return drafted;
-      const capped = capDraft(fix.draft, drafted.expert);
+      // The fix turn never sees the checklist answers, so they stay from the first part.
+      const capped = capDraft({ ...fix.draft, checklist: drafted.draft.checklist }, drafted.expert);
       overruns.push(...capped.overruns);
       return { expert: drafted.expert, draft: capped.value };
     });
