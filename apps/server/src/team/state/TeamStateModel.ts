@@ -46,6 +46,7 @@ import {
   type EnvironmentId,
   type TeamActivityId,
   type TeamClaimId,
+  type TeamId,
   type TeamHandoffId,
   type TeamTaskId,
 } from "@t3tools/contracts";
@@ -53,6 +54,7 @@ import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
+import { sameThread } from "../heldElsewhere.ts";
 import { buildTeamNotes, capTeamNotes } from "./TeamNotesModel.ts";
 
 /** One server's writer file, with the key readers break ties by. */
@@ -266,9 +268,6 @@ const timeOf = (iso: string) => {
 
 const compareText = (left: string, right: string) => (left < right ? -1 : left > right ? 1 : 0);
 
-const sameThread = (left: TeamThreadRef, right: TeamThreadRef) =>
-  left.environmentId === right.environmentId && left.threadId === right.threadId;
-
 const memberIdOf = (login: TeamLogin) => TeamMemberId.make(login);
 
 /** Builds the team view from every writer file. Readers given the same files in any order agree. */
@@ -311,7 +310,7 @@ export const buildTeamView = (
         compareText(a.writer.key, b.writer.key) ||
         a.index - b.index,
     )
-    .map(({ writer, claim }) => toClaim(team, writer.file.login, claim));
+    .map(({ writer, claim }) => toClaim(team.teamId, writer.file.login, claim));
 
   const newestTask = new Map<
     TeamTaskId,
@@ -375,9 +374,9 @@ export const buildTeamView = (
   return { team, members, activeClaims, tasks, notes, activity, questions, answers, teamNotes };
 };
 
-const toClaim = (team: TeamStateTeamFile, login: TeamLogin, claim: TeamStateClaim): TeamClaim => ({
+export const toClaim = (teamId: TeamId, login: TeamLogin, claim: TeamStateClaim): TeamClaim => ({
   claimId: claim.claimId,
-  teamId: team.teamId,
+  teamId,
   memberId: memberIdOf(login),
   thread: claim.thread,
   paths: claim.paths,

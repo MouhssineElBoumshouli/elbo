@@ -51,12 +51,10 @@ import {
   TeamMemberId,
   type TeamAnswer,
   type TeamQuestion,
-  type TeamStateClaim,
   type TeamStateQuestion,
   type TeamStateTask,
   TeamTaskId,
   teamNoteConcerns,
-  type TeamThreadRef,
   type ThreadId,
   type TeamWriterFile,
 } from "@t3tools/contracts";
@@ -100,6 +98,7 @@ import {
   type WriteHandoffInput,
 } from "../TeamService.ts";
 import * as SoloTeam from "./SoloTeam.ts";
+import { sameThread } from "../heldElsewhere.ts";
 import * as TeamHost from "./TeamHost.ts";
 import * as NotesModel from "./TeamNotesModel.ts";
 import * as Model from "./TeamStateModel.ts";
@@ -201,9 +200,6 @@ const keepHashesOf = (
   return Object.keys(kept).length === 0 ? null : kept;
 };
 
-const sameThread = (left: TeamThreadRef, right: TeamThreadRef) =>
-  left.environmentId === right.environmentId && left.threadId === right.threadId;
-
 const toTeam = (view: Model.TeamStateView): Team => ({
   teamId: view.team.teamId,
   name: view.team.name,
@@ -217,20 +213,6 @@ const toMember = (view: Model.TeamStateView, member: Model.TeamStateMember): Tea
   displayName: member.displayName,
   role: member.role,
   lastSeenAt: member.lastSyncAt,
-});
-
-const toClaim = (teamId: TeamId, login: TeamLogin, claim: TeamStateClaim): TeamClaim => ({
-  claimId: claim.claimId,
-  teamId,
-  memberId: TeamMemberId.make(login),
-  thread: claim.thread,
-  paths: claim.paths,
-  note: claim.note,
-  ...(claim.branch === undefined ? {} : { branch: claim.branch }),
-  ...(claim.pushedCommit === undefined ? {} : { pushedCommit: claim.pushedCommit }),
-  ...(claim.pullRequest === undefined ? {} : { pullRequest: claim.pullRequest }),
-  claimedAt: claim.claimedAt,
-  releasedAt: claim.releasedAt,
 });
 
 /** One team this server has opened: its state repo and what was last read from it. */
@@ -938,7 +920,7 @@ export const make = Effect.fn("GitTeamService.make")(function* (options: GitTeam
           now,
         });
         yield* saveMyFile(entry, added.file);
-        return toClaim(input.teamId, file.login, added.claim);
+        return Model.toClaim(input.teamId, file.login, added.claim);
       }),
     );
 
@@ -976,7 +958,7 @@ export const make = Effect.fn("GitTeamService.make")(function* (options: GitTeam
         });
         if (result.changed.length === 0) return [];
         yield* saveMyFile(entry, result.file);
-        return result.changed.map((claim) => toClaim(input.teamId, file.login, claim));
+        return result.changed.map((claim) => Model.toClaim(input.teamId, file.login, claim));
       }),
     );
     if (changed.length > 0) yield* scheduleSync(entry);
@@ -1203,7 +1185,7 @@ export const make = Effect.fn("GitTeamService.make")(function* (options: GitTeam
             if (result.released.length === 0) continue;
             yield* saveMyFile(entry, result.file);
             changedHere.push(
-              ...result.released.map((claim) => toClaim(entry.teamId, file.login, claim)),
+              ...result.released.map((claim) => Model.toClaim(entry.teamId, file.login, claim)),
             );
           }
           return changedHere;
