@@ -524,8 +524,9 @@ export const T3_CONNECT_TROUBLESHOOTING_SECTIONS = [
 export type T3ConnectTroubleshootingSection = (typeof T3_CONNECT_TROUBLESHOOTING_SECTIONS)[number];
 
 /** Clients, the CLI, and server logs link here as "More info". */
+// team-layer: Elbo's guide. Connect is off in Elbo, so it has no such section and opens at the top.
 export function t3ConnectTroubleshootingUrl(section: T3ConnectTroubleshootingSection): string {
-  return `https://github.com/pingdotgg/t3code/blob/main/docs/user/t3-connect-troubleshooting.md#${section}`;
+  return `https://github.com/MouhssineElBoumshouli/elbo/blob/main/docs/user/README.md#${section}`;
 }
 
 const REACHABILITY_SECTION = {

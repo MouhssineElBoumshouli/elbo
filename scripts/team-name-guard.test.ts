@@ -11,6 +11,9 @@ import { describe, expect, it } from "vite-plus/test";
 const ROOT = NodePath.resolve(import.meta.dirname, "..");
 const SCOPES = ["apps/desktop/src", "apps/web/src", "apps/server/src", "packages"];
 const T3_NAMES = /T3 Code|T3 Connect|T3 home/;
+// Links to upstream's repo send people to T3 Code's guides, tracker and releases. Point them at
+// Elbo's (TEAM_IDENTITY.updateRepository); only a license notice may keep one.
+const UPSTREAM_LINK = /pingdotgg\/t3code/;
 const SKIP_PATH =
   /(\.test\.|\.testkit\.|\/test\/|\/testkit\/|fixture|\/__fixtures__\/|^packages\/provider-testing\/)/;
 
@@ -97,6 +100,8 @@ const ALLOWED: ReadonlyArray<{ file: string; text: string; reason: string }> = [
   },
 ];
 
+const LINK_ALLOWED: ReadonlyArray<{ file: string; text: string; reason: string }> = [];
+
 const stripComment = (line: string): string => {
   const trimmed = line.trimStart();
   if (/^(\/\/|\*|\/\*|\{\/\*)/.test(trimmed)) return "";
@@ -104,7 +109,7 @@ const stripComment = (line: string): string => {
   return inline === -1 ? line : line.slice(0, inline);
 };
 
-function visibleT3NameLines(): Array<{ file: string; line: string }> {
+function visibleLines(pattern: RegExp): Array<{ file: string; line: string }> {
   const files = NodeChildProcess.execFileSync("git", ["ls-files", "--", ...SCOPES], {
     cwd: ROOT,
     encoding: "utf8",
@@ -115,18 +120,19 @@ function visibleT3NameLines(): Array<{ file: string; line: string }> {
   const hits: Array<{ file: string; line: string }> = [];
   for (const file of files) {
     const text = NodeFS.readFileSync(NodePath.join(ROOT, file), "utf8");
-    if (!T3_NAMES.test(text)) continue;
+    if (!pattern.test(text)) continue;
     for (const line of text.split("\n")) {
-      if (T3_NAMES.test(stripComment(line))) hits.push({ file, line: line.trim() });
+      if (pattern.test(stripComment(line))) hits.push({ file, line: line.trim() });
     }
   }
   return hits;
 }
 
 describe("Elbo name guard", () => {
-  const hits = visibleT3NameLines();
+  const hits = visibleLines(T3_NAMES);
   const allowed = (hit: { file: string; line: string }) =>
     ALLOWED.some((entry) => entry.file === hit.file && hit.line.includes(entry.text));
+  const linkHits = visibleLines(UPSTREAM_LINK);
 
   it("finds no user-visible T3 name outside the allowlist", () => {
     expect(hits.filter((hit) => !allowed(hit))).toEqual([]);
@@ -137,5 +143,13 @@ describe("Elbo name guard", () => {
       (entry) => !hits.some((hit) => hit.file === entry.file && hit.line.includes(entry.text)),
     );
     expect(stale).toEqual([]);
+  });
+
+  it("finds no link to pingdotgg/t3code outside a license notice", () => {
+    const unexpected = linkHits.filter(
+      (hit) =>
+        !LINK_ALLOWED.some((entry) => entry.file === hit.file && hit.line.includes(entry.text)),
+    );
+    expect(unexpected).toEqual([]);
   });
 });

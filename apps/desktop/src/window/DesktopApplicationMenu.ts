@@ -13,6 +13,7 @@ import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";
 import * as DesktopUpdates from "../updates/DesktopUpdates.ts";
 import * as DesktopWindow from "./DesktopWindow.ts";
 import { APP_DISPLAY_NAME } from "../team/appName.ts"; // team-layer
+import { TEAM_USER_GUIDE_URL } from "@t3tools/shared/teamIdentity"; // team-layer
 
 export class DesktopApplicationMenuActionError extends Schema.TaggedError<DesktopApplicationMenuActionError>()(
   "DesktopApplicationMenuActionError",
@@ -350,6 +351,12 @@ export const make = Effect.gen(function* () {
       {
         role: "help",
         submenu: [
+          // team-layer
+          {
+            label: "User Guide",
+            click: () =>
+              void Electron.shell.openExternal(TEAM_USER_GUIDE_URL).catch(() => undefined),
+          },
           {
             label: "Check for Updates...",
             click: checkForUpdatesClick,

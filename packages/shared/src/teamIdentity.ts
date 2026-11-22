@@ -37,6 +37,8 @@ export const TEAM_APP_LINK_PROTOCOL = new RegExp(
   `^(?:t3code|${TEAM_IDENTITY.protocol})(?:-[a-z]+)?:$`,
 );
 
+export const TEAM_USER_GUIDE_URL = `https://github.com/${TEAM_IDENTITY.updateRepository}/blob/main/docs/user/README.md`;
+
 export const TEAM_PRIVACY_LINE = `${TEAM_IDENTITY.name} collects no usage data. It sends nothing about how you use it to us or to anyone else. The AI tools you connect, such as Claude and Codex, have their own privacy policies.`;
 
 // What upstream T3 Code uses today; the identity test fails if any of ours matches.

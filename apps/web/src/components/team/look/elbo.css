@@ -150,6 +150,30 @@ html[data-window-material] .sidebar-stage-backdrop {
   display: none;
 }
 
+/* Controls drawn for that art are white; without it they take the theme's text colors. */
+html[data-window-material] .sidebar-stage-backdrop ~ * :is(a, a *, button),
+html[data-window-material] [data-sidebar-control] button {
+  color: var(--foreground);
+  --tw-ring-color: var(--ring);
+}
+
+html[data-window-material] .sidebar-stage-backdrop ~ * button:hover:not(:disabled),
+html[data-window-material] [data-sidebar-control] button:hover {
+  background-color: var(--accent);
+}
+
+/* Back and forward in the title bar: full text color, muted when there is nowhere to go. */
+[data-team-history-nav="plain"] button,
+html[data-window-material] [data-team-history-nav] button {
+  color: var(--foreground);
+  --control-icon-color: currentColor;
+}
+
+[data-team-history-nav="plain"] button:disabled,
+html[data-window-material] [data-team-history-nav] button:disabled {
+  color: var(--muted-foreground);
+}
+
 html[data-window-material] [data-app-sidebar] .surface-grain {
   background-image: none;
 }

@@ -76,7 +76,10 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
         <div className="flex shrink-0 items-center gap-1">
           <SidebarBrand onBackdrop={backdropVariant !== null} />
           {isElectron ? (
-            <div className="hidden items-center md:flex">
+            <div
+              className="hidden items-center md:flex"
+              data-team-history-nav={backdropVariant ? "art" : "plain"} // team-layer: elbo.css colors
+            >
               <HistoryNavigationButton direction="back" onBackdrop={backdropVariant !== null} />
               <HistoryNavigationButton direction="forward" onBackdrop={backdropVariant !== null} />
             </div>

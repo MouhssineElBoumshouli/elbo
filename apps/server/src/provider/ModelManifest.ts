@@ -21,9 +21,10 @@ import { hasValidClaudeManifestAdapters } from "./ClaudeModelManifest.ts";
 import bundledManifestJson from "./model-manifest.json" with { type: "json" };
 import { ProviderCompatibilityPolicy } from "./providerCompatibility.ts";
 import * as ModelCatalog from "@t3tools/provider-core/server/ModelCatalog";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
-const MODEL_MANIFEST_URL =
-  "https://raw.githubusercontent.com/pingdotgg/t3code/main/apps/server/src/provider/model-manifest.json";
+// team-layer: Elbo's copy, which only changes with the code that reads it.
+const MODEL_MANIFEST_URL = `https://raw.githubusercontent.com/${TEAM_IDENTITY.updateRepository}/main/apps/server/src/provider/model-manifest.json`;
 
 const MANIFEST_TTL_MS = 60 * 60 * 1000;
 

@@ -6,9 +6,6 @@ import { serverEnvironment } from "../../state/server";
 import { Alert, AlertDescription } from "../ui/alert";
 import { APP_DISPLAY_NAME } from "~/branding"; // team-layer
 
-const MULTIPLE_ACCOUNTS_FAQ_URL =
-  "https://github.com/pingdotgg/t3code/blob/main/docs/user/faq.md#can-i-add-a-bunch-of-accounts-for-one-provider";
-
 const PROVIDER_NAMES = new Map<string, string>([
   ["codex", "Codex"],
   ["claudeAgent", "Claude"],
@@ -34,16 +31,9 @@ export function MultipleAccountsNote({
     <Alert variant="info" role="note">
       <InfoIcon aria-hidden />
       <AlertDescription>
+        {/* team-layer: no "More info" link; Elbo's guide does not cover several accounts. */}
         <p>
-          We do not recommend managing multiple {providerName} accounts in {APP_DISPLAY_NAME}.{" "}
-          <a
-            href={MULTIPLE_ACCOUNTS_FAQ_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="underline underline-offset-2 hover:text-foreground"
-          >
-            More info
-          </a>
+          We do not recommend managing multiple {providerName} accounts in {APP_DISPLAY_NAME}.
         </p>
       </AlertDescription>
     </Alert>

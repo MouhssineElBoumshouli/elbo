@@ -2,8 +2,10 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import { compareSemverVersions } from "./semver.ts";
+import { TEAM_IDENTITY } from "./teamIdentity.ts"; // team-layer
 
-const CLI_RELEASE_REPOSITORY = "pingdotgg/t3code";
+// team-layer: Elbo's own releases, so an update never installs T3 Code over Elbo.
+const CLI_RELEASE_REPOSITORY = TEAM_IDENTITY.updateRepository;
 export const CLI_RELEASES_PAGE_URL = `https://github.com/${CLI_RELEASE_REPOSITORY}/releases`;
 export const CLI_RELEASE_CHECKSUMS_FILE = "SHA256SUMS";
 export const CLI_RELEASE_BASE_URL_ENV = "T3CODE_RELEASE_BASE_URL";
