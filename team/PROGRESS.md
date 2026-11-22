@@ -2,6 +2,33 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-22 — Title bar on glass, user guide links, no upstream links; Beta released
+
+- **Title bar** (`2450e6f4c9`): with glass on, `elbo.css` hides the Beta/Dev art, but the title, sidebar toggle and back/forward arrows kept the art's white colours, so they vanished on light glass. With glass on, they now take the theme's text colours (`elbo.css`, plus a `data-team-history-nav` hook in `SidebarChrome.tsx`). The arrows show full text colour, muted when disabled; before, in the Elbo theme both arrows were the same grey. With glass off, the art keeps upstream's white controls.
+- **User guide:** an "Open guide" row in Settings → About (`TeamUserGuideRow`) and "User Guide" in the desktop Help menu both open `docs/user/README.md` on GitHub (`TEAM_USER_GUIDE_URL` in `teamIdentity.ts`).
+- **MultipleAccountsNote:** the "More info" link to T3 Code's deleted FAQ is gone; our guide doesn't cover several accounts.
+- **Name guard** (`scripts/team-name-guard.test.ts`) now also fails on `pingdotgg/t3code` in shipped code (`.ts`/`.tsx` in desktop, web, server, packages, plus README). Its allowlist is empty, with room for a license notice; none ships today. It found, and these were fixed:
+  - Model manifest URL: now Elbo's copy.
+  - CLI release repo (`cliRelease.ts`): now Elbo's releases, so `elbo update` never installs T3 Code.
+  - The Connect help link (`environmentHttp.ts`): now our guide, with the section anchor kept.
+  - The triage prompt and clone URL: triage is off in Elbo; `.github/triage/PLAYBOOK.md` changed with the prompt to keep them in sync.
+- **Files:**
+  - `apps/web/src/components/team/look/elbo.css`, `team/TeamAboutRow.tsx`, `sidebar/SidebarChrome.tsx`, `settings/SettingsPanels.tsx`, `settings/MultipleAccountsNote.tsx`
+  - `apps/desktop/src/window/DesktopApplicationMenu.ts`
+  - `packages/shared/src/{teamIdentity,cliRelease}.ts`, `packages/contracts/src/environmentHttp.ts`
+  - `apps/server/src/provider/ModelManifest.ts`, `apps/server/src/triage/{TriageService,triagePrompt}.ts`, `.github/triage/PLAYBOOK.md`
+  - The guard, plus URL updates in 3 tests (`update.test.ts`, `tunnel.test.ts`, mobile `environment-maintenance.test.ts`).
+- **Released:** Beta `1.0.0-nightly.20261122.8` from `2450e6f4c9` (Team release run 45069635523, green). The installer `.exe`, its blockmap and `nightly.yml` are on the Releases page.
+- **Checked:**
+  - Name guard: fails with the old links and passes now.
+  - Related tests pass. `vp run check:changed` passes (typecheck of 41 packages, 12 test files, lint, knip; format was fixed and rechecked).
+  - Headless self-test on the dev server in light mode. Computed colours for Classic and Elbo, light and dark, glass on and off (8 states), plus 4 screenshots: `test-screenshots` `2026-11-22-titlebar-light/` (`10abaa61f8`).
+- **Unsure / not done:**
+  - Glass was simulated with the `data-window-material` attribute and a stand-in desktop bridge, not real Windows Mica. Worth one look on Windows.
+  - The About row and Help menu item were not clicked in the desktop app; they typecheck and use the same external-link path as other links.
+  - Linux-only packaging files (`metainfo.xml`, the GNOME extension) and `apps/server/package.json` still name upstream's repo. They are not `.ts` and not in the Windows build, so the guard does not scan them.
+  - `gh` in this checkout defaults to `pingdotgg/t3code`. Pass `-R MouhssineElBoumshouli/elbo` for releases.
+
 ## 2026-11-22 — Planning round 2: short plans written for the team, blind eval of all 4 cases
 
 - **Method** (`9386d6eaad`, fixes `d98cc0701a`), all in `apps/server/src/team/planning/`:
