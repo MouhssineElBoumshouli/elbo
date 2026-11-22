@@ -2,6 +2,27 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-22 — Planning round 2: short plans written for the team, blind eval of all 4 cases
+
+- **Method** (`9386d6eaad`, fixes `d98cc0701a`), all in `apps/server/src/team/planning/`:
+  - Hard limits in code (`planBudget.ts`): small 2 decisions / 500 words, medium 6 / 1,500, large 10 / 3,000, counted on the rendered plan.md. The project manager ranks decisions (`mainDecisions`); the rest are one line each under "Smaller choices". Over the word limit → one shorten turn. Caps no longer cut text (`planCaps.ts` only records overruns).
+  - The merge rewrites every section, Go deeper included (`Merge.sections`), combines push-backs on one point naming everyone who raised it, asks only real project questions under "Choices for you" (never a decision, never how the experts' work fits), and adds done checks per must-have (PM13) and milestones with what to cut first (PM14), both shown in the plan.
+  - `planWords.ts`: pure check for lines about the method ("supplied … breakdown", "the architect's draft", "other experts", "the panel"…); also in the eval's `grade.ts`, on both sides.
+  - Experts by kind (`normalizePanel`): hackathon → pitch coach seat; a build of 1 day or less (and small plans) → no security seat, 3 lines (`checklists/quick-security.md`) added to the architect's checklist; architect A13: simplest storage for a deadline of a week or less, also said in its prompt.
+  - Plain words in every prompt ("like you'd explain it to a classmate" with an example); checklist answers 1–2 lines.
+  - One fix turn for all experts (`planMergePrompts.ts`). Push-back moved to `planPushBack.ts`, decision rendering to `planDecisionRender.ts` (files stay under 250 lines).
+  - **One session across turns:** `codex exec resume <id>` exists; the Codex runner can start/resume one (`team-layer:` edit, `session` on the request; resume has no `-s`, so it sets `sandbox_mode` by `--config`). Measured on weekend-todo: 318k input / 15k output vs 76k / 3.6k with separate calls (every resumed turn re-sends the chat). So it is behind `--shared-chat`, off by default. Claude Code has `--resume`; not wired (eval is Codex-only).
+- **Eval run** (Codex `gpt-6-astra`, medium effort, both sides): all 4 cases done, no usage limit hit. Evidence: `test-screenshots`, `2026-11-23-plan-eval-2/` (`blind/` = REVIEW.md + A/B + briefs; `answers/` = key, checks, REPORT.md, method files, plain chat files and tokens). No winner named.
+  - Method words: attendance 2,168, hackathon 2,050, planted 2,269 (limit 1,500; one shorten turn took 10–15% off); weekend 498 (limit 500). Decisions within limits everywhere. No method talk on either side. Planted mistakes: both sides caught all three.
+  - Tokens: medium 9 turns, 191–260k in, 23–26k out (round 1: 10–11 turns, ~290–300k / 27–32k; section 5: 60–120k / 12–20k). Plain chat 13k in / 0.6–1.9k out (52k on planted-mistakes).
+- **Fixed after the run:** the fix step dropped the checklist answers of fixed parts (they weren't sent, so came back empty); answers now stay, with a test that fails without the fix. The security-checklist check for attendance and planted-mistakes in this run is therefore unknown, not failed. The microservices keyword check missed both sides' phrasings; widened, both lines are test rows, run regraded.
+- **Checked:** planning tests (19) and grader tests (3) pass; upstream Claude/Codex text-generation tests pass (72 with planning); typecheck server, provider-core, evals (only old suggestions); fmt, lint, knip on every commit. Live: one smoke run with the shared session, the 4-case eval, a regrade.
+- **Not done / unsure:**
+  - Medium plans miss the 1,500-word limit. Next: per-section word budgets in the merge, or a second shorten turn.
+  - Words are plainer but still stiff in places ("Voluntary reports cannot establish occupancy").
+  - The method's fixed layout may let a reader guess which side is which.
+  - Push-back and the Claude path still not run live.
+
 ## 2026-11-22 — Planning slices 1 and 2: method, headless runner, plan-quality eval (stopped at the Codex usage limit)
 
 - **Slice 1, method and runner** (`4483ad3428`): `apps/server/src/team/planning/`. Brief schema (`planBrief.ts`, the 10 questions; per-person total hours), panel and sizes (`planExperts.ts`), prompts for the 6 steps (`planPrompts.ts`), the step order (`planMethod.ts`: size and panel → one draft per expert → cross-review rounds by size (0/1/2) with fix turns only for experts that got problems → merge; push-back as step 6), structured outputs (`planSchemas.ts`, every field required for Codex), length caps enforced in code with each overrun recorded (`planCaps.ts`), Markdown plan and decision files with `options`/`decided_by`/`status` (`planRender.ts`). Checklists: `checklists/*.md`, one per expert, items with ids (`S2: …`) so answers can be checked; the architect's has the Code shape rule (A9, A10). All of this is pure: the model call is passed in as `ask`, so the tests use fixed fake outputs (`planFixtures.testkit.ts`).
