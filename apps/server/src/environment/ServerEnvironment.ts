@@ -275,7 +275,7 @@ export const make = Effect.gen(function* () {
       projectOrganization: true,
       ignoredFileListing: true,
       ignoredFileSearch: true,
-      triage: true,
+      triage: false, // team-layer: triage reads T3 Code's source and files on its tracker
       oneTimeSchedules: true,
       freshContext: true,
       scheduledTaskThreadModes: true,

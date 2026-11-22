@@ -2,7 +2,6 @@
 // scripts/build-desktop-artifact.ts read it, so Elbo installs next to T3 Code without sharing data.
 export const TEAM_IDENTITY = {
   name: "Elbo",
-  basedOn: { name: "T3 Code", version: "0.1.10" },
   // The next Stable. Betas build as `<nextVersion>-nightly.<date>.<run>`; bump it after each Stable.
   nextVersion: "1.0.0",
   appId: "io.github.mouhssineelboumshouli.elbo",
@@ -16,7 +15,7 @@ export const TEAM_IDENTITY = {
   devProtocol: "elbo-dev",
   cliName: "elbo",
   installerArtifactName: "Elbo-${version}-${arch}.${ext}",
-  updateRepository: "MouhssineElBoumshouli/t3code",
+  updateRepository: "MouhssineElBoumshouli/elbo",
   author: "Mouhssine El Boumshouli",
   cloudEnabled: false,
   // Off means nothing about usage leaves the app: no analytics key, host, device id or owner lookup.
@@ -36,9 +35,7 @@ export const TEAM_APP_LINK_PROTOCOL = new RegExp(
   `^(?:t3code|${TEAM_IDENTITY.protocol})(?:-[a-z]+)?:$`,
 );
 
-export const TEAM_PRIVACY_LINE = `${TEAM_IDENTITY.name} collects no usage data. It sends nothing about how you use it to us, to T3 Code or to anyone else. The AI tools you connect, such as Claude and Codex, have their own privacy policies.`;
-
-export const TEAM_ABOUT_LINE = `${TEAM_IDENTITY.name}, based on ${TEAM_IDENTITY.basedOn.name} v${TEAM_IDENTITY.basedOn.version}`;
+export const TEAM_PRIVACY_LINE = `${TEAM_IDENTITY.name} collects no usage data. It sends nothing about how you use it to us or to anyone else. The AI tools you connect, such as Claude and Codex, have their own privacy policies.`;
 
 // What upstream T3 Code uses today; the identity test fails if any of ours matches.
 export const T3_CODE_IDENTITY = {

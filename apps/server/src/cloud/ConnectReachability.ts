@@ -85,14 +85,14 @@ export function classifyReachability(
     fix: string,
     hint: string | null = null,
   ): Unreachable => ({ status: "unreachable", checkedAt, cause, reason, hint, fix });
-  const restart = `Restart ${TEAM_IDENTITY.name}. If it stays, run \`t3 connect\` again.`;
+  const restart = `Restart ${TEAM_IDENTITY.name}. If it stays, run \`elbo connect\` again.`;
 
   if (!facts.managedTunnelConfigured) {
     // A running server reads the link `t3 connect` stores only at startup.
     return fail(
       "not_linked",
-      "The server has not set up a T3 Connect tunnel.",
-      `Run \`t3 connect\`, then restart ${TEAM_IDENTITY.name} so it applies the link.`,
+      "The server has not set up an Elbo Connect tunnel.",
+      `Run \`elbo connect\`, then restart ${TEAM_IDENTITY.name} so it applies the link.`,
     );
   }
   if (connector === null) {
@@ -131,7 +131,7 @@ export function classifyReachability(
   if (status === 502) {
     return fail(
       "origin_unreachable",
-      "The tunnel is up, but it cannot reach the T3 server on this machine.",
+      "The tunnel is up, but it cannot reach the server on this machine.",
       `Restart ${TEAM_IDENTITY.name} so the tunnel uses the port the server listens on.`,
     );
   }
@@ -155,15 +155,15 @@ export function classifyReachability(
   if (status === 530 && cloudflareError === "1016") {
     return fail(
       "dns_failed",
-      "The T3 Connect address no longer points to this machine's tunnel (Cloudflare error 1016). T3 Connect may have removed this environment.",
-      `Link this environment again. Turn T3 Connect off and on in Settings > Sharing & access, or run \`t3 connect link\` and then restart ${TEAM_IDENTITY.name}.`,
+      "The Elbo Connect address no longer points to this machine's tunnel (Cloudflare error 1016). Elbo Connect may have removed this environment.",
+      `Link this environment again. Turn Elbo Connect off and on in Settings > Sharing & access, or run \`elbo connect link\` and then restart ${TEAM_IDENTITY.name}.`,
     );
   }
   if (status !== null) {
     const code = cloudflareError === undefined ? "" : ` (Cloudflare error ${cloudflareError})`;
     return fail(
       "unexpected_response",
-      `The T3 Connect address answered with HTTP ${status}${code}.`,
+      `The Elbo Connect address answered with HTTP ${status}${code}.`,
       restart,
     );
   }
@@ -173,7 +173,7 @@ export function classifyReachability(
     if (endpoint.existsPublicly === true) {
       return fail(
         "dns_failed",
-        "The T3 Connect address resolves in public DNS, but this network's DNS still has an old cached answer that it does not exist.",
+        "The Elbo Connect address resolves in public DNS, but this network's DNS still has an old cached answer that it does not exist.",
         "Wait. The cached answer usually clears within about 30 minutes.",
         exitNodeHint(exitNode),
       );
@@ -181,20 +181,20 @@ export function classifyReachability(
     if (endpoint.existsPublicly === false) {
       return fail(
         "dns_failed",
-        "The T3 Connect address is missing from public DNS. The relay did not publish it.",
+        "The Elbo Connect address is missing from public DNS. The relay did not publish it.",
         restart,
       );
     }
     return fail(
       "dns_failed",
-      "The T3 Connect address does not resolve from this machine.",
+      "The Elbo Connect address does not resolve from this machine.",
       "Check the DNS settings on this machine or its VPN.",
       exitNodeHint(exitNode),
     );
   }
   return fail(
     "timeout",
-    "The T3 Connect address did not answer from this machine.",
+    "The Elbo Connect address did not answer from this machine.",
     "Check the network, VPN, or proxy on this machine.",
     exitNodeHint(exitNode),
   );
@@ -203,7 +203,7 @@ export function classifyReachability(
 /** The loud diagnosis the CLI prints and the server logs. */
 export function formatReachabilityFailure(result: Unreachable): string {
   return [
-    "✕ T3 Connect is NOT reachable from other devices",
+    "✕ Elbo Connect is NOT reachable from other devices",
     `  ${result.reason}`,
     ...(result.hint ? [`  ${result.hint}`] : []),
     `  Fix: ${result.fix}`,
@@ -476,7 +476,7 @@ const make = Effect.gen(function* () {
       );
     } else {
       yield* Effect.logInfo(
-        `T3 Connect is reachable from other devices. ${formatConnectReachable(result)}`,
+        `Elbo Connect is reachable from other devices. ${formatConnectReachable(result)}`,
       );
     }
     return result;

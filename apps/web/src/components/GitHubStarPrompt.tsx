@@ -9,11 +9,12 @@ import { appAtomRegistry } from "../rpc/atomRegistry";
 import { sourceControlEnvironment } from "../state/sourceControl";
 import { toastManager } from "./ui/toast";
 import { APP_DISPLAY_NAME } from "~/branding"; // team-layer
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 // Separate keys so a count written by another tab can never undo a dismissal.
 const SENT_KEY = "t3code:github-star-prompt:sent";
 const DISMISSED_KEY = "t3code:github-star-prompt:dismissed";
-const REPOSITORY = "pingdotgg/t3code";
+const REPOSITORY = TEAM_IDENTITY.updateRepository; // team-layer: star Elbo, not T3 Code
 const PROMPTS_BEFORE_ASKING = 5;
 const IDLE_MS = 30_000;
 // User-driven actions (send, navigate, type, scroll) start with one of these; touch fires pointerdown.

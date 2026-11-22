@@ -437,7 +437,7 @@ function CloudLinkSwitch({
   disabled,
   disabledReason,
   onCheckedChange,
-  ariaLabel = "Enable T3 Connect",
+  ariaLabel = "Enable Elbo Connect",
 }: {
   readonly checked: boolean;
   readonly disabled: boolean;
@@ -550,7 +550,7 @@ function ConfiguredCloudLinkRow({
 
   const disabledReason = canManageRelay
     ? null
-    : "Your session does not have permission to manage T3 Connect access.";
+    : "Your session does not have permission to manage Elbo Connect access.";
   const isBusy = isUpdating || isUpdatingPreference;
   const switchDisabled =
     !canManageRelay ||
@@ -603,15 +603,15 @@ function ConfiguredCloudLinkRow({
       toastManager.add({
         type: "success",
         title: enabled
-          ? "T3 Connect linked"
+          ? "Elbo Connect linked"
           : publishAgentActivity
-            ? "T3 Connect tunnel disabled"
-            : "T3 Connect unlinked",
+            ? "Elbo Connect tunnel disabled"
+            : "Elbo Connect unlinked",
         description: enabled
-          ? "This environment is available through T3 Connect."
+          ? "This environment is available through Elbo Connect."
           : publishAgentActivity
             ? "The managed tunnel was removed. Agent activity publishing stays on."
-            : "This environment is no longer available through T3 Connect.",
+            : "This environment is no longer available through Elbo Connect.",
       });
     }
     setIsUpdating(false);
@@ -645,7 +645,7 @@ function ConfiguredCloudLinkRow({
         type: "success",
         title: enabled ? "Webhooks held while offline" : "Webhooks no longer held",
         description: enabled
-          ? "T3 Connect keeps webhook requests for up to 24 hours while this environment is offline."
+          ? "Elbo Connect keeps webhook requests for up to 24 hours while this environment is offline."
           : "Requests to an offline environment now fail. Anything already held is still delivered.",
       });
     }
@@ -661,18 +661,18 @@ function ConfiguredCloudLinkRow({
             connectDenial !== undefined && !managedTunnelActive
               ? connectDenial
               : signedOut
-                ? "Sign in to make this environment available to your other devices through T3 Connect."
+                ? "Sign in to make this environment available to your other devices through Elbo Connect."
                 : linkRevoked
-                  ? "This environment was removed from T3 Connect. Turn it on to link it again."
+                  ? "This environment was removed from Elbo Connect. Turn it on to link it again."
                   : managedTunnelActive
                     ? reachability?.status === "unreachable"
-                      ? "T3 Connect is on, but other devices cannot reach this environment."
+                      ? "Elbo Connect is on, but other devices cannot reach this environment."
                       : reachability?.status === "reachable"
-                        ? "This environment is available to your other devices through T3 Connect."
-                        : "T3 Connect is on. Reachability has not been checked yet."
+                        ? "This environment is available to your other devices through Elbo Connect."
+                        : "Elbo Connect is on. Reachability has not been checked yet."
                     : managedTunnelOutOfSync
-                      ? "T3 Connect is out of sync. This environment is linked only to publish agent activity, so other devices cannot connect. Turn T3 Connect on to repair it."
-                      : "Make this environment available to your other devices through T3 Connect."
+                      ? "Elbo Connect is out of sync. This environment is linked only to publish agent activity, so other devices cannot connect. Turn Elbo Connect on to repair it."
+                      : "Make this environment available to your other devices through Elbo Connect."
           }
           status={operationError ?? cloudLinkState.error ?? reachabilityStatus}
           managed={managedTunnelActive ? undefined : connectDenial}
@@ -696,12 +696,12 @@ function ConfiguredCloudLinkRow({
       ) : linkRevoked ? (
         <SettingsRow
           title={searchableSetting("t3-connect").title}
-          description="This environment was removed from T3 Connect. Run `t3 connect link` on the host to link it again."
+          description="This environment was removed from Elbo Connect. Run `elbo connect link` on the host to link it again."
         />
       ) : isElectron ? (
         <SettingsRow
           title={searchableSetting("t3-connect").title}
-          description={`Run \`t3 connect link\` on the host, then restart ${APP_DISPLAY_NAME} there.`}
+          description={`Run \`elbo connect link\` on the host, then restart ${APP_DISPLAY_NAME} there.`}
         />
       ) : null}
       {signedOut && showSwitch ? null : (
@@ -710,7 +710,7 @@ function ConfiguredCloudLinkRow({
           description={
             signedOut
               ? "Sign in to send activity to mobile notifications and Live Activities."
-              : "Send activity to mobile notifications and Live Activities without T3 Connect."
+              : "Send activity to mobile notifications and Live Activities without Elbo Connect."
           }
           managed={connectDenial}
           control={
@@ -731,7 +731,7 @@ function ConfiguredCloudLinkRow({
       {managedTunnelActive && !signedOut ? (
         <SettingsRow
           title={searchableSetting("hold-webhooks-while-offline").title}
-          description="Keep webhook requests for up to 24 hours while this environment is offline, then deliver them. Off: T3 Connect only forwards requests and stores nothing."
+          description="Keep webhook requests for up to 24 hours while this environment is offline, then deliver them. Off: Elbo Connect only forwards requests and stores nothing."
           managed={connectDenial}
           control={
             <CloudLinkSwitch
@@ -747,11 +747,11 @@ function ConfiguredCloudLinkRow({
       {managedTunnelActive && connectDeviceApproval ? (
         <SettingsRow
           title={searchableSetting("connect-device-approval").title}
-          description="Devices that sign in to your T3 Connect account wait until someone already connected here approves them."
+          description="Devices that sign in to your Elbo Connect account wait until someone already connected here approves them."
           managed={connectDenial}
           control={
             <CloudLinkSwitch
-              ariaLabel="Require approval for new T3 Connect devices"
+              ariaLabel="Require approval for new Elbo Connect devices"
               checked={connectDeviceApproval.required}
               disabled={!connectDeviceApproval.canManage}
               disabledReason={
@@ -791,7 +791,7 @@ export function CloudLinkRow({
   if (!canReadRelay) {
     return (
       <SettingsRow
-        title="T3 Connect"
+        title="Elbo Connect"
         description="To edit these settings, pair this connection with both View relay and Manage relay permissions."
       />
     );
@@ -815,7 +815,7 @@ function EmptyRemoteEnvironments({ cloudEnabled = true }: { readonly cloudEnable
         <EmptyTitle>No saved remote environments</EmptyTitle>
         <EmptyDescription>
           {cloudEnabled
-            ? "Click “Add environment” to pair another environment, or connect one from T3 Connect."
+            ? "Click “Add environment” to pair another environment, or connect one from Elbo Connect."
             : "Click “Add environment” to pair another environment."}
         </EmptyDescription>
       </EmptyHeader>

@@ -520,7 +520,7 @@ function MakeTeamSection() {
           </ul>
           <p className="mt-2 text-xs text-muted-foreground">
             Not available from here yet. Today it is done with{" "}
-            <span className="font-mono">t3 team init</span> in the project folder.
+            <span className="font-mono">elbo team init</span> in the project folder.
           </p>
         </PopoverPopup>
       </Popover>

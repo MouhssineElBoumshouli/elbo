@@ -77,7 +77,7 @@ const policies = (): ReadonlyArray<Policy> => [
   {
     id: "Clients",
     title: "Allowed clients",
-    help: `What may connect to ${TEAM_IDENTITY.name} on this machine.\n\nWithout Remote, ${TEAM_IDENTITY.name} only listens on this machine, does not create pairing links, signs out devices that paired earlier, and turns T3 Connect off. Check at least one client.\n\nDisabled or Not Configured: no restriction.`,
+    help: `What may connect to ${TEAM_IDENTITY.name} on this machine.\n\nWithout Remote, ${TEAM_IDENTITY.name} only listens on this machine, does not create pairing links, signs out devices that paired earlier, and turns Elbo Connect off. Check at least one client.\n\nDisabled or Not Configured: no restriction.`,
     elements: [
       {
         kind: "checkbox",
@@ -104,8 +104,8 @@ const policies = (): ReadonlyArray<Policy> => [
   },
   {
     id: "Connect",
-    title: "Allow T3 Connect",
-    help: "Disabled turns T3 Connect off and unlinks this machine. Other remote access still follows Allowed clients.\n\nEnabled or Not Configured leaves T3 Connect available.",
+    title: "Allow Elbo Connect",
+    help: "Disabled turns Elbo Connect off and unlinks this machine. Other remote access still follows Allowed clients.\n\nEnabled or Not Configured leaves Elbo Connect available.",
     toggle: "Connect",
   },
   {
@@ -165,7 +165,7 @@ const policies = (): ReadonlyArray<Policy> => [
   {
     id: "Settings",
     title: "Managed settings (JSON)",
-    help: `Defaults and locks for server settings, as the "settings" object of an ${TEAM_IDENTITY.name} policy. Each key is a setting path; each value is {"value": ..., "locked": true|false}.\n\nExample: {"enableAgentBrowserAccess": {"value": false, "locked": true}}\n\nRun "t3 policy check" on a policy file with the same object to validate it first.`,
+    help: `Defaults and locks for server settings, as the "settings" object of an ${TEAM_IDENTITY.name} policy. Each key is a setting path; each value is {"value": ..., "locked": true|false}.\n\nExample: {"enableAgentBrowserAccess": {"value": false, "locked": true}}\n\nRun "elbo policy check" on a policy file with the same object to validate it first.`,
     elements: [{ kind: "text", name: "Settings", label: "Settings JSON", json: true }],
   },
   {

@@ -177,7 +177,7 @@ it.layer(NodeServices.layer)("DesktopCliCommand", (it) => {
       yield* fs.symlink(path.join(home, "gone"), path.join(home, "bin", "elbo"));
 
       const error = yield* Effect.flip(command.install);
-      expect(error.message).toContain("Another t3 command is already in");
+      expect(error.message).toContain("Another elbo command is already in");
       yield* command.uninstall;
       expect(yield* fs.readFileString(theirs)).toBe("npm's t3\n");
       expect(yield* fs.readLink(path.join(home, "bin", "elbo"))).toBe(path.join(home, "gone"));

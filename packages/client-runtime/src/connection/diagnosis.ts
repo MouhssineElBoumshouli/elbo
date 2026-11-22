@@ -101,7 +101,7 @@ function headline(host: string, located: Located, failure: ConnectionAttemptErro
     case "offline":
       return "This device is offline";
     case "session_pending":
-      return "This device is still loading its T3 Connect sign-in";
+      return "This device is still loading its Elbo Connect sign-in";
     case "approval_pending":
       return `${host} is waiting for someone to approve this device`;
     case "outdated":
@@ -109,13 +109,13 @@ function headline(host: string, located: Located, failure: ConnectionAttemptErro
     case "clock_skew":
       return "This device's clock is off";
     case "not_linked":
-      return `${host} is not linked to your T3 Connect account`;
+      return `${host} is not linked to your Elbo Connect account`;
     case "relay_error":
-      return "T3 Connect returned an error";
+      return "Elbo Connect returned an error";
     case "tunnel_pending":
       return `${host}'s tunnel is still being set up`;
     case "tunnel_not_enabled":
-      return `T3 Connect is not turned on for ${host}`;
+      return `Elbo Connect is not turned on for ${host}`;
     case "released":
     case "tunnel_down":
       return `${host}'s tunnel is offline`;
@@ -140,15 +140,15 @@ function headline(host: string, located: Located, failure: ConnectionAttemptErro
       return "This device could not prepare the connection";
     case "relay":
       return failure?.reason === "authentication"
-        ? "T3 Connect did not accept this device's sign-in"
-        : "This device can't reach T3 Connect";
+        ? "Elbo Connect did not accept this device's sign-in"
+        : "This device can't reach Elbo Connect";
     case "tunnel":
       // The relay already reached the host when this device fails on its own.
       return failure?.reason === "network" ||
         failure?.reason === "transport" ||
         failure?.reason === "timeout"
         ? `This device can't reach ${host}'s tunnel`
-        : `T3 Connect could not reach ${host}'s tunnel`;
+        : `Elbo Connect could not reach ${host}'s tunnel`;
     case "server":
       return failure?.reason === "authentication" || failure?.reason === "permission"
         ? `${TEAM_IDENTITY.name} on ${host} did not accept this device`
@@ -157,7 +157,7 @@ function headline(host: string, located: Located, failure: ConnectionAttemptErro
 }
 
 function steps(host: string, located: Located, failure: ConnectionAttemptError | null): string[] {
-  const checkHost = `On ${host}, check Settings > Sharing & access or run \`t3 connect status\`.`;
+  const checkHost = `On ${host}, check Settings > Sharing & access or run \`elbo connect status\`.`;
   switch (located.cause) {
     case "offline":
       return [`Connect this device to the internet. ${TEAM_IDENTITY.name} reconnects on its own.`];
@@ -172,7 +172,7 @@ function steps(host: string, located: Located, failure: ConnectionAttemptError |
       const approve = code ? `approve the device showing ${code}` : "approve this device";
       return [
         `On a device already connected to ${host}, open Settings > Sharing & access and ${approve}.`,
-        `Or run \`t3 auth connect-device approve ${code ?? "<code>"}\` on ${host}.`,
+        `Or run \`elbo auth connect-device approve ${code ?? "<code>"}\` on ${host}.`,
       ];
     }
     case "outdated":
@@ -181,8 +181,8 @@ function steps(host: string, located: Located, failure: ConnectionAttemptError |
       return [`Turn on automatic date and time on this device and on ${host}, then retry.`];
     case "not_linked":
       return [
-        "Check that this device is signed in to the same T3 Connect account as the host.",
-        `On ${host}, open Settings > Sharing & access and turn T3 Connect on.`,
+        "Check that this device is signed in to the same Elbo Connect account as the host.",
+        `On ${host}, open Settings > Sharing & access and turn Elbo Connect on.`,
       ];
     case "tunnel_pending":
       return [`Wait a minute. ${TEAM_IDENTITY.name} retries on its own.`, checkHost];
@@ -192,7 +192,7 @@ function steps(host: string, located: Located, failure: ConnectionAttemptError |
         "If it keeps failing, copy the diagnostics and report it.",
       ];
     case "tunnel_not_enabled":
-      return [`On ${host}, open Settings > Sharing & access and turn T3 Connect on.`];
+      return [`On ${host}, open Settings > Sharing & access and turn Elbo Connect on.`];
     case "released":
     case "tunnel_down":
       return [
@@ -221,10 +221,10 @@ function steps(host: string, located: Located, failure: ConnectionAttemptError |
       ];
     case "relay":
       return failure?.reason === "authentication"
-        ? ["Sign out of T3 Connect and sign in again."]
+        ? ["Sign out of Elbo Connect and sign in again."]
         : [
             "Check this device's internet connection.",
-            "A VPN, firewall, or ad blocker on this device can block T3 Connect.",
+            "A VPN, firewall, or ad blocker on this device can block Elbo Connect.",
           ];
     case "tunnel":
       return failure?.reason === "network" ||
@@ -307,7 +307,7 @@ function hopLabel(hop: ConnectionHop, host: string): string {
     case "device":
       return "This device";
     case "relay":
-      return "T3 Connect";
+      return "Elbo Connect";
     case "tunnel":
       return `${host} tunnel`;
     case "server":
@@ -359,7 +359,7 @@ export function presentConnectionDiagnosis(
       ? null
       : DateTime.formatIso(DateTime.makeUnsafe(input.state.retryAt)),
   );
-  add("Route", relayPath ? "T3 Connect" : "Direct");
+  add("Route", relayPath ? "Elbo Connect" : "Direct");
   add("App version", input.clientVersion);
   add("Host version", input.serverVersion);
   add("Error", failure?.detail);

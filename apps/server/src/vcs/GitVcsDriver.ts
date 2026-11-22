@@ -1617,7 +1617,7 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
                     "-p",
                     commit,
                     "-m",
-                    `t3 checkpoint turn start ref=${input.checkpointRef}`,
+                    `elbo checkpoint turn start ref=${input.checkpointRef}`,
                   ],
                   // listAuthoredPaths reads commits newer than the start as the turn's own.
                   env: { ...commitEnv, GIT_COMMITTER_DATE: `${capturedAt} +0000` },
@@ -1633,7 +1633,7 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
                 ),
               );
 
-        const message = `t3 checkpoint ref=${input.checkpointRef}${
+        const message = `elbo checkpoint ref=${input.checkpointRef}${
           headMark === undefined ? "" : `\n\n${HEAD_MARK_TRAILER}: ${headMark}`
         }`;
         // HEAD is the first parent so listAuthoredPaths can see how HEAD moved between checkpoints.

@@ -61,7 +61,7 @@ export function teamReleaseNotes(input: {
 
 **Updates:** the app checks this page and shows an update button when a new version is out. Settings → About → Update track picks Stable or Beta.
 
-${name} is based on ${TEAM_IDENTITY.basedOn.name} v${TEAM_IDENTITY.basedOn.version}. It keeps its own data in \`%USERPROFILE%\\${TEAM_IDENTITY.homeDirName}\` and can be installed next to ${TEAM_IDENTITY.basedOn.name}. All releases: ${RELEASES_URL}
+${name} keeps its own data in \`%USERPROFILE%\\${TEAM_IDENTITY.homeDirName}\`. All releases: ${RELEASES_URL}
 
 SHA-256 of \`${input.installerName}\`: \`${input.installerSha256}\`
 

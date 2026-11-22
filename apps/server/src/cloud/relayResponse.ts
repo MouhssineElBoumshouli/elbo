@@ -29,7 +29,7 @@ export function relayRequestError(cause: unknown): RelayRequestError {
     ? cause
     : new RelayRequestError({
         rejection: "unavailable",
-        description: `Could not complete the T3 Connect relay request. ${isHttpClientError(cause) ? `The relay request failed (${cause.reason._tag}).` : "The relay returned an unexpected response."} Check this machine's network connection and relay availability, then retry.`,
+        description: `Could not complete the Elbo Connect relay request. ${isHttpClientError(cause) ? `The relay request failed (${cause.reason._tag}).` : "The relay returned an unexpected response."} Check this machine's network connection and relay availability, then retry.`,
       });
 }
 
@@ -63,9 +63,9 @@ export function relayRetryAfterMillis(error: unknown): number | undefined {
 function recoveryHint(error: RelayProtectedError): string {
   switch (error._tag) {
     case "RelayEnvironmentLinkLimitExceededError":
-      return `Unlink an unused environment in T3 Connect, then restart ${TEAM_IDENTITY.name} on this machine.`;
+      return `Unlink an unused environment in Elbo Connect, then restart ${TEAM_IDENTITY.name} on this machine.`;
     case "RelayAuthInvalidError":
-      return `Run \`t3 connect login\` to check this machine's authorization. If the stored credential was revoked, sign out with \`t3 connect logout\`, then run \`t3 connect\` again. Restart ${TEAM_IDENTITY.name} after signing in.`;
+      return `Run \`elbo connect login\` to check this machine's authorization. If the stored credential was revoked, sign out with \`elbo connect logout\`, then run \`elbo connect\` again. Restart ${TEAM_IDENTITY.name} after signing in.`;
     case "RelayEnvironmentLinkProofExpiredError":
     case "RelayEnvironmentLinkProofInvalidError":
       return `Check this machine's date and time, update ${TEAM_IDENTITY.name}, then restart it.`;
@@ -84,8 +84,8 @@ export const filterRelayResponse = Effect.fn("cloud.filter_relay_response")(func
   const ray = response.headers["cf-ray"];
   const requestId = ray && /^[a-zA-Z0-9-]{1,128}$/.test(ray) ? ` Cloudflare Ray ID: ${ray}.` : "";
   const description = Option.isSome(decoded)
-    ? `T3 Connect: ${decoded.value.message}. ${recoveryHint(decoded.value)} Trace ID: ${decoded.value.traceId}.`
-    : `T3 Connect relay returned HTTP ${response.status} without a recognized error response. Check relay access and any proxy or firewall restrictions, then restart ${TEAM_IDENTITY.name}.${requestId}`;
+    ? `Elbo Connect: ${decoded.value.message}. ${recoveryHint(decoded.value)} Trace ID: ${decoded.value.traceId}.`
+    : `Elbo Connect relay returned HTTP ${response.status} without a recognized error response. Check relay access and any proxy or firewall restrictions, then restart ${TEAM_IDENTITY.name}.${requestId}`;
 
   // Only a schema-decoded expired-proof 401 is retryable for clock skew; every other 401 is permanent.
   if (

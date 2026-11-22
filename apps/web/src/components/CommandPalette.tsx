@@ -1360,9 +1360,8 @@ function OpenCommandPaletteDialog(props: {
       value: "action:triage",
       searchTerms: ["triage", "bug", "issue", "report", "broken", "debug", "help", "support"],
       title: "Triage an issue",
-      // team-layer: triage reports to T3 Code's tracker, so it says so instead of "a T3 Code problem".
-      description:
-        "An agent looks into a problem with the app and helps you report it to T3 Code, which Elbo is built on",
+      // team-layer: the server turns triage off in Elbo (it files on T3 Code's tracker); no name here.
+      description: "An agent looks into a problem with the app and helps file an issue",
       icon: <BugIcon className={ITEM_ICON_CLASS} />,
       run: () => startTriage(triageEnvironmentId),
     });

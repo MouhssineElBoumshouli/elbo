@@ -44,7 +44,7 @@ export class ServiceLauncherClientError extends Schema.TaggedError<ServiceLaunch
       case "decode-context":
         return "The service launcher supplied invalid startup context.";
       case "version-mismatch":
-        return "The service launcher started a different t3 version.";
+        return "The service launcher started a different elbo version.";
       case "unmanaged":
         return "This server is not managed by the launcher.";
       case "send":
@@ -169,7 +169,7 @@ export const repointLaunchers = Effect.fn("cloud.service_launcher_client.repoint
       if (
         yield* fs.exists(candidate).pipe(
           Effect.catch((cause) =>
-            Effect.logWarning("Could not check the t3 command on PATH", {
+            Effect.logWarning("Could not check the elbo command on PATH", {
               launchedAs: candidate,
               cause,
             }).pipe(Effect.as(false)),
@@ -217,7 +217,7 @@ export const repointLaunchers = Effect.fn("cloud.service_launcher_client.repoint
         Effect.catchCause((cause) =>
           Cause.hasInterrupts(cause)
             ? Effect.interrupt
-            : Effect.logWarning("Could not move the t3 command to the updated version", {
+            : Effect.logWarning("Could not move the elbo command to the updated version", {
                 launchedAs,
                 cause,
               }),

@@ -1,7 +1,8 @@
 // @effect-diagnostics nodeBuiltinImport:off - a plain test that reads tracked files.
-// team-layer: user-visible text says Elbo, never "T3 Code". Upstream syncs bring new strings back;
-// this fails on them. Fix the string (APP_DISPLAY_NAME in web and desktop, TEAM_IDENTITY.name in
-// server and packages) or, only when it must stay, add it below with the reason.
+// team-layer: user-visible text says Elbo, never "T3 Code", "T3 Connect" or "T3 home". Upstream
+// syncs bring new strings back; this fails on them. Fix the string (APP_DISPLAY_NAME in web and
+// desktop, TEAM_IDENTITY.name in server and packages, "Elbo Connect", "data folder") or, only
+// when it must stay, add it below with the reason.
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
@@ -9,20 +10,11 @@ import { describe, expect, it } from "vite-plus/test";
 
 const ROOT = NodePath.resolve(import.meta.dirname, "..");
 const SCOPES = ["apps/desktop/src", "apps/web/src", "apps/server/src", "packages"];
+const T3_NAMES = /T3 Code|T3 Connect|T3 home/;
 const SKIP_PATH =
   /(\.test\.|\.testkit\.|\/test\/|\/testkit\/|fixture|\/__fixtures__\/|^packages\/provider-testing\/)/;
 
 const ALLOWED: ReadonlyArray<{ file: string; text: string; reason: string }> = [
-  {
-    file: "packages/shared/src/teamIdentity.ts",
-    text: 'basedOn: { name: "T3 Code"',
-    reason: "the credit",
-  },
-  {
-    file: "packages/shared/src/teamIdentity.ts",
-    text: "to T3 Code or to anyone else",
-    reason: "privacy line",
-  },
   {
     file: "packages/shared/src/teamIdentity.ts",
     text: '"T3 Code (Alpha)", "T3 Code (Dev)"',
@@ -56,12 +48,12 @@ const ALLOWED: ReadonlyArray<{ file: string; text: string; reason: string }> = [
   {
     file: "apps/server/src/triage/triagePrompt.ts",
     text: "T3 Code",
-    reason: "triage really reports to T3 Code's tracker",
+    reason: "triage is off in Elbo; its prompt is upstream's, agent-facing",
   },
   {
-    file: "apps/web/src/components/CommandPalette.tsx",
-    text: "report it to T3 Code, which Elbo is built on",
-    reason: "the triage option",
+    file: "apps/server/src/triage/triagePrompt.ts",
+    text: "T3 Connect tunnel log",
+    reason: "triage is off in Elbo; its prompt is upstream's, agent-facing",
   },
   {
     file: "apps/server/src/provider/CodexProvider.ts",
@@ -112,30 +104,31 @@ const stripComment = (line: string): string => {
   return inline === -1 ? line : line.slice(0, inline);
 };
 
-function visibleT3CodeLines(): Array<{ file: string; line: string }> {
+function visibleT3NameLines(): Array<{ file: string; line: string }> {
   const files = NodeChildProcess.execFileSync("git", ["ls-files", "--", ...SCOPES], {
     cwd: ROOT,
     encoding: "utf8",
   })
     .split("\n")
-    .filter((file) => /\.(ts|tsx)$/.test(file) && !SKIP_PATH.test(file));
+    .filter((file) => /\.(ts|tsx)$/.test(file) && !SKIP_PATH.test(file))
+    .concat("README.md");
   const hits: Array<{ file: string; line: string }> = [];
   for (const file of files) {
     const text = NodeFS.readFileSync(NodePath.join(ROOT, file), "utf8");
-    if (!text.includes("T3 Code")) continue;
+    if (!T3_NAMES.test(text)) continue;
     for (const line of text.split("\n")) {
-      if (stripComment(line).includes("T3 Code")) hits.push({ file, line: line.trim() });
+      if (T3_NAMES.test(stripComment(line))) hits.push({ file, line: line.trim() });
     }
   }
   return hits;
 }
 
 describe("Elbo name guard", () => {
-  const hits = visibleT3CodeLines();
+  const hits = visibleT3NameLines();
   const allowed = (hit: { file: string; line: string }) =>
     ALLOWED.some((entry) => entry.file === hit.file && hit.line.includes(entry.text));
 
-  it('finds no user-visible "T3 Code" outside the allowlist', () => {
+  it("finds no user-visible T3 name outside the allowlist", () => {
     expect(hits.filter((hit) => !allowed(hit))).toEqual([]);
   });
 

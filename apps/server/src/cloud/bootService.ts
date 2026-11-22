@@ -656,8 +656,8 @@ type BootServiceProblem = typeof BootServiceProblem.Type;
 export function formatBootServiceProblem(
   problem: BootServiceProblem,
   commands: { readonly install: string; readonly restart: string } = {
-    install: "t3 service install",
-    restart: "t3 service restart",
+    install: "elbo service install",
+    restart: "elbo service restart",
   },
 ): string {
   switch (problem) {
@@ -720,7 +720,7 @@ export class BootServiceOtherBaseDirError extends Schema.TaggedError<BootService
   },
 ) {
   override get message(): string {
-    return `The ${TEAM_IDENTITY.name} service on this machine serves ${this.installedBaseDir}, not ${this.baseDir}. Pass ${formatBootServiceBaseDirOption(this.installedBaseDir)} to manage it, or run \`t3 service uninstall ${formatBootServiceBaseDirOption(this.installedBaseDir)}\` first to move it; both data directories are kept.`;
+    return `The ${TEAM_IDENTITY.name} service on this machine serves ${this.installedBaseDir}, not ${this.baseDir}. Pass ${formatBootServiceBaseDirOption(this.installedBaseDir)} to manage it, or run \`elbo service uninstall ${formatBootServiceBaseDirOption(this.installedBaseDir)}\` first to move it; both data directories are kept.`;
   }
 
   // A refusal the user fixes by rerunning, so the CLI prints the message, not a stack trace.
@@ -734,7 +734,7 @@ export class BootServiceBaseDirUnsupportedError extends Schema.TaggedError<BootS
   { baseDir: Schema.String },
 ) {
   override get message(): string {
-    return `systemd cannot run ${TEAM_IDENTITY.name} from ${JSON.stringify(this.baseDir)}: the path contains a quote, backslash or control character. Choose another T3 home with --base-dir.`;
+    return `systemd cannot run ${TEAM_IDENTITY.name} from ${JSON.stringify(this.baseDir)}: the path contains a quote, backslash or control character. Choose another data folder with --base-dir.`;
   }
 
   override get [CliError.userMessage]() {
@@ -1267,7 +1267,7 @@ export const make = Effect.fn("cloud.boot_service.make")(function* (input: {
             Effect.mapError(
               (cause) =>
                 new PinnedRuntimeInstallError({
-                  step: "verifying the pinned t3 runtime",
+                  step: "verifying the pinned elbo runtime",
                   cause,
                 }),
             ),
@@ -1277,7 +1277,7 @@ export const make = Effect.fn("cloud.boot_service.make")(function* (input: {
                 ? Effect.void
                 : Effect.fail(
                     new PinnedRuntimeInstallError({
-                      step: "verifying the pinned t3 runtime",
+                      step: "verifying the pinned elbo runtime",
                       exitCode: Number(result.code),
                       stdoutLength: result.stdout.length,
                       stderrLength: result.stderr.length,

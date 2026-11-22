@@ -1,15 +1,15 @@
 import type { ComponentProps } from "react";
-import { TEAM_ABOUT_LINE, TEAM_IDENTITY, TEAM_PRIVACY_LINE } from "@t3tools/shared/teamIdentity";
+import { TEAM_IDENTITY, TEAM_PRIVACY_LINE } from "@t3tools/shared/teamIdentity";
 
 import { SettingsRow } from "../settings/settingsLayout";
 import { APP_DISPLAY_NAME } from "~/branding"; // team-layer
 
-/** Settings → About: which app this is and what it is built on. */
+/** Settings → About: which app this is and where it comes from. */
 export function TeamAboutRow() {
   return (
     <SettingsRow
-      title={TEAM_ABOUT_LINE}
-      description={`Open source under the MIT license, like ${APP_DISPLAY_NAME}. Source and updates: github.com/${TEAM_IDENTITY.updateRepository}/releases`}
+      title={APP_DISPLAY_NAME}
+      description={`Open source under the MIT license. Source and updates: github.com/${TEAM_IDENTITY.updateRepository}/releases`}
     />
   );
 }

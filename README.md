@@ -1,128 +1,47 @@
-# T3 Code + team layer (paused prototype)
-
-This is my fork of [T3 Code](https://github.com/pingdotgg/t3code). I tried to add a "team layer" so several people can each use their own AI coding agent (Claude Code, Codex) on the same project without getting in each other's way.
-
-**What works:**
-
-- A shared team memory on one computer. Every agent knows the project rules, who is working on what, and its own task.
-- File claims. Before an agent edits a file, it reserves it. If another agent wants the same file, it warns the user first.
-- Handoff notes and memory search. Each note is marked fresh or "maybe outdated" based on whether the files changed since it was written.
-- A "cold start" test. A brand new chat, with no hints, answered 5 questions about the project correctly. It passed with both Claude and Codex.
-- The first steps for teammates on other computers: limited team-only access, invite links, and security tests that try every door in the app with a teammate's key.
-
-**Status:** paused. The design and progress notes are in the [`team/`](team/) folder.
-
-While building this, I found a security bug in T3 Code and reported it privately to their team.
-
-All credit for T3 Code goes to T3 Tools Inc. It is MIT licensed.
-
----
-
 <p align="center">
-  <a href="https://t3.codes">
-    <img src="./assets/prod/t3-black-web-icon-192x192.png" width="80" height="80" alt="T3 Code logo" />
-  </a>
+  <img src="./assets/team/elbo-symbol-transparent.png" width="96" height="96" alt="Elbo logo" />
 </p>
 
-<h1 align="center">T3 Code</h1>
+<h1 align="center">Elbo</h1>
 
-<p align="center">The open-source control plane for coding agents.</p>
-
-<p align="center">
-  <a href="https://t3.codes/download"><strong>Download</strong></a> ·
-  <a href="https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824">iOS</a> ·
-  <a href="https://play.google.com/store/apps/details?id=com.t3tools.t3code">Android</a> ·
-  <a href="https://app.t3.codes">Web</a> ·
-  <a href="./docs/README.md">Docs</a> ·
-  <a href="https://discord.gg/jn4EGJjrvv">Discord</a>
-</p>
+<p align="center">One app for your AI coding agents, made for working as a team.</p>
 
 <p align="center">
-  <a href="https://t3.codes">
-    <img src="./.github/readme/hero.webp" width="100%" alt="T3 Code on desktop with a finished Claude thread, next to the phone app asking to approve a command from Codex" />
-  </a>
+  <a href="https://github.com/MouhssineElBoumshouli/elbo/releases"><strong>Download for Windows</strong></a>
 </p>
 
-T3 Code runs the coding agents on your machine and gives them one fast interface. Start a thread at your desk, then approve the next step from your phone.
-
-It works with Claude Code, Codex, Cursor, OpenCode, Grok Build, Antigravity, Kiro, Pi, Muse Code, fx, and any [ACP](./docs/user/providers-acp.md) agent. If an agent is set up on your computer, T3 Code can control it.
+Elbo runs the AI coding agents you already use, such as Claude Code and Codex, in one simple window. It is made for students and small teams: several people, each with their own AI, working on the same project without getting in each other's way.
 
 ## What you get
 
-- **Your subscriptions.** T3 Code does not resell tokens. It drives the agents you are already signed in to.
-- **Every agent in one place.** Change models in the middle of a thread. Let Claude hand a task to Codex.
-- **Desktop, web, and phone.** One server, and every client shows the same threads. There are apps for iOS and Android.
-- **Remote ready.** Run agents on any machine. Connect over your local network, Tailscale, or [T3 Connect](./docs/user/remote-access.md).
-- **Git built in.** Each thread can work in its own worktree. Review the diff, then commit, push, and open a pull request with one button.
-- **Fast.** Performance is a feature here. We measure it, and we treat a dropped frame as a bug.
-- **Open.** MIT licensed. If you don't like something, fork it.
+- **Your own subscriptions.** Elbo does not sell tokens. It drives the agents you are already signed in to.
+- **Team memory.** Every agent knows the project's rules, who is working on what, and its own task. A brand new chat can answer questions about the project without hints.
+- **No clashes.** Before an agent edits a file, it claims it. If a teammate's agent is already on that file, you are warned first.
+- **Handoffs and notes.** Leave a note for a teammate or for future you. Notes say when the files they talk about have changed since.
+- **Team home and Today.** See who is working on what, what changed and what needs you.
+- **Merge help.** Elbo checks your chats against the main branch and helps when they clash.
+- **Simple by default.** Plain words, fewer buttons. Advanced settings are one switch away.
 
 ## Install
 
-### Desktop app
+1. Download the newest `Elbo-…-x64.exe` from [Releases](https://github.com/MouhssineElBoumshouli/elbo/releases).
+2. Open it. Windows shows "Windows protected your PC" because Elbo is not code-signed yet. Click **More info**, then **Run anyway**.
+3. Elbo installs for your user only (no admin needed). Pick a project folder, connect one AI, and start a chat.
 
-[Download T3 Code](https://t3.codes/download) for macOS, Windows, or Linux. You can also use a package manager:
+Elbo needs one AI agent that is installed and signed in. For example, install [Claude Code](https://claude.com/product/claude-code) and run `claude auth login`, or install [Codex CLI](https://developers.openai.com/codex/cli) and run `codex login`. Settings → Check my setup shows what is missing.
 
-| Platform       | Command                                                              |
-| -------------- | -------------------------------------------------------------------- |
-| macOS          | `brew install --cask t3-code`                                        |
-| Windows        | `winget install T3Tools.T3Code` or `scoop install extras/t3code`     |
-| Arch Linux     | `yay -S t3code-bin`                                                  |
-| Nix            | `nix profile add github:NixOS/nixpkgs/nixos-unstable#t3code`         |
-| Debian, Ubuntu | `.deb` from [Releases](https://github.com/pingdotgg/t3code/releases) |
+Updates arrive through the update button in the app. Settings → About → Update track picks Stable or Beta.
 
-### Command line
+## Privacy
 
-This installs the `t3` command. Run `t3` to start the server and open the web app.
+Elbo collects no usage data. It sends nothing about how you use it to us or to anyone else. The AI tools you connect have their own privacy policies.
 
-```bash
-curl -fsSL https://t3.codes/install.sh | sh
-```
+## For contributors
 
-On Windows, in PowerShell:
-
-```powershell
-irm https://t3.codes/install.ps1 | iex
-```
-
-To try it once without an install, run `npx t3@latest`.
-
-### Phone
-
-Get the app from the [App Store](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824) or [Google Play](https://play.google.com/store/apps/details?id=com.t3tools.t3code). Then follow [remote access](./docs/user/remote-access.md) to connect it to your computer.
-
-### Sign in to an agent
-
-T3 Code needs one agent that is installed and signed in. For example, install [Claude Code](https://claude.com/product/claude-code) and run `claude auth login`, or install [Codex CLI](https://developers.openai.com/codex/cli) and run `codex login`.
-
-[Provider setup](./docs/user/install.md#providers) has the steps for each agent. [Install T3 Code](./docs/user/install.md) covers nightly builds, AppImage, WSL, and NixOS.
-
-## "Wait, what are you selling me?"
-
-Nothing. We built T3 Code because we wanted the best possible development experience with agents. We were inspired by existing solutions like the Codex desktop app, Conductor, Claude Desktop and Cursor Glass, but none met our bar.
-
-We wanted something performant, remote-ready, and truly open. If we ever go the wrong direction, we want you to have everything you need to fork and build the tool that you want.
-
-## Documentation
-
-- [Install and first run](./docs/user/install.md)
-- [Remote access from a phone or another machine](./docs/user/remote-access.md)
-- [Permission modes](./docs/user/permission-modes.md)
-- [Source control](./docs/user/source-control.md)
-- [Connect outside agents over MCP](./docs/user/outside-agents.md)
-- [FAQ](./docs/user/faq.md)
-
-[All docs](./docs/README.md) has the full list.
-
-## Contributing
-
-We have limited review capacity. Small, focused fixes are the most likely to be merged. Features need an approved discussion first.
-
-- Read [CONTRIBUTING.md](./CONTRIBUTING.md) before you report a bug or open a pull request.
-- Put feature requests in [Ideas](https://github.com/pingdotgg/t3code/discussions/categories/ideas).
-- Build from source with the [development runbook](./docs/operations/development.md#first-checkout). The [architecture overview](./docs/internals/overview.md) explains how it works.
-- Get help in [Discord](https://discord.gg/jn4EGJjrvv).
+- How we work: [team/WORKING_RULES.md](./team/WORKING_RULES.md). Progress: [team/PROGRESS.md](./team/PROGRESS.md).
+- Releasing: [team/RELEASING.md](./team/RELEASING.md).
+- Build from source: [development runbook](./docs/operations/development.md#first-checkout).
 
 ## License
 
-[MIT](./LICENSE)
+[MIT](./LICENSE). The license and the notices of the open source projects Elbo uses are in the app under Settings → About → Open source licenses.

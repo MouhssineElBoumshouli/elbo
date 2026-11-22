@@ -933,7 +933,7 @@ export class Launcher {
       if (lock !== undefined) return lock;
       if (attempt >= LOCK_ATTEMPTS) {
         throw new Error(
-          `Another ${TEAM_IDENTITY.name} service launcher still runs for this T3 home.`,
+          `Another ${TEAM_IDENTITY.name} service launcher still runs for this data folder.`,
         );
       }
       await new Promise((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
@@ -1458,7 +1458,7 @@ export class Launcher {
     }
     this.#releaseServing();
     this.#log(
-      `[service-launcher] Another ${TEAM_IDENTITY.name} server owns this T3 home. This service starts again once it stops.\n`,
+      `[service-launcher] Another ${TEAM_IDENTITY.name} server owns this data folder. This service starts again once it stops.\n`,
     );
     this.#stateDirFreeProbes = 0;
     // The interval also keeps Node alive: signal listeners alone do not.
@@ -1482,7 +1482,7 @@ export class Launcher {
     if (this.#stateDirFreeProbes < 2) return;
     this.#clearTimer();
     await this.#claimServing();
-    this.#log("[service-launcher] The T3 home is free again. Starting the server.\n");
+    this.#log("[service-launcher] The data folder is free again. Starting the server.\n");
     const update = this.#state.update;
     if (update?.status === "pending") await this.#startTrial(update);
     else await this.#startChild(this.#state.activeVersion, "active", update);

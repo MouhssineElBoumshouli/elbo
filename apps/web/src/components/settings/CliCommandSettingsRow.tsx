@@ -16,7 +16,7 @@ import { searchableSetting } from "./settingsSearch";
 const FAILURE_TITLES = {
   install: "Could not install t3",
   uninstall: "Could not remove t3",
-  addToPath: "Could not add t3 to PATH",
+  addToPath: "Could not add elbo to PATH",
 } as const;
 
 /** The desktop `t3` command's state, and its actions with a toast on failure. */

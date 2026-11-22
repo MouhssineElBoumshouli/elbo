@@ -1005,13 +1005,13 @@ function PhoneConnectLink({ environmentId }: { readonly environmentId: Environme
     </Button>
   );
   if (isSignedIn && link === null && linkState.isPending) {
-    return <p className="text-sm text-muted-foreground">Checking T3 Connect…</p>;
+    return <p className="text-sm text-muted-foreground">Checking Elbo Connect…</p>;
   }
   if (isSignedIn && linkState.error !== null) {
     return (
       <>
-        <p className="text-sm text-foreground">Could not check T3 Connect.</p>
-        {settingsLink("Check T3 Connect")}
+        <p className="text-sm text-foreground">Could not check Elbo Connect.</p>
+        {settingsLink("Check Elbo Connect")}
       </>
     );
   }
@@ -1026,7 +1026,7 @@ function PhoneConnectLink({ environmentId }: { readonly environmentId: Environme
   if (isSignedIn && shared && reachability === undefined) {
     return (
       <p className="text-sm text-foreground">
-        T3 Connect is on for this computer. Sign in to the app with the same account.
+        Elbo Connect is on for this computer. Sign in to the app with the same account.
       </p>
     );
   }
@@ -1036,17 +1036,17 @@ function PhoneConnectLink({ environmentId }: { readonly environmentId: Environme
       <>
         <p className="text-sm text-foreground">
           {shared
-            ? "T3 Connect is on, but the app cannot reach this computer."
+            ? "Elbo Connect is on, but the app cannot reach this computer."
             : "Signed in. Share this computer so the app can reach it."}
         </p>
-        {settingsLink(shared ? "Check T3 Connect" : "Set up T3 Connect")}
+        {settingsLink(shared ? "Check Elbo Connect" : "Set up Elbo Connect")}
       </>
     );
   }
   return (
     <>
       <p className="text-sm text-foreground">
-        Sign in to T3 Connect here, then in the app with the same account.
+        Sign in to Elbo Connect here, then in the app with the same account.
       </p>
       {loadFailed ? (
         <Button variant="outline" size="xs" onClick={retryClerkLoad}>
@@ -1054,7 +1054,7 @@ function PhoneConnectLink({ environmentId }: { readonly environmentId: Environme
         </Button>
       ) : (
         <Button variant="outline" size="xs" disabled={!isLoaded} onClick={openAuthPrompt}>
-          Sign in to T3 Connect
+          Sign in to Elbo Connect
         </Button>
       )}
     </>

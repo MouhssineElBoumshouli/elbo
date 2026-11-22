@@ -46,13 +46,13 @@ export function relayProtectedErrorMessage(error: RelayProtectedError): string {
       // "Not authorized" covers non-auth causes too; surface the reason so a
       // missing link does not read as a credential problem.
       if (error.reason === "environment_link_not_found") {
-        return "Relay has no active link for this environment. If it was deregistered from T3 Connect, link it again on that machine.";
+        return "Relay has no active link for this environment. If it was deregistered from Elbo Connect, link it again on that machine.";
       }
       if (error.reason === "managed_endpoint_allocation_not_ready") {
-        return "The environment's T3 Connect tunnel is still being set up.";
+        return "The environment's Elbo Connect tunnel is still being set up.";
       }
       if (error.reason === "endpoint_provider_not_managed") {
-        return "This environment is linked only to publish agent activity, so it cannot accept connections. On that computer, open Settings > Sharing & access and turn T3 Connect on.";
+        return "This environment is linked only to publish agent activity, so it cannot accept connections. On that computer, open Settings > Sharing & access and turn Elbo Connect on.";
       }
       return error.reason
         ? `Relay rejected the environment connection request (${error.reason}).`
@@ -69,7 +69,7 @@ export function relayProtectedErrorMessage(error: RelayProtectedError): string {
       }`;
     case "RelayEnvironmentLinkLimitExceededError":
       return error.maxTunnels < T3CHAT_PLAN_TUNNEL_LIMITS.premier
-        ? `Relay refused the link: this account already has its maximum of ${error.maxTunnels} managed tunnels. Unlink an environment, or link a paid T3 Chat account in your T3 Connect account settings on web or desktop. Pro raises the default limit to ${T3CHAT_PLAN_TUNNEL_LIMITS.pro} and Premier to ${T3CHAT_PLAN_TUNNEL_LIMITS.premier}.`
+        ? `Relay refused the link: this account already has its maximum of ${error.maxTunnels} managed tunnels. Unlink an environment, or link a paid T3 Chat account in your Elbo Connect account settings on web or desktop. Pro raises the default limit to ${T3CHAT_PLAN_TUNNEL_LIMITS.pro} and Premier to ${T3CHAT_PLAN_TUNNEL_LIMITS.premier}.`
         : `Relay refused the link: this account already has its maximum of ${error.maxTunnels} managed tunnels. Unlink an environment to free one up.`;
     case "RelayAgentActivityPublishProofExpiredError":
       return "Relay rejected an expired agent activity publish proof.";
@@ -95,7 +95,7 @@ export function relayRequestFailureDetail(error: {
   return null;
 }
 
-const RELAY_TUNNEL_RELEASED_MESSAGE = `Offline for a while, so its T3 Connect tunnel was removed. Start ${TEAM_IDENTITY.name} on that computer and update it to the latest version to reconnect.`;
+const RELAY_TUNNEL_RELEASED_MESSAGE = `Offline for a while, so its Elbo Connect tunnel was removed. Start ${TEAM_IDENTITY.name} on that computer and update it to the latest version to reconnect.`;
 
 export function relayOfflineReasonMessage(
   status: Pick<RelayEnvironmentStatusResponse, "offlineReason">,

@@ -85,7 +85,7 @@ function GuestLinksRowWithSignIn() {
   return (
     <SettingsRow
       {...searchableSetting("guest-links")}
-      description="Share a thread with a guest who watches it live in a browser and sends messages you approve. Sign in to T3 Connect to use guest links."
+      description="Share a thread with a guest who watches it live in a browser and sends messages you approve. Sign in to Elbo Connect to use guest links."
       control={
         <Button size="sm" variant="outline" onClick={openAuthPrompt}>
           Sign in
@@ -117,11 +117,11 @@ function GuestLinksRow() {
       description={
         <>
           Share a thread with a guest who watches it live in a browser and sends messages you
-          approve. Needs T3 Connect: sign in and link this machine in{" "}
+          approve. Needs Elbo Connect: sign in and link this machine in{" "}
           <Link to="/settings/access" className="underline underline-offset-2">
             Sharing & access
           </Link>
-          . Turning it off stops every guest link.
+          . Turn it off to end every guest link.
         </>
       }
       control={
@@ -251,7 +251,7 @@ function FastWorktreeCheckoutRow() {
       serverScoped
       {...searchableSetting("worktree-fast-checkout")}
       settingKeys={["fastWorktreeCheckout"]}
-      description="On a Mac, clone new worktrees from a checkout cached in the T3 home folder instead of writing every file. Uses Git’s normal checkout when it can’t. Turning it off deletes the cache."
+      description="On a Mac, clone new worktrees from a checkout cached in the data folder folder instead of writing every file. Uses Git’s normal checkout when it can’t. Turning it off deletes the cache."
       control={
         <ScopedSwitch
           settingKeys={["fastWorktreeCheckout"]}

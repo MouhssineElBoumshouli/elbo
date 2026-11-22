@@ -318,7 +318,7 @@ export function McpConsent({
             <p className="text-xs text-muted-foreground">
               {/* team-layer: Elbo's name for the palette item */}
               Get one from Use Elbo in another app (MCP), Settings → Sharing & access, or{" "}
-              <code>t3 auth pairing create</code> on this machine.
+              <code>elbo auth pairing create</code> on this machine.
             </p>
           </div>
         ) : null}

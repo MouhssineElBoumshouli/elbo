@@ -71,8 +71,8 @@ export function RelayClientInstallDialog() {
           </DialogTitle>
           <DialogDescription>
             {isInstalling
-              ? `${APP_DISPLAY_NAME} is preparing this environment for secure access through T3 Connect.`
-              : `${APP_DISPLAY_NAME} needs the relay client to make this environment available through T3 Connect.`}
+              ? `${APP_DISPLAY_NAME} is preparing this environment for secure access through Elbo Connect.`
+              : `${APP_DISPLAY_NAME} needs the relay client to make this environment available through Elbo Connect.`}
           </DialogDescription>
         </DialogHeader>
         <DialogPanel scrollFade={false}>

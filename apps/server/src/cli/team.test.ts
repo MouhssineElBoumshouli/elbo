@@ -220,12 +220,12 @@ describe("t3 team init", () => {
       const repo = makeRepo();
       const failure = yield* runCli(["team", "init", repo]).pipe(Effect.flip);
       assert.include(String(failure), "needs --base-dir");
-      assert.include(String(failure), "your real T3 install");
+      assert.include(String(failure), "your real data");
       assert.isFalse(exists(repo, ".team"));
       assert.isFalse(exists(repo, "t3.json"));
 
       const status = yield* runCli(["team", "status"]).pipe(Effect.flip);
-      assert.include(String(status), "t3 team status needs --base-dir");
+      assert.include(String(status), "elbo team status needs --base-dir");
     }),
   );
 
@@ -279,7 +279,7 @@ describe("t3 team init", () => {
 
         yield* runCli(["team", "status", "--base-dir", home]);
         const status = yield* lastOutput;
-        assert.include(status, `Teams the T3 home at ${home} has opened:`);
+        assert.include(status, `Teams the data folder at ${home} has opened:`);
         assert.include(status, `Core (teamId ${teamFile.teamId})`);
         assert.include(status, "Fetched from the remote just now.");
         assert.match(status, /members: Mouhssine \(owner, last seen [^)]+\), Sara \(member, /u);
@@ -291,7 +291,7 @@ describe("t3 team init", () => {
     Effect.gen(function* () {
       const home = makeHome();
       yield* runCli(["team", "status", "--base-dir", home]);
-      assert.include(yield* lastOutput, `The T3 home at ${home} has opened no teams.`);
+      assert.include(yield* lastOutput, `The data folder at ${home} has opened no teams.`);
       assert.isFalse(NodeFS.existsSync(NodePath.join(home, "userdata", "state.sqlite")));
     }),
   );
@@ -423,7 +423,7 @@ describe("t3 team init on the remote", () => {
         output,
         /team\.json +team "Core" \(teamId [0-9a-f-]{36}\), created by Mouhssine/u,
       );
-      assert.include(output, `${writer}  this T3 server's part`);
+      assert.include(output, `${writer}  this server's part`);
       assert.include(output, `Created ${TEAM_STATE_REF} on ${NodeURL.pathToFileURL(origin).href}.`);
 
       // One commit with team.json and the creator's writer file; the files are not committed.

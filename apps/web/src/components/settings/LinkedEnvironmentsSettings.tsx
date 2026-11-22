@@ -348,7 +348,9 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
                   value={pairingCode}
                   onChange={(event) => setPairingCode(event.target.value)}
                   placeholder={
-                    machine === null ? "From Sharing & access there, or t3 pair" : "Paste the code"
+                    machine === null
+                      ? "From Sharing & access there, or elbo pair"
+                      : "Paste the code"
                   }
                   disabled={busy}
                   autoComplete="one-time-code"

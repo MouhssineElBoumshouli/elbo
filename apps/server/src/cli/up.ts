@@ -122,7 +122,7 @@ const needsRestart = (before: Routes, after: Routes) =>
   after.lan !== before.lan || (after.connect && !before.connect);
 
 const CHOICES = {
-  connect: { title: "T3 Connect", description: "Creates a tunnel to control your PC." },
+  connect: { title: "Elbo Connect", description: "Creates a tunnel to control your PC." },
   lan: { title: "Local network", description: "LAN and tailnet. Pairing code required." },
 } satisfies Record<Route, { readonly title: string; readonly description: string }>;
 
@@ -149,7 +149,7 @@ const formatSetup = (setup: Setup, hints: Hints) => {
   // This home's access settings reach no service, so only the service is shown.
   if (service.otherBaseDir !== undefined) {
     return [
-      `  ${"Service".padEnd(15)}installed for another T3 home · ${service.otherBaseDir}`,
+      `  ${"Service".padEnd(15)}installed for another data folder · ${service.otherBaseDir}`,
       "",
       `Pass \`${BootService.formatBootServiceBaseDirOption(service.otherBaseDir)}\` to manage it.`,
     ].join("\n");
@@ -167,9 +167,9 @@ const formatSetup = (setup: Setup, hints: Hints) => {
       ? []
       : [
           [
-            "T3 Connect",
+            "Elbo Connect",
             setup.connect
-              ? "on · your T3 account"
+              ? "on · your account"
               : setup.connectRevoked
                 ? `off · link revoked. Run \`${hints.connect}\`.`
                 : "off",
@@ -203,7 +203,7 @@ const formatSetup = (setup: Setup, hints: Hints) => {
 const formatNextSteps = (routes: Routes, serviceInstalled: boolean, hints: Hints) =>
   [
     ...(routes.connect
-      ? ["On your other device, sign in to T3 Connect with the same account."]
+      ? ["On your other device, sign in to Elbo Connect with the same account."]
       : []),
     ...(routes.lan ? [`Run \`${hints.pair}\`. Use the code on your other device.`] : []),
     ...(routes.connect || routes.lan
@@ -242,7 +242,7 @@ const setUp = Effect.fn("cli.up")(function* (flags: {
   if (before.connect === null && Option.getOrElse(flags.connect, () => false)) {
     return yield* new CliError.UserError({
       cause: "connect",
-      userMessage: "T3 Connect is unavailable in this build.",
+      userMessage: "Elbo Connect is unavailable in this build.",
     });
   }
 
@@ -278,7 +278,7 @@ const setUp = Effect.fn("cli.up")(function* (flags: {
       cause: "routes",
       userMessage: `No terminal. Choose access with ${
         before.connect === null ? "--lan" : "--connect or --lan"
-      }, or use --yes for the default. See \`t3 up --help\`.`,
+      }, or use --yes for the default. See \`elbo up --help\`.`,
     });
   }
   if (routes.connect && !current.connect) yield* requireConnectAllowed;
@@ -330,7 +330,7 @@ const setUp = Effect.fn("cli.up")(function* (flags: {
     });
     if (linked === null) return;
     yield* Console.log(
-      `✓ Signed in to T3 Connect${linked.identity ? ` as ${linked.identity}` : ""}`,
+      `✓ Signed in to Elbo Connect${linked.identity ? ` as ${linked.identity}` : ""}`,
     );
   }
   // A running server unlinks live; when that fails, only a restart stops its tunnel.
@@ -419,13 +419,13 @@ const setUp = Effect.fn("cli.up")(function* (flags: {
         (yield* Prompt.run(
           Prompt.Confirm({
             message:
-              "The running service still has T3 Connect on. Restart it? Running agent turns will stop.",
+              "The running service still has Elbo Connect on. Restart it? Running agent turns will stop.",
             initial: true,
           }),
         ).pipe(Effect.catchTags({ QuitError: () => Effect.succeed(false) })));
       if (!confirmed) {
         const { command } = yield* resolveHostCliCommand("service restart", baseDirArgs);
-        yield* Console.log(`Run \`${command}\` to turn T3 Connect off.`);
+        yield* Console.log(`Run \`${command}\` to turn Elbo Connect off.`);
       } else {
         if (!interactive && !stopped) {
           yield* Console.log(`Restarting ${TEAM_IDENTITY.name}. Running agent turns will stop.`);
@@ -436,7 +436,7 @@ const setUp = Effect.fn("cli.up")(function* (flags: {
         }
         if (outcome === "skipped") {
           yield* Console.log(
-            "The installed service was not restarted. Run `t3 service status` to see why.",
+            "The installed service was not restarted. Run `elbo service status` to see why.",
           );
         }
         started = outcome === "restarted";
@@ -460,7 +460,7 @@ export const upCommand = Command.make("up", {
   ...projectLocationFlags,
   connect: Flag.Boolean("connect").pipe(
     Flag.withDescription(
-      "Allow access through T3 Connect with your T3 account. Turn off with --no-connect.",
+      "Allow access through Elbo Connect with your account. Turn off with --no-connect.",
     ),
     Flag.optional,
   ),
@@ -472,7 +472,7 @@ export const upCommand = Command.make("up", {
   ),
   yes: Flag.Boolean("yes").pipe(
     Flag.withDescription(
-      "Ask nothing. Keep the access settings; a new machine gets T3 Connect. A restart stops running agent turns.",
+      "Ask nothing. Keep the access settings; a new machine gets Elbo Connect. A restart stops running agent turns.",
     ),
     Flag.withDefault(false),
   ),
@@ -485,12 +485,12 @@ export const upCommand = Command.make("up", {
     `Set up remote access and the ${TEAM_IDENTITY.name} background service. Access flags skip the question, and routes not named keep their settings. Without a terminal, a needed restart runs without asking and stops running agent turns.`,
   ),
   Command.withExamples([
-    { command: "t3 up", description: "Choose remote access." },
-    { command: "t3 up --connect", description: "Turn on T3 Connect. Keep other settings." },
-    { command: "t3 up --lan", description: "Allow LAN access with pairing codes." },
-    { command: "t3 up --no-lan", description: "Stop LAN access." },
-    { command: "t3 up --yes", description: "Take the defaults with no questions." },
-    { command: "t3 status --json", description: "Read the settings from a script." },
+    { command: "elbo up", description: "Choose remote access." },
+    { command: "elbo up --connect", description: "Turn on Elbo Connect. Keep other settings." },
+    { command: "elbo up --lan", description: "Allow LAN access with pairing codes." },
+    { command: "elbo up --no-lan", description: "Stop LAN access." },
+    { command: "elbo up --yes", description: "Take the defaults with no questions." },
+    { command: "elbo status --json", description: "Read the settings from a script." },
   ]),
   Command.withHandler((flags) => runCloudCommand(flags, setUp(flags), { quietLogs: true })),
 );
@@ -499,7 +499,7 @@ export const connectCommand = Command.make("connect", {
   ...projectLocationFlags,
   headless: headlessFlag,
 }).pipe(
-  Command.withDescription("Set up T3 Connect for this machine. Same as `t3 up --connect`."),
+  Command.withDescription("Set up Elbo Connect for this machine. Same as `elbo up --connect`."),
   Command.withHandler((flags) =>
     runCloudCommand(
       flags,
@@ -541,8 +541,8 @@ export const statusCommand = Command.make("status", {
 }).pipe(
   Command.withDescription("Show service setup and remote access settings."),
   Command.withExamples([
-    { command: "t3 status", description: "Show the settings." },
-    { command: "t3 status --json", description: "Print them for scripts and agents." },
+    { command: "elbo status", description: "Show the settings." },
+    { command: "elbo status --json", description: "Print them for scripts and agents." },
   ]),
   Command.withHandler(
     Effect.fn("cli.status")(function* (flags) {

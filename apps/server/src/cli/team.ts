@@ -61,7 +61,7 @@ export class TeamCliError extends Schema.TaggedError<TeamCliError>()("TeamCliErr
 
 /** For now every `t3 team` command needs `--base-dir`, so a test never lands in the real install. */
 const missingBaseDirMessage = (command: string) =>
-  `t3 team ${command} needs --base-dir: the T3 home of the server to use, the same folder as its --home-dir (for example --base-dir ~/.t3-dev). Without it, it would use your real T3 install.`;
+  `elbo team ${command} needs --base-dir: the data folder of the server to use, the same folder as its --home-dir (for example --base-dir ~/.t3-dev). Without it, it would use your real data.`;
 
 const requireBaseDir = (command: string, baseDir: Option.Option<string>) =>
   Option.isSome(baseDir) && baseDir.value.trim().length > 0
@@ -87,10 +87,10 @@ const teamStateLayer = (config: ServerConfig.ServerConfig["Service"]) =>
 const GIT_ENV = { GIT_TERMINAL_PROMPT: "0", LC_ALL: "C", GCM_INTERACTIVE: "never" };
 
 export const PUBLIC_REPO_REFUSAL =
-  "This repo is public, so its team state would be public too: anyone could read your GitHub logins, task titles and notes, the files you work on, handoff notes and when you work. Nothing was written. Make the repo private (GitHub Free allows unlimited private repos with collaborators), or run t3 team init --public-ok to accept that.";
+  "This repo is public, so its team state would be public too: anyone could read your GitHub logins, task titles and notes, the files you work on, handoff notes and when you work. Nothing was written. Make the repo private (GitHub Free allows unlimited private repos with collaborators), or run elbo team init --public-ok to accept that.";
 
 export const REMOTE_TEAM_WITHOUT_FILE =
-  "The project's remote already holds a team's state, but this checkout has no .team/team.json. Pull the commit that adds it (git pull), then run t3 team init again. Nothing was written.";
+  "The project's remote already holds a team's state, but this checkout has no .team/team.json. Pull the commit that adds it (git pull), then run elbo team init again. Nothing was written.";
 
 /** What `init` can do on the project's remote, decided before any file is written. */
 type RemotePlan =
@@ -110,8 +110,8 @@ function formatTeamInitResult(result: TeamProjectInitResult): string {
     ...result.files.map((file) => `  ${file.status.padEnd(9)} ${file.path}  ${file.detail}`),
     "",
     changed
-      ? "t3 team init does not commit. Review these files, then commit and push them so the whole team gets them."
-      : "Nothing changed here. t3 team init does not commit; commit and push the files if you have not yet.",
+      ? "elbo team init does not commit. Review these files, then commit and push them so the whole team gets them."
+      : "Nothing changed here. elbo team init does not commit; commit and push the files if you have not yet.",
   ];
   return lines.join("\n");
 }
@@ -130,7 +130,7 @@ function formatTeamStatePreview(input: {
   return [
     `On ${input.remoteUrl}, this creates the hidden ref ${TEAM_STATE_REF} with:`,
     `  ${"team.json".padEnd(width)}team "${input.teamName}" (teamId ${input.teamId}), created by ${input.login}`,
-    `  ${writer.padEnd(width)}this T3 server's part: your claims, tasks, notes and activity`,
+    `  ${writer.padEnd(width)}this server's part: your claims, tasks, notes and activity`,
     "Your branches are not touched, and a normal git fetch or pull does not download it.",
     input.isPublic
       ? "The repo is public, so anyone can read it (you passed --public-ok)."
@@ -185,7 +185,7 @@ export const runTeamInit = Effect.fn("runTeamInit")(function* (input: TeamInitIn
       const remoteUrl = remote.exitCode === 0 ? remote.stdout.trim() : "";
       if (remoteUrl === "") {
         return localOnly(
-          "this repo has no origin remote, where the team's shared state lives. Add one, then run t3 team init again",
+          "this repo has no origin remote, where the team's shared state lives. Add one, then run elbo team init again",
         );
       }
       const location = TeamHost.parseTeamRemoteUrl(remoteUrl);
@@ -288,7 +288,7 @@ export const runTeamInit = Effect.fn("runTeamInit")(function* (input: TeamInitIn
     );
     if (!input.yes && !(yield* input.confirm)) {
       yield* Console.log(
-        "Left the remote as is. Team tools in this repo do nothing until t3 team init creates the team state.",
+        "Left the remote as is. Team tools in this repo do nothing until elbo team init creates the team state.",
       );
       return;
     }
@@ -312,7 +312,7 @@ export const runTeamInit = Effect.fn("runTeamInit")(function* (input: TeamInitIn
   const writer = writerFilePath(membership.member.memberId, input.environmentId);
   if (opened.created) {
     yield* Console.log(
-      `Created ${TEAM_STATE_REF} on ${plan.remoteUrl}. Teammates with push access join by pulling .team/ and opening the project in ${TEAM_IDENTITY.name} (or running t3 team init in their clone).`,
+      `Created ${TEAM_STATE_REF} on ${plan.remoteUrl}. Teammates with push access join by pulling .team/ and opening the project in ${TEAM_IDENTITY.name} (or running elbo team init in their clone).`,
     );
     return;
   }
@@ -320,7 +320,7 @@ export const runTeamInit = Effect.fn("runTeamInit")(function* (input: TeamInitIn
   const pushed = yield* teams.sync(teamFile.teamId);
   if (!pushed.confirmed) {
     return yield* new TeamCliError({
-      detail: `Could not push this server's writer file to ${plan.remoteUrl} (${pushed.reason}). Run t3 team init again.`,
+      detail: `Could not push this server's writer file to ${plan.remoteUrl} (${pushed.reason}). Run elbo team init again.`,
     });
   }
   yield* Console.log(
@@ -398,7 +398,7 @@ const formatClaim = (claim: TeamClaim) =>
 
 const teamStatusCommand = Command.make("status", { baseDir: baseDirFlag }).pipe(
   Command.withDescription(
-    "List the teams the T3 home in --base-dir has opened, with their members and claims, fetched from each project's remote.",
+    "List the teams the data folder in --base-dir has opened, with their members and claims, fetched from each project's remote.",
   ),
   Command.withHandler(
     Effect.fn("teamStatusCommand")(function* (flags) {
@@ -407,7 +407,7 @@ const teamStatusCommand = Command.make("status", { baseDir: baseDirFlag }).pipe(
       const path = yield* Path.Path;
       const stateDirectory = path.join(config.stateDir, "team");
       if (!(yield* fs.exists(stateDirectory))) {
-        yield* Console.log(`The T3 home at ${config.baseDir} has opened no teams.`);
+        yield* Console.log(`The data folder at ${config.baseDir} has opened no teams.`);
         return;
       }
       yield* Effect.gen(function* () {
@@ -418,10 +418,10 @@ const teamStatusCommand = Command.make("status", { baseDir: baseDirFlag }).pipe(
         });
         const opened = yield* teams.listTeams();
         if (opened.length === 0) {
-          yield* Console.log(`The T3 home at ${config.baseDir} has opened no teams.`);
+          yield* Console.log(`The data folder at ${config.baseDir} has opened no teams.`);
           return;
         }
-        const lines = [`Teams the T3 home at ${config.baseDir} has opened:`];
+        const lines = [`Teams the data folder at ${config.baseDir} has opened:`];
         for (const team of opened) {
           const fetched = yield* teams.refresh(team.teamId);
           if (fetched.status === "solo") {

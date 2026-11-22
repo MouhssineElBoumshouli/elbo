@@ -52,7 +52,7 @@ const notInTeamReason = (
       case "noPushAccess":
         return "the GitHub account signed in here cannot push to the project's repo";
       case "noTeamState":
-        return "the project's remote has no team state yet (t3 team init starts it)";
+        return "the project's remote has no team state yet (elbo team init starts it)";
       case "otherTeam":
         return `the project's remote holds the state of another team (${membership.teamId})`;
       case "unavailable":

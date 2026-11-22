@@ -33,7 +33,7 @@ permissions:
 jobs:
   preflight:
     name: Preflight
-    if: github.repository == 'MouhssineElBoumshouli/t3code'
+    if: github.repository == 'MouhssineElBoumshouli/elbo'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:

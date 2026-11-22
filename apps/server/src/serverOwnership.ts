@@ -49,7 +49,7 @@ export class ServerAlreadyRunningError extends Schema.TaggedError<ServerAlreadyR
   override readonly [Runtime.errorExitCode] = SERVER_EXIT_CODE_STATE_DIR_OWNED;
 
   override get message(): string {
-    return `An ${TEAM_IDENTITY.name} server already owns ${this.stateDir}. Stop that server, or use a separate T3 home and pair with it, then retry. No server was stopped. server-owner.sqlite is the ownership lock; do not delete it while a server is running.`;
+    return `An ${TEAM_IDENTITY.name} server already owns ${this.stateDir}. Stop that server, or use a separate data folder and pair with it, then retry. No server was stopped. server-owner.sqlite is the ownership lock; do not delete it while a server is running.`;
   }
 }
 
@@ -60,7 +60,7 @@ export class OlderBootServiceError extends Schema.TaggedError<OlderBootServiceEr
   override readonly [Runtime.errorExitCode] = SERVER_EXIT_CODE_STATE_DIR_OWNED;
 
   override get message(): string {
-    return `An ${TEAM_IDENTITY.name} background service set up for ${this.baseDir} may still run a release without the ownership lock. On that machine, try \`t3 update\` and let it restart (or run \`t3 service restart\` if the update is already installed). If the older launcher cannot update, run \`t3 service uninstall\`, then reinstall with \`t3 service install\` from a current CLI. You can also leave the service uninstalled. Pass \`--base-dir ${this.baseDir}\` to each command, and use \`npx t3@latest\` if \`t3\` is not installed or is outdated. Then retry. No server was stopped.`;
+    return `An ${TEAM_IDENTITY.name} background service set up for ${this.baseDir} may still run a release without the ownership lock. On that machine, try \`elbo update\` and let it restart (or run \`elbo service restart\` if the update is already installed). If the older launcher cannot update, run \`elbo service uninstall\`, then reinstall with \`elbo service install\` from a current CLI. You can also leave the service uninstalled. Pass \`--base-dir ${this.baseDir}\` to each command, and use \`npx t3@latest\` if \`t3\` is not installed or is outdated. Then retry. No server was stopped.`;
   }
 }
 
@@ -283,7 +283,7 @@ export const acquireServerOwnership = Effect.fn("acquireServerOwnership")(functi
         current.ino !== lock.identity.ino;
     }
     yield* Effect.logError(
-      `Server ownership lock at ${lockPath} was deleted or replaced. Another server may now share this T3 home. Stop any other server using this home, then restart this server. Do not delete server-owner.sqlite while a server is running.`,
+      `Server ownership lock at ${lockPath} was deleted or replaced. Another server may now share this data folder. Stop any other server using this home, then restart this server. Do not delete server-owner.sqlite while a server is running.`,
     );
   }).pipe(Effect.forkScoped);
 

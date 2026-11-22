@@ -171,8 +171,8 @@ function formatProtection(
     !protection.memoryControllerAvailable
       ? `  Memory protection: unavailable, ${MEMORY_CONTROLLER_DISABLED}`
       : protection.unprotected === undefined
-        ? `  Memory protection: on${protection.setByProtect ? " (t3 service protect)" : ""}`
-        : `  Memory protection: off, ${protection.unprotected} grants none. Run \`t3 service protect\`.`,
+        ? `  Memory protection: on${protection.setByProtect ? " (elbo service protect)" : ""}`
+        : `  Memory protection: off, ${protection.unprotected} grants none. Run \`elbo service protect\`.`,
     ...(protection.oomScoreAdj === undefined ? [] : [`  OOM score: ${protection.oomScoreAdj}`]),
   ];
 }
@@ -192,7 +192,7 @@ function formatServiceStatus(
   if (status.otherBaseDir !== undefined) {
     return [
       `${TEAM_IDENTITY.name} service`,
-      "  Status: installed for another T3 home",
+      "  Status: installed for another data folder",
       `  Base dir: ${status.otherBaseDir}`,
       `  Next: Pass \`${BootService.formatBootServiceBaseDirOption(status.otherBaseDir)}\` to manage it.`,
     ].join("\n");
@@ -246,7 +246,7 @@ const serviceReconcileFlags = {
 
 const serviceInstallCommand = Command.make("install", serviceReconcileFlags).pipe(
   Command.withDescription(
-    `Install ${TEAM_IDENTITY.name} as a background service for this user. \`t3 up\` also chooses how your other devices reach it.`,
+    `Install ${TEAM_IDENTITY.name} as a background service for this user. \`elbo up\` also chooses how your other devices reach it.`,
   ),
   Command.withHandler((flags) =>
     runServiceCommand(
@@ -270,14 +270,14 @@ const serviceInstallCommand = Command.make("install", serviceReconcileFlags).pip
 );
 
 const serviceUpdateCommand = Command.make("update", serviceReconcileFlags).pipe(
-  Command.withDescription("Deprecated. Run `t3 update` to move to a newer release."),
+  Command.withDescription("Deprecated. Run `elbo update` to move to a newer release."),
   Command.unlisted,
   Command.withHandler((flags) =>
     runServiceCommand(
       flags,
       Effect.gen(function* () {
         yield* Console.log(
-          "`t3 service update` is deprecated: run `t3 update` to move to a newer release, or `t3 service install` to repair the service. Repairing now.",
+          "`elbo service update` is deprecated: run `elbo update` to move to a newer release, or `elbo service install` to repair the service. Repairing now.",
         );
         const result = yield* reconcileService({ allowDowngrade: flags.allowDowngrade });
         if (!result.changed) {
@@ -294,7 +294,7 @@ const serviceUpdateCommand = Command.make("update", serviceReconcileFlags).pipe(
 
 const serviceRestartCommand = Command.make("restart", projectLocationFlags).pipe(
   Command.withDescription(
-    "Restart the background service. Picks up a version installed by `t3 update` that was not restarted at the time.",
+    "Restart the background service. Picks up a version installed by `elbo update` that was not restarted at the time.",
   ),
   Command.withHandler((flags) =>
     runServiceCommand(
@@ -412,7 +412,7 @@ const serviceProtectCommand = Command.make("protect", {
       // Before resolving config, which creates T3 directories that root would then own.
       if ((yield* HostProcess.UserId) === 0) {
         return yield* Console.log(
-          `Run \`t3 service protect\` as the user that runs ${TEAM_IDENTITY.name}, without sudo. It asks for sudo when it needs root.`,
+          `Run \`elbo service protect\` as the user that runs ${TEAM_IDENTITY.name}, without sudo. It asks for sudo when it needs root.`,
         );
       }
       return yield* runServiceCommand(
@@ -450,7 +450,7 @@ const serviceProtectCommand = Command.make("protect", {
               return;
             yield* ServiceProtection.removeProtection(installed);
             return yield* Console.log(
-              `Removed ${TEAM_IDENTITY.name} service protection. The server's OOM score returns to normal after \`t3 service restart\`.`,
+              `Removed ${TEAM_IDENTITY.name} service protection. The server's OOM score returns to normal after \`elbo service restart\`.`,
             );
           }
 
@@ -459,7 +459,7 @@ const serviceProtectCommand = Command.make("protect", {
               `Keeps ${TEAM_IDENTITY.name} running when agents fill this machine's memory:`,
               `  - reserves memory for the ${TEAM_IDENTITY.name} server, so the kernel takes memory from agents first`,
               "  - makes the out-of-memory killer pick agents before the server",
-              "It adds systemd drop-in files and changes nothing else. Undo with `t3 service protect --undo`.",
+              "It adds systemd drop-in files and changes nothing else. Undo with `elbo service protect --undo`.",
             ].join("\n"),
           );
           const names = remote.map((unit) => unit.replace(/\.service$/, "")).join(" and ");
@@ -490,8 +490,8 @@ const serviceProtectCommand = Command.make("protect", {
           yield* ServiceProtection.applyProtection(plan);
           yield* Console.log(
             memoryController
-              ? `Protected ${TEAM_IDENTITY.name}. Memory protection applies now; the server takes its OOM score after \`t3 service restart\`. Undo with \`t3 service protect --undo\`.`
-              : `Protected ${TEAM_IDENTITY.name}'s OOM score; the server takes it after \`t3 service restart\`. Memory protection applies once the kernel's memory controller is enabled. Undo with \`t3 service protect --undo\`.`,
+              ? `Protected ${TEAM_IDENTITY.name}. Memory protection applies now; the server takes its OOM score after \`elbo service restart\`. Undo with \`elbo service protect --undo\`.`
+              : `Protected ${TEAM_IDENTITY.name}'s OOM score; the server takes it after \`elbo service restart\`. Memory protection applies once the kernel's memory controller is enabled. Undo with \`elbo service protect --undo\`.`,
           );
         }).pipe(Effect.provide(ProcessRunner.layer)),
       );

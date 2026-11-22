@@ -1410,7 +1410,7 @@ function ConnectionsSettingsContent({
                 <AlertDialogDescription>
                   {pendingDesktopServerExposureMode === "network-accessible"
                     ? `Let your other devices connect to ${APP_DISPLAY_NAME} over the network. Pair devices to give them access. ${APP_DISPLAY_NAME} will restart.`
-                    : `Devices connected over your local network will disconnect. Existing tunnels, such as T3 Connect or Tailscale HTTPS, keep working. ${APP_DISPLAY_NAME} will restart.`}
+                    : `Devices connected over your local network will disconnect. Existing tunnels, such as Elbo Connect or Tailscale HTTPS, keep working. ${APP_DISPLAY_NAME} will restart.`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
