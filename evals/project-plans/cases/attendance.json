@@ -1,0 +1,26 @@
+{
+  "what": "An app that takes attendance in class: students check in with their phone, the teacher sees who is there.",
+  "users": "Teachers and students of one department (about 40 teachers, 1,200 students). Teachers on laptops, students on phones.",
+  "mustHaves": [
+    "Teacher opens a session for a class",
+    "Students check in during the first 10 minutes",
+    "Teacher sees the list live and can fix it by hand",
+    "Export to CSV"
+  ],
+  "niceToHaves": ["Statistics per student", "Email alerts after 3 absences", "A native app"],
+  "deadline": "6 weeks, demo to the teacher in week 6",
+  "deadlineDays": 42,
+  "people": [
+    { "name": "Adam", "skills": ["JavaScript", "some React"], "hours": 48 },
+    { "name": "Sara", "skills": ["Python", "SQL"], "hours": 48 },
+    { "name": "Yassine", "skills": ["HTML/CSS", "never used a backend"], "hours": 48 }
+  ],
+  "budget": "free only",
+  "outsideRules": [
+    "Student data must stay in the EU",
+    "The teacher wants it to work on the school Wi-Fi"
+  ],
+  "ai": "no",
+  "feel": "Simple, like the school's own pages.",
+  "notes": ""
+}
