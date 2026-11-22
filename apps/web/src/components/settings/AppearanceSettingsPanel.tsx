@@ -120,7 +120,7 @@ export function AppearanceSettingsPanel() {
       ? "Only built-in themes show artwork, so this theme shows the version pill."
       : "Only built-in themes show artwork."
     : environmentStageVariant
-      ? "Choose how Dev and Beta environments are identified." // team-layer: Beta
+      ? "Choose how the sidebar shows that this is a Beta or Dev version." // team-layer: Beta
       : "Show Dev or Beta artwork in the sidebar header.";
   const glassOpacityRatio =
     (settings.glassOpacity - MIN_GLASS_OPACITY) / (MAX_GLASS_OPACITY - MIN_GLASS_OPACITY);

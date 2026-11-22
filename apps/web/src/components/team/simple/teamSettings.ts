@@ -40,6 +40,7 @@ const SIMPLE_TITLES: Readonly<Record<string, string>> = {
   Threads: "Chats",
   "Thread notifications": "Chat notifications",
   "Thread details": "Chat details",
+  "Environment identification": "Beta and Dev label",
 };
 
 /** A settings title in plain words ("Threads" → "Chats") while simple mode is on. */

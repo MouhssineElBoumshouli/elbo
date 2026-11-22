@@ -11,6 +11,7 @@ const TEST_EXCLUDE = [
   "**/dist/**",
   "**/dist-electron/**",
   "**/.{idea,git,cache,output,temp}/**",
+  "team/parked/**", // team-layer: parked host-mode code, kept for reference, not run
 ];
 
 // Directories whose tests belong to a package's own test config. desktop also

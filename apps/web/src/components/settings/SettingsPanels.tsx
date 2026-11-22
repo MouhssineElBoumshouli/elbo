@@ -3,6 +3,7 @@ import { TeamSimpleModeRow } from "../team/simple/TeamSimpleModeRow"; // team-la
 import { NotificationSettings } from "./NotificationSettings";
 import { CheckIcon } from "lucide-react";
 import { msg, T, useGT, useMessages } from "gt-react";
+import { TeamPlain } from "../team/simple/TeamPlain"; // team-layer
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import {
@@ -813,10 +814,12 @@ export function GeneralSettingsPanel() {
         <SettingsRow
           {...setting("in-app-notifications")}
           description={
-            <T>
-              Show a toast when another thread finishes, fails, or needs input or approval while
-              this app has focus.
-            </T>
+            <TeamPlain words="Show a small message when another chat finishes, fails or needs you while the app is in front.">
+              <T>
+                Show a toast when another thread finishes, fails, or needs input or approval while
+                this app has focus.
+              </T>
+            </TeamPlain>
           }
           control={
             <Switch
@@ -831,7 +834,11 @@ export function GeneralSettingsPanel() {
       <SettingsSection id="sidebar" title={gt("Sidebar")}>
         <SettingsRow
           {...setting("project-grouping")}
-          description={<T>Combine matching repositories across environments.</T>}
+          description={
+            <TeamPlain words="Show a project once, even when it is open on more than one computer.">
+              <T>Combine matching repositories across environments.</T>
+            </TeamPlain>
+          }
           resetAction={
             settings.sidebarProjectGroupingMode !==
             DEFAULT_UNIFIED_SETTINGS.sidebarProjectGroupingMode ? (
@@ -866,7 +873,11 @@ export function GeneralSettingsPanel() {
         />
         <SettingsRow
           {...setting("project-order")}
-          description={<T>Order of projects in the sidebar project picker and command palette.</T>}
+          description={
+            <TeamPlain words="How projects are sorted in the sidebar and in search.">
+              <T>Order of projects in the sidebar project picker and command palette.</T>
+            </TeamPlain>
+          }
           resetAction={
             settings.sidebarProjectSortOrder !==
             DEFAULT_UNIFIED_SETTINGS.sidebarProjectSortOrder ? (
@@ -907,11 +918,13 @@ export function GeneralSettingsPanel() {
         <SettingsRow
           {...setting("working-shelf")}
           description={
-            <T>
-              {/* team-layer: without upstream's note about the Labs sidebar. */}
-              Fold working and monitoring threads into a Working section. They return to the top of
-              the inbox when they need you.
-            </T>
+            <TeamPlain words="Put chats that are working into their own Working group. They move back to the top when they need you.">
+              <T>
+                {/* team-layer: without upstream's note about the Labs sidebar. */}
+                Fold working and monitoring threads into a Working section. They return to the top
+                of the inbox when they need you.
+              </T>
+            </TeamPlain>
           }
           resetAction={
             settings.sidebarWorkingShelfEnabled !==
@@ -941,7 +954,11 @@ export function GeneralSettingsPanel() {
       <SettingsSection id="confirmations" title={gt("Confirmations")}>
         <SettingsRow
           {...setting("unpin-confirmation")}
-          description={<T>Ask before unpinning a thread from the pinned section.</T>}
+          description={
+            <TeamPlain words="Ask before unpinning a chat.">
+              <T>Ask before unpinning a thread from the pinned section.</T>
+            </TeamPlain>
+          }
           resetAction={
             settings.confirmThreadUnpin !== DEFAULT_UNIFIED_SETTINGS.confirmThreadUnpin ? (
               <SettingResetButton
@@ -967,7 +984,11 @@ export function GeneralSettingsPanel() {
         <SettingsRow
           {...setting("archive-confirmation")}
           description={
-            <T>Require a second click on the inline archive action before a thread is archived.</T>
+            <TeamPlain words="Click archive twice before a chat is archived, so it is never archived by accident.">
+              <T>
+                Require a second click on the inline archive action before a thread is archived.
+              </T>
+            </TeamPlain>
           }
           resetAction={
             settings.confirmThreadArchive !== DEFAULT_UNIFIED_SETTINGS.confirmThreadArchive ? (
@@ -993,7 +1014,11 @@ export function GeneralSettingsPanel() {
         />
         <SettingsRow
           {...setting("delete-confirmation")}
-          description={<T>Ask before deleting a thread and its chat history.</T>}
+          description={
+            <TeamPlain words="Ask before deleting a chat and its messages.">
+              <T>Ask before deleting a thread and its chat history.</T>
+            </TeamPlain>
+          }
           resetAction={
             settings.confirmThreadDelete !== DEFAULT_UNIFIED_SETTINGS.confirmThreadDelete ? (
               <SettingResetButton
