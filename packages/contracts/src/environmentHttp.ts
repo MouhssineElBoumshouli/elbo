@@ -507,6 +507,8 @@ export function formatConnectReachable(
 /**
  * Sections of docs/user/t3-connect-troubleshooting.md. Each is the GitHub anchor of a
  * heading there; the test fails when a heading is renamed without updating this list.
+ * team-layer: that test is gone with docs/user (team/UPSTREAM_SYNC.md), hence the tag.
+ * @public
  */
 export const T3_CONNECT_TROUBLESHOOTING_SECTIONS = [
   "the-hosts-tunnel-is-offline",

@@ -10,6 +10,10 @@ How to pull in pingdotgg/t3code, and where our team layer hooks into upstream fi
 
 Upstream moves about 1,300 commits a week, so a sync is always big. "How to keep syncs cheap" below matters more than a calendar.
 
+## Keep deleted
+
+- **`docs/user/`**: upstream's user guides (T3's installers, phone app, Connect). Only `docs/user/README.md`, Elbo's own guide, is ours. A merge that brings back or changes an upstream guide: `git rm` it (`git rm -r $(git diff --name-only --diff-filter=AU main...HEAD -- docs/user ':!docs/user/README.md')`, or by hand for a modify/delete conflict). `ConnectReachability.test.ts` read one of them; its test is removed there with a `team-layer` note.
+
 ## Steps
 
 1. **Pick the tag and look first.** `git fetch upstream --tags`, then `git tag -l 'v*' --sort=-creatordate | grep -v -- '-' | head` (stable tags have no `-nightly`/`-preview` suffix). `git log --oneline main..vX.Y.Z | wc -l`. Check `git diff --stat main...vX.Y.Z -- $(git grep -l 'team-layer' -- ':!team/')`: a hooked file upstream deleted or rewrote needs its hook moved, not just merged.

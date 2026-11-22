@@ -32,6 +32,8 @@ Elbo needs one AI agent that is installed and signed in. For example, install [C
 
 Updates arrive through the update button in the app. Settings → About → Update track picks Stable or Beta.
 
+More in the [user guide](./docs/user/README.md).
+
 ## Privacy
 
 Elbo collects no usage data. It sends nothing about how you use it to us or to anyone else. The AI tools you connect have their own privacy policies.
