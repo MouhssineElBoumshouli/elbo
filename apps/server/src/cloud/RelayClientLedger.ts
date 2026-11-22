@@ -9,6 +9,7 @@ import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import * as ChildProcess from "effect/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const ProcessIdentity = Schema.Struct({
   pid: Schema.Int,
@@ -193,9 +194,12 @@ export const make = Effect.fn("RelayClientLedger.make")(function* (input: {
   const stopOrphan = Effect.fn("RelayClientLedger.stopOrphan")(function* (client: ProcessIdentity) {
     let state = yield* compare(client);
     if (state !== "same") return state === "gone";
-    yield* Effect.logInfo("Stopping a relay client left by a previous T3 Code server", {
-      pid: client.pid,
-    });
+    yield* Effect.logInfo(
+      `Stopping a relay client left by a previous ${TEAM_IDENTITY.name} server`,
+      {
+        pid: client.pid,
+      },
+    );
     for (const name of ["SIGTERM", "SIGKILL"] as const) {
       signal(client.pid, name);
       for (let attempt = 0; attempt < STOP_POLL_ATTEMPTS && state === "same"; attempt++) {

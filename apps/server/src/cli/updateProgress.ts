@@ -1,4 +1,5 @@
 import type { PinnedRuntimeProgress } from "../cloud/pinnedRuntime.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 export function createUpdateProgress(
   output: Pick<NodeJS.WriteStream, "write" | "isTTY" | "columns"> = process.stderr,
@@ -39,7 +40,7 @@ export function createUpdateProgress(
         const labels = {
           download: "Downloading...",
           verify: "Verifying the download...",
-          extract: "Extracting T3 Code...",
+          extract: `Extracting ${TEAM_IDENTITY.name}...`,
           validate: "Checking the new executable...",
           cached: "Using the downloaded release...",
         };

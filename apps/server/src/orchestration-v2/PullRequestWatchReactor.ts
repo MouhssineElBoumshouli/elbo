@@ -43,6 +43,7 @@ import {
   PULL_REQUEST_WATCH_NO_CHECKS_MS,
   pullRequestWatchMessage,
 } from "./pullRequestWatch.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 /** Checks take minutes; faster sweeps waste the account's shared host quota. */
 const SWEEP_MINUTES = 2;
@@ -338,7 +339,7 @@ export const make = Effect.gen(function* () {
 
   const giveUp = (target: WatchTarget) =>
     record(target, null, {
-      text: `T3 Code stopped watching pull request #${target.link.number} (${target.link.url}) because it failed to read it from the host ${READ_FAILURE_LIMIT} times in a row. Check it yourself, and call watch_pull_request only if it is still open.`,
+      text: `${TEAM_IDENTITY.name} stopped watching pull request #${target.link.number} (${target.link.url}) because it failed to read it from the host ${READ_FAILURE_LIMIT} times in a row. Check it yourself, and call watch_pull_request only if it is still open.`,
       notification: {
         source: { kind: "monitor" },
         outcome: "failed",
@@ -530,7 +531,7 @@ export const make = Effect.gen(function* () {
       target,
       next: null,
       wake: {
-        text: `Pull request #${target.link.number} (${target.link.url}) was closed, so T3 Code stopped watching it. Call watch_pull_request if it reopens.`,
+        text: `Pull request #${target.link.number} (${target.link.url}) was closed, so ${TEAM_IDENTITY.name} stopped watching it. Call watch_pull_request if it reopens.`,
         notification: {
           source: { kind: "monitor" },
           outcome: "updated",

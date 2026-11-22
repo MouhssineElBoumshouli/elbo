@@ -30,6 +30,7 @@ import {
 } from "./connect.ts";
 import { resolveHostCliCommand } from "./invocation.ts";
 import * as CliService from "./service.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 type Route = "connect" | "lan";
 type Routes = Readonly<Record<Route, boolean>>;
@@ -209,8 +210,8 @@ const formatNextSteps = (routes: Routes, serviceInstalled: boolean, hints: Hints
       ? []
       : [
           serviceInstalled
-            ? "Remote access is off. T3 Code still runs here in the background."
-            : `Remote access is off. Run \`${hints.run}\` to use T3 Code here.`,
+            ? `Remote access is off. ${TEAM_IDENTITY.name} still runs here in the background.`
+            : `Remote access is off. Run \`${hints.run}\` to use ${TEAM_IDENTITY.name} here.`,
         ]),
   ].join("\n");
 
@@ -314,7 +315,7 @@ const setUp = Effect.fn("cli.up")(function* (flags: {
     const confirmed = yield* Prompt.run(
       Prompt.Confirm({
         message: update
-          ? "Update and restart T3 Code? Running agent turns will stop."
+          ? `Update and restart ${TEAM_IDENTITY.name}? Running agent turns will stop.`
           : "Apply changes and restart? Running agent turns will stop.",
         initial: true,
       }),
@@ -389,7 +390,7 @@ const setUp = Effect.fn("cli.up")(function* (flags: {
       yield* Console.log(`Keeping installed service version t3@${installedVersion}.`);
     }
     if (update && !interactive) {
-      yield* Console.log("Updating T3 Code. Running agent turns will stop.");
+      yield* Console.log(`Updating ${TEAM_IDENTITY.name}. Running agent turns will stop.`);
     }
     const result = newer
       ? ({ changed: false } as const)
@@ -427,7 +428,7 @@ const setUp = Effect.fn("cli.up")(function* (flags: {
         yield* Console.log(`Run \`${command}\` to turn T3 Connect off.`);
       } else {
         if (!interactive && !stopped) {
-          yield* Console.log("Restarting T3 Code. Running agent turns will stop.");
+          yield* Console.log(`Restarting ${TEAM_IDENTITY.name}. Running agent turns will stop.`);
         }
         const outcome = yield* service.restart.pipe(Effect.tapError(() => rollBack));
         if (outcome === "queued") {
@@ -477,9 +478,11 @@ export const upCommand = Command.make("up", {
   ),
   headless: headlessFlag,
 }).pipe(
-  Command.withShortDescription("Set up remote access and the T3 Code background service."),
+  Command.withShortDescription(
+    `Set up remote access and the ${TEAM_IDENTITY.name} background service.`,
+  ),
   Command.withDescription(
-    "Set up remote access and the T3 Code background service. Access flags skip the question, and routes not named keep their settings. Without a terminal, a needed restart runs without asking and stops running agent turns.",
+    `Set up remote access and the ${TEAM_IDENTITY.name} background service. Access flags skip the question, and routes not named keep their settings. Without a terminal, a needed restart runs without asking and stops running agent turns.`,
   ),
   Command.withExamples([
     { command: "t3 up", description: "Choose remote access." },

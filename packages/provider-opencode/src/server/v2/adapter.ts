@@ -104,6 +104,7 @@ import {
   openCodeCommandFailed,
   openCodeToolTurnItem,
 } from "../toolItems.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const NativeGoal = Schema.NullOr(
   Schema.Struct({
@@ -654,8 +655,7 @@ class OpenCode2ServerExitedError extends Schema.TaggedError<OpenCode2ServerExite
   "OpenCode2ServerExitedError",
   {},
 ) {}
-const LOST_BACKGROUND =
-  "T3 Code lost its connection to OpenCode while this subagent ran, so its result is not shown.";
+const LOST_BACKGROUND = `${TEAM_IDENTITY.name} lost its connection to OpenCode while this subagent ran, so its result is not shown.`;
 const INVENTORY_TIMEOUT = "5 seconds";
 const MCP_TOOL_RELOAD_SETTLE = "250 millis";
 const ACTIVE_CHECK_TIMEOUT = "5 seconds";
@@ -712,8 +712,7 @@ const boundaryAfter = (
     return Effect.fail(
       new ProviderAdapter.ProviderAdapterProtocolError({
         driver: OPENCODE_PROVIDER,
-        detail:
-          "This OpenCode conversation has turns from an earlier T3 Code version, so it can't be cut there.",
+        detail: `This OpenCode conversation has turns from an earlier ${TEAM_IDENTITY.name} version, so it can't be cut there.`,
       }),
     );
   }
@@ -2378,7 +2377,7 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
       yield* finishTurn(state, {
         status: "failed",
         failure: makeProviderFailure({
-          message: "OpenCode is waiting on a request T3 Code couldn't answer.",
+          message: `OpenCode is waiting on a request ${TEAM_IDENTITY.name} couldn't answer.`,
           class: "provider_error",
         }),
       });
@@ -2623,7 +2622,7 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
         );
       }
       // Cancel reports user Stop; record failure here and skip that execution end.
-      yield* Effect.logWarning("Declined an OpenCode form T3 Code cannot show.", {
+      yield* Effect.logWarning(`Declined an OpenCode form ${TEAM_IDENTITY.name} cannot show.`, {
         reason: mapped.unsupported,
       });
       const cancelled = yield* deliver(
@@ -2636,7 +2635,7 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
       yield* finishTurn(asker, {
         status: "failed",
         failure: makeProviderFailure({
-          message: `OpenCode asked for ${mapped.unsupported}, which T3 Code can't show. The question was declined.`,
+          message: `OpenCode asked for ${mapped.unsupported}, which ${TEAM_IDENTITY.name} can't show. The question was declined.`,
           class: "provider_error",
         }),
       });
@@ -3632,8 +3631,7 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
                   ? {
                       status: "failed",
                       failure: makeProviderFailure({
-                        message:
-                          "OpenCode ended the turn with an error while T3 Code was reconnecting.",
+                        message: `OpenCode ended the turn with an error while ${TEAM_IDENTITY.name} was reconnecting.`,
                         class: "provider_error",
                       }),
                     }
@@ -4267,9 +4265,10 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
             Effect.timeout(INVENTORY_TIMEOUT),
             Effect.as(true),
             Effect.catchCause((cause) =>
-              Effect.logWarning("Could not add T3 Code's MCP server to OpenCode.", cause).pipe(
-                Effect.as(false),
-              ),
+              Effect.logWarning(
+                `Could not add ${TEAM_IDENTITY.name}'s MCP server to OpenCode.`,
+                cause,
+              ).pipe(Effect.as(false)),
             ),
           );
         if (mcpAvailable) state.mcp = wanted;

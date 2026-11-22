@@ -29,6 +29,7 @@ import {
   type PendingScopedWrite,
 } from "./scopedSettings";
 import { resolveSettingsScope } from "./settingsScope";
+import { APP_DISPLAY_NAME } from "~/branding";
 
 function environment(
   id: string,
@@ -283,7 +284,7 @@ describe("scoped settings writes", () => {
     const unsupported = [
       {
         label: server.label,
-        message: "This environment does not support this setting. Update T3 Code on it.",
+        message: `This environment does not support this setting. Update ${APP_DISPLAY_NAME} on it.`,
       },
     ];
 

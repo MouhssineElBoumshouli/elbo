@@ -1,3 +1,4 @@
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 export type LoopbackAuthorizationStage = "dev" | "nightly" | "latest";
 
 declare const __T3CODE_BUILD_CHANNEL__: "nightly" | "latest" | undefined;
@@ -7,9 +8,9 @@ function resolveLoopbackAuthorizationStage(): LoopbackAuthorizationStage {
 }
 
 const stageBrands = {
-  dev: "T3 Code (Dev)",
-  nightly: "T3 Code (Nightly)",
-  latest: "T3 Code",
+  dev: `${TEAM_IDENTITY.name} (Dev)`,
+  nightly: `${TEAM_IDENTITY.name} (Nightly)`,
+  latest: TEAM_IDENTITY.name,
 } as const satisfies Record<LoopbackAuthorizationStage, string>;
 
 export function renderLoopbackAuthorizationCompleteHtml(

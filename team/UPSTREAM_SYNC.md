@@ -14,7 +14,7 @@ Upstream moves about 1,300 commits a week, so a sync is always big. "How to keep
 
 1. **Pick the tag and look first.** `git fetch upstream --tags`, then `git tag -l 'v*' --sort=-creatordate | grep -v -- '-' | head` (stable tags have no `-nightly`/`-preview` suffix). `git log --oneline main..vX.Y.Z | wc -l`. Check `git diff --stat main...vX.Y.Z -- $(git grep -l 'team-layer' -- ':!team/')`: a hooked file upstream deleted or rewrote needs its hook moved, not just merged.
 2. **Safety tag.** `git tag pre-upstream-sync-YYYY-MM-DD main && git push origin pre-upstream-sync-YYYY-MM-DD`.
-3. **Branch.** `git switch -c sync/upstream-YYYY-MM-DD main`. `main` does not move until step 9. Push the branch after every commit.
+3. **Branch.** `git switch -c sync/upstream-YYYY-MM-DD main`. `main` does not move until step 10. Push the branch after every commit.
 4. **Merge the tag, not main.** `git merge --no-ff vX.Y.Z`. For each conflict: take upstream's version, then put our `team-layer:` edit back on top. When upstream rewrote a hooked file, `git checkout --theirs` it and re-apply our hooks from `git diff <old base> main -- <file>`: easier than reading big conflict hunks. `routeTree.gen.ts`: take theirs and regenerate (see lessons). Upstream's pre-commit runs fmt, lint and knip on the merge commit, so those must pass before the merge commits.
 5. **Install.** `vp i`.
 6. **Typecheck, one package at a time.** In each package: `GOMEMLIMIT=2500MiB npx effect-tsgo tsrs --noEmit` (contracts, client-runtime, web, then server alone). Count only `error TS` lines; `suggestion` lines are upstream's. The server check takes ~15 s and ~3 GB. A clean merge is not a clean build: an upstream Effect bump can break our files with no conflict. Fix root causes first (a missing module turns into hundreds of `unknown` errors).
@@ -22,8 +22,9 @@ Upstream moves about 1,300 commits a week, so a sync is always big. "How to keep
    - Server: `vp test run src/team/ src/mcp/toolkits/team/ src/cli/team.test.ts src/auth/ChatGptRpcScopes.test.ts`, plus the upstream tests of every hooked server file (`ThreadSettlementService`, the Claude and Codex adapters, `ws`, `ProviderTurnStartService`, `RunExecutionService`).
    - Web: `src/components/team/`, `MessagesTimeline.logic`, `session-logic`, `Sidebar.logic`; browser project: `ThreadNotificationCoordinator.badge.browser`.
    - client-runtime: `src/work-log/`, `src/state/teamMarkers`, `src/state/teamMerging`. Contracts: `teamFeed`, `teamCards`.
-8. **Check hooks still cover every path** (see the checklist below), then a live run per `team/WORKING_RULES.md`. Screenshots go to `test-screenshots`.
-9. **Land.** `git switch main && git merge --no-ff sync/upstream-YYYY-MM-DD && git push origin main`. Add a PROGRESS.md entry, and update the file list below if it changed.
+8. **Name guard and workflows.** `vp test run scripts/team-name-guard.test.ts` from the root: upstream adds new "T3 Code" strings with every release. Use `APP_DISPLAY_NAME` (web: `~/branding`; desktop: `src/team/appName.ts`) or `TEAM_IDENTITY.name` (server, packages); contracts name no app. Allowlist only what must stay, with a reason. Then `gh workflow list --all` and `gh workflow disable` every new upstream workflow: on this fork only "Team CI", "Team release" and "Release desktop build" (called by Team release) stay on.
+9. **Check hooks still cover every path** (see the checklist below), then a live run per `team/WORKING_RULES.md`. Screenshots go to `test-screenshots`.
+10. **Land.** `git switch main && git merge --no-ff sync/upstream-YYYY-MM-DD && git push origin main`. Add a PROGRESS.md entry, and update the file list below if it changed.
 
 ## Hook coverage checklist
 

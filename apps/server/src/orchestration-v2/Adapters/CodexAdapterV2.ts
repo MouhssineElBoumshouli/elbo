@@ -162,7 +162,8 @@ import {
 } from "@t3tools/provider-core/server/subagentProjection";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
-import { codexToolStartupNotice } from "../../team/setup/codexToolChoices.ts"; // team-layer
+import { codexToolStartupNotice } from "../../team/setup/codexToolChoices.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer // team-layer
 
 const CODEX_PROVIDER = ProviderDriverKind.make("codex");
 const CODEX_CAPACITY_MAX_RETRIES = 5;
@@ -2059,7 +2060,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
               return yield* new ProviderSetupError({
                 instanceId: adapterOptions.instanceId,
                 operation: "runtime",
-                detail: `Codex ${version} does not work with this T3 Code release. Update Codex to ${target}, then retry.`,
+                detail: `Codex ${version} does not work with this ${TEAM_IDENTITY.name} release. Update Codex to ${target}, then retry.`,
               });
             }
             yield* client.notify("initialized", undefined);

@@ -6,6 +6,7 @@ import "~/index.css";
 import { act, render } from "../../../test/render";
 import { SidebarUpdatePill } from "./SidebarUpdatePill";
 import type { UpdateEverythingRow } from "./updateEverything.logic";
+import { APP_DISPLAY_NAME } from "~/branding";
 
 const mocks = vi.hoisted(() => {
   const listeners = new Set<() => void>();
@@ -161,7 +162,7 @@ describe("SidebarUpdatePill update everything", () => {
 
     const table = page.getByRole("table");
     await expect.element(table.getByRole("columnheader", { name: "Machine" })).toBeVisible();
-    await expect.element(table.getByRole("columnheader", { name: "T3 Code" })).toBeVisible();
+    await expect.element(table.getByRole("columnheader", { name: APP_DISPLAY_NAME })).toBeVisible();
     await expect.element(table.getByRole("columnheader", { name: "Providers" })).toBeVisible();
     const row = table.getByRole("row", { name: new RegExp(label) });
     await expect.element(row.getByRole("cell", { name: label, exact: true })).toBeVisible();

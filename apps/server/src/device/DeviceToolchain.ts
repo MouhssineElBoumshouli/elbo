@@ -11,6 +11,7 @@ import * as Semaphore from "effect/Semaphore";
 
 import * as ProcessRunner from "../processRunner.ts";
 import DEVICE_TOOL_VERSIONS from "./deviceToolVersions.json" with { type: "json" };
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const DEVICE_HUB_PACKAGE = "expo-device-hub";
 export const DEVICE_HUB_VERSION = DEVICE_TOOL_VERSIONS[DEVICE_HUB_PACKAGE];
@@ -43,7 +44,7 @@ export class DeviceToolchainInstallError extends Schema.TaggedError<DeviceToolch
 ) {
   override get message(): string {
     if (this.reason === "npm_not_found")
-      return "Device support needs npm, which is not on the T3 server's PATH. Install npm (it comes with Node.js from nodejs.org), restart T3 Code, then retry.";
+      return `Device support needs npm, which is not on the T3 server's PATH. Install npm (it comes with Node.js from nodejs.org), restart ${TEAM_IDENTITY.name}, then retry.`;
     const suffix = this.exitCode === undefined ? "" : ` (exit code ${this.exitCode})`;
     return `Installing ${this.tool} failed while ${this.step}${suffix}.`;
   }

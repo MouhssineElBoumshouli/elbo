@@ -1,3 +1,4 @@
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 /**
  * The message of a "Fix it" turn (fork-only, team/MERGE_HELP_PLAN.md section
  * 5): which files Git could not combine, why each side changed them (handoff
@@ -70,7 +71,7 @@ export function buildMergeFixPrompt(input: MergeFixPromptInput): string {
     input.check === undefined
       ? "Then run the project's usual typecheck or tests for these files if there are any."
       : `Then run \`${oneLine(input.check)}\` and fix what the merge broke.`,
-    "Stage the files with `git add`. Do not commit, push, abort the merge or switch branches: the user reviews the diff and approves or undoes it in T3 Code. End with a short summary of how you combined the two sides.",
+    `Stage the files with \`git add\`. Do not commit, push, abort the merge or switch branches: the user reviews the diff and approves or undoes it in ${TEAM_IDENTITY.name}. End with a short summary of how you combined the two sides.`,
   ];
   const open = "<team_merge_fix>";
   const close = "</team_merge_fix>";

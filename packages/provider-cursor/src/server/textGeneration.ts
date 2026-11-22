@@ -18,6 +18,7 @@ import type { CursorAuth } from "./auth.ts";
 import * as CursorAgentSdk from "./CursorAgentSdk.ts";
 import * as CursorSdk from "./CursorSdk.ts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const CURSOR_TIMEOUT_MS = 180_000;
 
@@ -67,7 +68,7 @@ export const makeCursorTextGeneration = Effect.fn("makeCursorTextGeneration")(fu
     if (!cursorSettings.enabled) {
       return yield* new TextGenerationError({
         operation,
-        detail: "Cursor is disabled in T3 Code settings.",
+        detail: `Cursor is disabled in ${TEAM_IDENTITY.name} settings.`,
       });
     }
 

@@ -10,6 +10,7 @@ import * as EnvironmentTheme from "../../../environmentTheme.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as ThreadCommandExecutor from "../../../orchestration-v2/ThreadCommandExecutor.ts";
 import * as ThreadManagementService from "../../../orchestration-v2/ThreadManagementService.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const Appearance = Schema.Literals(["light", "dark", "system"]);
 
@@ -26,8 +27,7 @@ const shared = {
 
 const ThemeReadTool = Tool.make("t3_theme_read", {
   ...shared,
-  description:
-    "Read T3 Code's own themes and the guide to restyle it: color roles and CSS selectors. Call before `t3_theme_set`.",
+  description: `Read ${TEAM_IDENTITY.name}'s own themes and the guide to restyle it: color roles and CSS selectors. Call before \`t3_theme_set\`.`,
   parameters: Schema.Struct({
     themeId: Schema.optionalKey(
       EnvironmentThemeId.annotate({ description: "Also return this published theme's file." }),
@@ -54,8 +54,7 @@ const ThemeReadTool = Tool.make("t3_theme_read", {
 
 const ThemeSetTool = Tool.make("t3_theme_set", {
   ...shared,
-  description:
-    "Restyle T3 Code itself, only when the user asks. With `theme`, publish it as `themeId` (same id updates it) and switch this server's web app and this machine's desktop app to it, not remote desktop apps. Without `theme`, switch to a built-in or published `themeId`. `appearance` sets light, dark, or system mode. Live full-access or default caller thread only.",
+  description: `Restyle ${TEAM_IDENTITY.name} itself, only when the user asks. With \`theme\`, publish it as \`themeId\` (same id updates it) and switch this server's web app and this machine's desktop app to it, not remote desktop apps. Without \`theme\`, switch to a built-in or published \`themeId\`. \`appearance\` sets light, dark, or system mode. Live full-access or default caller thread only.`,
   parameters: Schema.Struct({
     themeId: Schema.optionalKey(EnvironmentThemeId),
     theme: Schema.optionalKey(EnvironmentThemeFile),

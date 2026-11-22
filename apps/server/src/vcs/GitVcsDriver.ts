@@ -50,7 +50,8 @@ import * as CheckoutCloner from "./CheckoutCloner.ts";
 import * as CheckpointUntrackedBlobs from "./checkpointUntrackedBlobs.ts";
 import * as VcsDriver from "./VcsDriver.ts";
 import * as VcsProcess from "./VcsProcess.ts";
-import { isBelowHomeRepository } from "../team/homeRepository.ts"; // team-layer
+import { isBelowHomeRepository } from "../team/homeRepository.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer // team-layer
 
 export interface ExecuteGitInput {
   readonly operation: string;
@@ -1147,9 +1148,9 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
         GIT_ALTERNATE_OBJECT_DIRECTORIES: quotedObjects.startsWith('"')
           ? quotedObjects
           : `"${quotedObjects}"`,
-        GIT_AUTHOR_NAME: "T3 Code",
+        GIT_AUTHOR_NAME: TEAM_IDENTITY.name,
         GIT_AUTHOR_EMAIL: "t3code@users.noreply.github.com",
-        GIT_COMMITTER_NAME: "T3 Code",
+        GIT_COMMITTER_NAME: TEAM_IDENTITY.name,
         GIT_COMMITTER_EMAIL: "t3code@users.noreply.github.com",
       };
 

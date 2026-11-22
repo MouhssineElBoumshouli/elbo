@@ -26,6 +26,7 @@ import type { CDPSession, ConsoleMessage, Frame, Locator, Page } from "playwrigh
 import * as NodeCrypto from "node:crypto";
 import * as NodeUtil from "node:util";
 import { BrowserControlInterrupted } from "./SessionControl.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const isBrowserControlInterrupted = Schema.is(BrowserControlInterrupted);
 
@@ -566,8 +567,7 @@ export const captureViewport = async (
         reject(
           new ServerBrowserOperationError({
             tag: "PreviewAutomationExecutionError",
-            message:
-              "The browser is not producing screenshot frames. For a desktop tab, show or restore the T3 Code window and try again.",
+            message: `The browser is not producing screenshot frames. For a desktop tab, show or restore the ${TEAM_IDENTITY.name} window and try again.`,
           }),
         ),
       SCREENSHOT_TIMEOUT_MS,

@@ -35,6 +35,7 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { stackedThreadToast, toastManager } from "../ui/toast";
+import { APP_DISPLAY_NAME } from "~/branding"; // team-layer
 
 /** Moves this app and every connected machine to `channel`. */
 export function UpdateTrackSwitchDialog({
@@ -177,7 +178,7 @@ function SwitchPlan({
           ? ["This app's updates are off here, so reinstall it yourself to switch."]
           : []),
         ...(switchesLocal && isMacPlatform(navigator.platform)
-          ? ["If T3 Code does not reopen after it restarts, open it again."]
+          ? [`If ${APP_DISPLAY_NAME} does not reopen after it restarts, open it again.`]
           : []),
       ]}
       restarts={everything.restarts}

@@ -83,6 +83,7 @@ import { makeStreamingTimelineFixture, makeThreadProjectionFixture } from "../..
 import { QueuedRunsControl } from "./QueuedRunsControl";
 import { ExpandedImageDialog } from "./ExpandedImageDialog";
 import type { ExpandedImagePreview } from "./ExpandedImagePreview";
+import { APP_DISPLAY_NAME } from "~/branding";
 
 function setup() {
   state.workflow = null;
@@ -307,7 +308,7 @@ it("shows who sent a queued message and folds automation and agent prompts", asy
   await page.getByRole("button", { name: "Open thread" }).nth(1).click({ force: true });
   expect(onOpenThread).toHaveBeenLastCalledWith("thread:linked-lead", "environment:linked");
 
-  await expect.element(page.getByText("Sent by T3 Code")).toBeVisible();
+  await expect.element(page.getByText(`Sent by ${APP_DISPLAY_NAME}`)).toBeVisible();
   await expect.element(page.getByText("Continue where you left off.")).toBeVisible();
 });
 

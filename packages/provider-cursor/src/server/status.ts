@@ -24,6 +24,7 @@ import {
   type ServerProviderDraft,
 } from "@t3tools/provider-core/server/snapshotProbe";
 import * as CursorSdkCatalog from "./CursorSdkCatalog.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const CURSOR_PRESENTATION = {
   displayName: "Cursor",
@@ -53,7 +54,7 @@ export const buildInitialCursorProviderSnapshot = Effect.fn(
         version: null,
         status: "warning",
         auth: { status: "unknown" },
-        message: "Cursor is disabled in T3 Code settings.",
+        message: `Cursor is disabled in ${TEAM_IDENTITY.name} settings.`,
       },
     });
   }
@@ -269,7 +270,7 @@ export const checkCursorProviderStatus = Effect.fn("checkCursorProviderStatus")(
         version: null,
         status: "warning",
         auth: { status: "unknown" },
-        message: "Cursor is disabled in T3 Code settings.",
+        message: `Cursor is disabled in ${TEAM_IDENTITY.name} settings.`,
       },
     });
   }
@@ -320,8 +321,8 @@ export const checkCursorProviderStatus = Effect.fn("checkCursorProviderStatus")(
     } else if (failure.planRequired) {
       message =
         authenticationType === "browser"
-          ? "Cursor needs a paid plan to run in T3 Code. Upgrade this account or sign in with a different one."
-          : "Cursor needs a paid plan to run in T3 Code. Upgrade the account that owns CURSOR_API_KEY or use a key from a paid account.";
+          ? `Cursor needs a paid plan to run in ${TEAM_IDENTITY.name}. Upgrade this account or sign in with a different one.`
+          : `Cursor needs a paid plan to run in ${TEAM_IDENTITY.name}. Upgrade the account that owns CURSOR_API_KEY or use a key from a paid account.`;
     }
     return buildServerProvider({
       presentation: CURSOR_PRESENTATION,

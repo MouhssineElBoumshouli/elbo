@@ -11,6 +11,7 @@ import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
 import { writeFileStringAtomically } from "@t3tools/shared/atomicWrite";
 import { signalProcessGroup } from "@t3tools/provider-core/server/processGroup";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const ProcessIdentity = Schema.Struct({ pid: Schema.Int, startTime: Schema.String });
 type ProcessIdentity = typeof ProcessIdentity.Type;
@@ -260,10 +261,13 @@ export const make = Effect.fn("OpenCodeServerLedger.make")(function* (input: {
     ) {
       return;
     }
-    yield* Effect.logInfo("Stopping an OpenCode server left by a previous T3 Code server", {
-      pid: entry.pgid,
-      port: entry.port,
-    });
+    yield* Effect.logInfo(
+      `Stopping an OpenCode server left by a previous ${TEAM_IDENTITY.name} server`,
+      {
+        pid: entry.pgid,
+        port: entry.port,
+      },
+    );
     signalGroup(entry.pgid, "SIGTERM");
     for (let attempt = 0; attempt < STOP_POLL_ATTEMPTS && groupExists(entry.pgid); attempt++) {
       yield* Effect.sleep(STOP_POLL_INTERVAL);

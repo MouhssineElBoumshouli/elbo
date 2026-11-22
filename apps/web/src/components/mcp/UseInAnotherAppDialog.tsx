@@ -56,6 +56,7 @@ import { toastManager } from "../ui/toast";
 import { WizardFooter, WizardHeader, WizardPanel, WizardPopup, WizardSteps } from "../ui/wizard";
 import { afterFailedCheck, resolveMcpGate } from "./mcpGate";
 import { MCP_APPS, type McpApp, mcpHandoffAction, OTHER_MCP_APP_STEPS } from "./mcpApps";
+import { APP_DISPLAY_NAME } from "~/branding"; // team-layer
 
 const requestAtom = Atom.make<{ readonly environmentId: EnvironmentId | null } | null>(null).pipe(
   Atom.keepAlive,
@@ -413,7 +414,7 @@ function GateScreen({
         </GateMessage>
       );
     case "update":
-      return <GateMessage title={`Update T3 Code on ${name}`} />;
+      return <GateMessage title={`Update ${APP_DISPLAY_NAME} on ${name}`} />;
     case "no-relay-read":
       return (
         <GateMessage
@@ -472,7 +473,9 @@ function GateScreen({
           ) : (
             <div className="space-y-2 text-sm">
               <CommandBlock command="t3 connect link" />
-              <p>Restart T3 Code on {name}.</p>
+              <p>
+                Restart {APP_DISPLAY_NAME} on {name}.
+              </p>
               {checkAgain}
             </div>
           )}

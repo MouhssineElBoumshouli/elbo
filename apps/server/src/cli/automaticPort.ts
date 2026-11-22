@@ -6,6 +6,7 @@ import * as CliError from "effect/cli/CliError";
 
 import { queryWindowsTcpListeners } from "../process/windowsTcpListeners.ts";
 import * as ProcessRunner from "../processRunner.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const KERNEL_RELEASE_PATH = "/proc/sys/kernel/osrelease";
 const WINDOWS_NETSTAT_PATH = String.raw`C:\Windows\System32\netstat.exe`;
@@ -62,8 +63,7 @@ export const make = Effect.gen(function* () {
       if (!windows.has(port)) return port;
     }
     return yield* new CliError.UserError({
-      cause:
-        "Windows is already using every port T3 Code tried. Pass --port or set T3CODE_PORT to a port Windows is not using.",
+      cause: `Windows is already using every port ${TEAM_IDENTITY.name} tried. Pass --port or set T3CODE_PORT to a port Windows is not using.`,
     });
   });
 });

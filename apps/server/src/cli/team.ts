@@ -49,6 +49,7 @@ import {
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as VcsProcess from "../vcs/VcsProcess.ts";
 import { baseDirFlag, resolveCliAuthConfig } from "./config.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 export class TeamCliError extends Schema.TaggedError<TeamCliError>()("TeamCliError", {
   detail: Schema.String,
@@ -311,7 +312,7 @@ export const runTeamInit = Effect.fn("runTeamInit")(function* (input: TeamInitIn
   const writer = writerFilePath(membership.member.memberId, input.environmentId);
   if (opened.created) {
     yield* Console.log(
-      `Created ${TEAM_STATE_REF} on ${plan.remoteUrl}. Teammates with push access join by pulling .team/ and opening the project in T3 Code (or running t3 team init in their clone).`,
+      `Created ${TEAM_STATE_REF} on ${plan.remoteUrl}. Teammates with push access join by pulling .team/ and opening the project in ${TEAM_IDENTITY.name} (or running t3 team init in their clone).`,
     );
     return;
   }

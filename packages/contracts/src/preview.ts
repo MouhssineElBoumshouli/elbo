@@ -339,7 +339,8 @@ export class PreviewStopLocalServerError extends Schema.TaggedError<PreviewStopL
       case "not-found":
         return "This server is no longer running.";
       case "shared-group":
-        return "This server shares a process group with T3 Code, an agent, or a terminal shell, so it can't be stopped on its own.";
+        // team-layer: no app name here; contracts cannot read Elbo's identity.
+        return "This server shares a process group with this app, an agent, or a terminal shell, so it can't be stopped on its own.";
       case "unsupported":
         return "Stopping servers is not supported on this environment's platform.";
       case "signal-failed":

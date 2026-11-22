@@ -34,6 +34,7 @@ import { expandHomePath } from "../os-jank.ts";
 import * as ProcessRunner from "../processRunner.ts";
 import { readLiveServerRuntimeState } from "../serverRuntimeState.ts";
 import { projectLocationFlags, resolveCliAuthConfig } from "./config.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 /**
  * Short enough that a run which stops to ask the user something is noticed
@@ -59,7 +60,7 @@ export class ThreadServerNotRunningError extends Schema.TaggedError<ThreadServer
 ) {
   override readonly [Runtime.errorReported] = false;
   override get message(): string {
-    return `No running T3 Code server uses ${this.baseDir}. Start T3 Code, then retry.`;
+    return `No running ${TEAM_IDENTITY.name} server uses ${this.baseDir}. Start ${TEAM_IDENTITY.name}, then retry.`;
   }
 }
 
@@ -70,7 +71,7 @@ export class ThreadServerUnreachableError extends Schema.TaggedError<ThreadServe
   override readonly [Runtime.errorReported] = false;
   override get message(): string {
     const reason = this.cause instanceof Error ? ` ${this.cause.message}` : "";
-    return `Could not reach the T3 Code server at ${this.origin}.${reason}`;
+    return `Could not reach the ${TEAM_IDENTITY.name} server at ${this.origin}.${reason}`;
   }
 }
 
@@ -99,7 +100,7 @@ export class ThreadProjectNotFoundError extends Schema.TaggedError<ThreadProject
 ) {
   override readonly [Runtime.errorReported] = false;
   override get message(): string {
-    return `No T3 Code project matches '${this.identifier}'. Pass a project id or a path inside a project.`;
+    return `No ${TEAM_IDENTITY.name} project matches '${this.identifier}'. Pass a project id or a path inside a project.`;
   }
 }
 
@@ -112,7 +113,7 @@ export class ThreadNeedsInputError extends Schema.TaggedError<ThreadNeedsInputEr
   override readonly [Runtime.errorExitCode] = 2;
 
   override get message(): string {
-    return `Thread ${this.threadId} is waiting for an answer. Open it in T3 Code to respond.`;
+    return `Thread ${this.threadId} is waiting for an answer. Open it in ${TEAM_IDENTITY.name} to respond.`;
   }
 }
 

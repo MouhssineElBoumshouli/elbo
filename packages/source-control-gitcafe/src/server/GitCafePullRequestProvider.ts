@@ -22,6 +22,7 @@ import * as GitCafeApi from "./GitCafeApi.ts";
 import * as GitCafeHosts from "./gitCafeHosts.ts";
 import * as Json from "./gitCafePullRequestJson.ts";
 import { definition } from "../shared/definition.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const CAPABILITIES: PullRequestCapabilities = {
   diff: true,
@@ -1163,7 +1164,10 @@ export const make = Effect.gen(function* () {
           };
         }
         default:
-          return yield* failure(input.action, `GitCafe cannot ${input.action} from T3 Code.`);
+          return yield* failure(
+            input.action,
+            `GitCafe cannot ${input.action} from ${TEAM_IDENTITY.name}.`,
+          );
       }
     }),
     updateChangeRequest: Effect.fn("GitCafePullRequestProvider.updateChangeRequest")(

@@ -60,6 +60,7 @@ import {
   captureSetupShouldDisableOnClose,
   type CaptureSetupStep,
 } from "./SnapShotSetupDialog.logic";
+import { APP_DISPLAY_NAME } from "~/branding"; // team-layer
 
 const soundOptionRowClassName = "grid grid-cols-[1fr_auto]";
 
@@ -255,7 +256,7 @@ export function SnapShotSettings() {
   const shortcutStatus = recording
     ? "Press your shortcut. Esc cancels."
     : candidateConflict
-      ? `T3 Code already uses this for "${commandLabel(candidateConflict)}".`
+      ? `${APP_DISPLAY_NAME} already uses this for "${commandLabel(candidateConflict)}".`
       : shortcutCheck.status === "checking"
         ? "Checking shortcut…"
         : shortcutCheck.availability

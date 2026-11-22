@@ -29,6 +29,7 @@ import * as ProjectSetupScriptRunner from "../project/ProjectSetupScriptRunner.t
 import * as ServerSettings from "../serverSettings.ts";
 import * as VcsStatusBroadcaster from "../vcs/VcsStatusBroadcaster.ts";
 import type { McpInvocationScope, McpThreadInvocationScope } from "./McpInvocationContext.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 export class WorktreeMcpService extends Context.Service<
   WorktreeMcpService,
@@ -84,7 +85,7 @@ const make = Effect.gen(function* () {
       ? Effect.fail(
           failure(
             "thread_credential_required",
-            "Worktree handoff and status act as the calling T3 thread, so they need an agent running inside T3 Code.",
+            `Worktree handoff and status act as the calling T3 thread, so they need an agent running inside ${TEAM_IDENTITY.name}.`,
           ),
         )
       : Effect.succeed(scope as McpThreadInvocationScope);

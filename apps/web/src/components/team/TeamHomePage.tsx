@@ -54,6 +54,7 @@ import { TeamFace } from "./TeamHolderMarks";
 import { TeamMergingList } from "./TeamMerging";
 import { TeamNotes } from "./TeamNotes";
 import { syncLabel } from "./TeamPresenceChip";
+import { APP_DISPLAY_NAME } from "~/branding"; // team-layer
 
 const MAX_PATHS = 3;
 const TASK_STATUS: Record<TeamTask["status"], string> = {
@@ -508,7 +509,8 @@ function MakeTeamSection() {
               commit, and keep the team's state on the repo's remote.
             </li>
             <li>
-              Teammates with push access join by pulling it and opening the project in T3 Code.
+              Teammates with push access join by pulling it and opening the project in{" "}
+              {APP_DISPLAY_NAME}.
             </li>
             <li>
               They see which files each chat holds, the tasks and the handoff notes, and agents warn

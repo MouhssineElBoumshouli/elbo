@@ -27,6 +27,7 @@ import { Argument, Command } from "effect/cli";
 
 import { expandHomePath, resolveBaseDir } from "../os-jank.ts";
 import { baseDirFlag } from "./config.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 const CLI_RESPONSE_TIMEOUT_MS = 17_000;
 const MAX_RESPONSE_BYTES = 64 * 1024;
@@ -60,7 +61,7 @@ export class DesktopAppUnreachableError extends Schema.TaggedError<DesktopAppUnr
   },
 ) {
   override get message(): string {
-    return "Could not reach the T3 Code desktop app. Start or update the desktop app on this machine, then run `t3 app` again. A running T3 Code server is not enough.";
+    return `Could not reach the ${TEAM_IDENTITY.name} desktop app. Start or update the desktop app on this machine, then run \`t3 app\` again. A running ${TEAM_IDENTITY.name} server is not enough.`;
   }
 }
 
@@ -74,7 +75,7 @@ export class DesktopAppRequestFailedError extends Schema.TaggedError<DesktopAppR
   },
 ) {
   override get message(): string {
-    return `T3 Code could not open ${this.workspaceRoot} (${this.code}).`;
+    return `${TEAM_IDENTITY.name} could not open ${this.workspaceRoot} (${this.code}).`;
   }
 }
 
@@ -266,7 +267,7 @@ const runAppCommand = Effect.fn("cli.app")(function* (flags: {
     });
   }
 
-  yield* Console.log(`Opened ${workspaceRoot} in T3 Code.`);
+  yield* Console.log(`Opened ${workspaceRoot} in ${TEAM_IDENTITY.name}.`);
 });
 
 export const appCommand = Command.make("app", {
@@ -276,6 +277,6 @@ export const appCommand = Command.make("app", {
     Argument.optional,
   ),
 }).pipe(
-  Command.withDescription("Open a project in the running T3 Code desktop app."),
+  Command.withDescription(`Open a project in the running ${TEAM_IDENTITY.name} desktop app.`),
   Command.withHandler(runAppCommand),
 );

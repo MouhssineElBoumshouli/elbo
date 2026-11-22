@@ -19,6 +19,7 @@ import * as ServerSettings from "../serverSettings.ts";
 import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import { authLocationFlags, type CliAuthLocationFlags, resolveCliAuthConfig } from "./config.ts";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
 
 /**
  * Links live in this environment's database and secret store, so these
@@ -104,7 +105,7 @@ const environmentLinkCommand = Command.make("link", {
   ),
 }).pipe(
   Command.withDescription(
-    "Link another T3 Code environment, so agents here can work there. It shows up there under Authorized clients in Settings → Sharing & access, where it can be revoked.",
+    `Link another ${TEAM_IDENTITY.name} environment, so agents here can work there. It shows up there under Authorized clients in Settings → Sharing & access, where it can be revoked.`,
   ),
   Command.withHandler((flags) =>
     runWithPeerLinks(flags, (links) =>
@@ -162,7 +163,9 @@ const environmentUnlinkCommand = Command.make("unlink", {
 );
 
 export const environmentCommand = Command.make("environment").pipe(
-  Command.withDescription("Link other T3 Code environments, so agents here can work there."),
+  Command.withDescription(
+    `Link other ${TEAM_IDENTITY.name} environments, so agents here can work there.`,
+  ),
   Command.withSubcommands([
     environmentLinkCommand,
     environmentListCommand,
