@@ -35,6 +35,8 @@ import {
   makeClaudeEnvironment,
 } from "../provider/Drivers/ClaudeHome.ts";
 import { readClaudeLaunchArgSettings } from "../orchestration-v2/Adapters/ClaudeAdapterV2.ts";
+// team-layer: token counts for the planning runner.
+import { claudeUsage } from "../team/planning/providerUsage.ts";
 
 const CLAUDE_TIMEOUT_MS = 180_000;
 /** `--tools` takes bare names; patterns go in the allow list. */
@@ -151,6 +153,8 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
     outputSchema: outputSchemaJson,
     modelSelection,
     investigate,
+    timeoutMs,
+    onUsage,
   }: TextGenerationOperations.Request<S>): Effect.fn.Return<
     S["Type"],
     TextGenerationError,
@@ -320,7 +324,7 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
         );
       }),
       Effect.scoped,
-      Effect.timeoutOption(investigate?.timeoutMs ?? CLAUDE_TIMEOUT_MS),
+      Effect.timeoutOption(timeoutMs ?? investigate?.timeoutMs ?? CLAUDE_TIMEOUT_MS),
       Effect.flatMap(
         Option.match({
           onNone: () =>
@@ -332,6 +336,8 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
       ),
     );
 
+    const usage = onUsage ? claudeUsage(rawStdout) : undefined;
+    if (usage) onUsage?.(usage);
     const output = yield* decodeClaudeOutput(rawStdout).pipe(
       Effect.catchTags({
         SchemaError: (cause) =>
@@ -363,9 +369,9 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
     );
   });
 
-  return TextGenerationOperations.fromRunner(
-    "ClaudeTextGeneration",
-    <S extends Schema.Top>(request: TextGenerationOperations.Request<S>) =>
-      Effect.scoped(runClaudeJson(request)),
-  );
+  const run: TextGenerationOperations.Runner = <S extends Schema.Top>(
+    request: TextGenerationOperations.Request<S>,
+  ) => Effect.scoped(runClaudeJson(request));
+  // team-layer: `run` is the raw runner, for the planning runner's own schemas.
+  return Object.assign(TextGenerationOperations.fromRunner("ClaudeTextGeneration", run), { run });
 });

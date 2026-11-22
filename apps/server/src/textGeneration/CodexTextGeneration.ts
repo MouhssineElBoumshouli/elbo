@@ -35,6 +35,8 @@ import {
 } from "@t3tools/shared/model";
 import { getCodexServiceTierOptionValue } from "../codexModelOptions.ts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+// team-layer: token counts for the planning runner.
+import { codexUsage } from "../team/planning/providerUsage.ts";
 
 const CODEX_TIMEOUT_MS = 180_000;
 const CODEX_MCP_LIST_TIMEOUT_MS = 10_000;
@@ -231,6 +233,8 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
     modelSelection,
     attachments,
     investigate,
+    timeoutMs,
+    onUsage,
   }: TextGenerationOperations.Request<S>): Effect.fn.Return<
     S["Type"],
     TextGenerationError,
@@ -336,6 +340,8 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
           schemaPath,
           "--output-last-message",
           outputPath,
+          // team-layer: events on stdout carry the token counts.
+          ...(onUsage ? ["--json"] : []),
           ...imagePaths.flatMap((imagePath) => ["--image", imagePath]),
           "-",
         ],
@@ -372,6 +378,8 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
         { concurrency: "unbounded" },
       );
 
+      const usage = onUsage && exitCode === 0 ? codexUsage(stdout) : undefined;
+      if (usage) onUsage?.(usage);
       if (exitCode !== 0) {
         const stderrDetail = stderr.trim();
         const stdoutDetail = stdout.trim();
@@ -393,7 +401,7 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
     return yield* Effect.gen(function* () {
       yield* runCodexCommand().pipe(
         Effect.scoped,
-        Effect.timeoutOption(investigate?.timeoutMs ?? CODEX_TIMEOUT_MS),
+        Effect.timeoutOption(timeoutMs ?? investigate?.timeoutMs ?? CODEX_TIMEOUT_MS),
         Effect.flatMap(
           Option.match({
             onNone: () =>
@@ -431,5 +439,8 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
     }).pipe(Effect.ensuring(cleanup));
   });
 
-  return TextGenerationOperations.fromRunner("CodexTextGeneration", runCodexJson);
+  // team-layer: `run` is the raw runner, for the planning runner's own schemas.
+  return Object.assign(TextGenerationOperations.fromRunner("CodexTextGeneration", runCodexJson), {
+    run: runCodexJson as TextGenerationOperations.Runner,
+  });
 });

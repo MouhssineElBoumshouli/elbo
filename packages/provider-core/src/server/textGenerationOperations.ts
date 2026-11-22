@@ -32,6 +32,16 @@ export interface Request<S extends Schema.Top> {
   readonly attachments?: ReadonlyArray<ChatAttachment> | undefined;
   /** Investigate cwd with read-only tools across turns; fail if the runner cannot guarantee read-only access. */
   readonly investigate?: { readonly timeoutMs: number } | undefined;
+  // team-layer: the planning runner needs long turns and the tokens each one used.
+  readonly timeoutMs?: number | undefined;
+  readonly onUsage?: ((usage: TokenUsage) => void) | undefined;
+}
+
+// team-layer: what a provider CLI reports for one call.
+export interface TokenUsage {
+  readonly inputTokens: number;
+  readonly cachedInputTokens: number;
+  readonly outputTokens: number;
 }
 
 const INVESTIGATION_TIMEOUT_MS = 15 * 60_000;
