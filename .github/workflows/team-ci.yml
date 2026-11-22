@@ -31,6 +31,12 @@ jobs:
             !/apps/mobile/modules/t3-terminal/Vendor/**/*.a
           sparse-checkout-cone-mode: false
 
+      # Team tests commit in temporary repos.
+      - name: Git identity for tests
+        run: |
+          git config --global user.name "Team CI"
+          git config --global user.email "team-ci@users.noreply.github.com"
+
       - name: Setup Vite+
         uses: ./.github/actions/setup-ci-deps
 
