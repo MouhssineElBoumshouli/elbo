@@ -18,6 +18,8 @@ export const TEAM_IDENTITY = {
   updateRepository: "MouhssineElBoumshouli/elbo",
   author: "Mouhssine El Boumshouli",
   cloudEnabled: false,
+  // No Elbo phone app yet: About and settings search hide upstream's App Store and Play links.
+  phoneApp: false,
   // Off means nothing about usage leaves the app: no analytics key, host, device id or owner lookup.
   usageData: false,
 } as const;

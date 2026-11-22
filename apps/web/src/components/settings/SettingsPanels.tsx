@@ -2356,11 +2356,15 @@ export function AboutSettingsPanel() {
           </>
         )}
         <TeamAboutRow />
-        <MobileAppSettingsRow />
+        {TEAM_IDENTITY.phoneApp ? <MobileAppSettingsRow /> : null /* team-layer */}
         {primaryEnvironmentId === null ? null : (
           <SettingsRow
             {...searchableSetting("welcome-page")}
-            description="See your agents, import projects, and set up your phone."
+            description={
+              TEAM_IDENTITY.phoneApp // team-layer: Welcome offers the phone only with one
+                ? "See your agents, import projects, and set up your phone."
+                : "See your agents and import projects."
+            }
             control={
               <Button size="sm" variant="outline" render={<Link to="/welcome" />}>
                 Open
