@@ -1,0 +1,99 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Elbo planning mockups</title>
+<style>
+:root{--bg:#fafafa;--panel:#fff;--line:#e6e6e6;--text:#1a1a1a;--muted:#6b6b6b;--accent:#1a1a1a;--soft:#f2f2f2;--warn:#b45309;--ok:#15803d}
+*{box-sizing:border-box}body{margin:0;font:13px/1.5 Inter,system-ui,sans-serif;color:var(--text);background:var(--bg)}
+.app{display:grid;grid-template-columns:56px 220px 1fr;height:100vh}
+.rail{border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:14px;color:var(--muted);font-size:11px}
+.rail b{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px}
+.side{border-right:1px solid var(--line);padding:14px 10px;color:var(--muted)}
+.side h4{margin:4px 6px 8px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.side div{padding:5px 8px;border-radius:6px}.side .on{background:var(--soft);color:var(--text)}
+main{overflow:auto;padding:28px 40px}
+h1{font-size:20px;font-weight:600;margin:0 0 4px}h2{font-size:15px;margin:22px 0 6px;font-weight:600}
+.muted{color:var(--muted)}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px;font:inherit}
+.btn.p{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+.chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--panel)}.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.q{display:grid;grid-template-columns:24px 1fr;gap:6px;margin:12px 0}.q .n{color:var(--muted)}
+input,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;background:var(--panel)}
+.sum{font-size:14px}.deeper{color:var(--muted);margin-top:6px}.deeper:before{content:"▸ "}
+.who{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:10px;color:#fff}
+table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{font-weight:500;color:var(--muted)}
+.tag{font-size:11px;border-radius:4px;padding:1px 6px;background:var(--soft);color:var(--muted)}
+.warn{border-left:3px solid var(--warn);padding-left:10px}.u{text-decoration:underline dotted;text-underline-offset:3px}
+.bar{height:6px;background:var(--soft);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.msg{background:var(--soft);border-radius:8px;padding:8px 10px;margin:6px 0}
+.screen{display:none}.screen.on{display:block}
+</style></head><body>
+<div class="app"><nav class="rail"><b>E</b><span>Team</span><span>Chats</span><span>Plan</span></nav>
+<aside class="side"><h4>Projects</h4><div class="on">attendance</div><div>portfolio</div><h4 style="margin-top:16px">Chats</h4><div>Planning: attendance</div></aside>
+<main>
+<!-- 1 -->
+<section class="screen" id="s1">
+<div class="muted">New project · attendance</div><h1>What are you making?</h1>
+<div class="row" style="margin:10px 0 18px"><button class="btn p">Plan it first</button><button class="btn">Start building</button><span class="muted">A plan takes about 10 minutes for a project this size. You can skip it any time.</span></div>
+<div class="card">
+<div class="q"><span class="n">1</span><div><b>What are you making, in one or two sentences?</b><textarea rows="2">An app that takes attendance in class: students check in with their phone, the teacher sees who is there.</textarea></div></div>
+<div class="q"><span class="n">2</span><div><b>Who will use it?</b><div class="row" style="margin-top:4px"><span class="chip on">Teachers</span><span class="chip on">Students</span><span class="chip">The public</span><span class="chip">Just me</span><span class="chip">Not sure, suggest</span></div></div></div>
+<div class="q"><span class="n">5</span><div><b>Deadline, and hours a week each?</b><div class="row" style="margin-top:4px"><input style="width:160px" value="6 weeks"><input style="width:160px" value="8 hours each"></div></div></div>
+<div class="q"><span class="n">6</span><div><b>Who is on the team, and what does each person know?</b>
+<div class="row" style="margin-top:6px"><span class="who" style="background:#6d28d9">M</span> Mouhssine <span class="tag">JavaScript</span><span class="tag">some React</span></div>
+<div class="row" style="margin-top:4px"><span class="who" style="background:#0f766e">S</span> Sara <span class="tag">Python</span><span class="tag">SQL</span></div>
+<div class="row" style="margin-top:4px"><span class="who" style="background:#c2410c">Y</span> Yassine <span class="tag">HTML/CSS</span><span class="tag">never used a backend</span> <span class="muted">+ add a skill</span></div></div></div>
+<div class="q"><span class="n">7</span><div><b>Budget for hosting?</b><div class="row" style="margin-top:4px"><span class="chip on">Free only</span><span class="chip">A few euros a month</span><span class="chip">More</span></div></div></div>
+<div class="q"><span class="n">8</span><div><b>Any rules from outside?</b><input value="Student data must stay in the EU. Must work on the school Wi-Fi."></div></div>
+<div class="muted" style="margin:8px 0 0 30px">Questions 3, 4, 9, 10 and "anything else" below…</div>
+</div>
+<div class="row"><button class="btn p">Next: size and experts</button><span class="muted">Your answers become a short brief every expert reads.</span></div>
+</section>
+<!-- 2 -->
+<section class="screen" id="s2">
+<div class="muted">Plan · attendance · medium (3 people, 6 weeks) · <span class="u">change size</span></div>
+<h1>Class attendance</h1><div class="muted">Project manager, architect, security engineer, designer · 5 decisions · 2 need you</div>
+<div class="card"><h2 style="margin-top:0">1. What we build and for whom</h2>
+<div class="sum">A web page where a teacher opens a 10-minute check-in for a class, and students check in from their phones with a code shown in the room.</div><div class="deeper">Go deeper</div></div>
+<div class="card"><h2 style="margin-top:0">3. Stack and why</h2>
+<div class="sum">A Python <span class="u" title="The part of the app that runs on a server and keeps the data.">backend</span> (Sara knows it), plain HTML pages, and a free EU database.</div><div class="deeper">Go deeper</div>
+<div class="grid2" style="margin-top:10px">
+<div class="card" style="margin:0"><div class="row"><b>0001 Backend: Flask</b><span class="tag" style="color:var(--ok)">agreed</span></div><div class="muted">vs Django, Node · Sara can lead</div></div>
+<div class="card" style="margin:0"><div class="row"><b>0003 Database: EU Postgres</b><span class="tag" style="color:var(--warn)">needs you</span></div>
+<div class="warn" style="margin-top:6px">Security engineer disagrees with Firebase: its free plan can't guarantee EU-only storage.</div>
+<div class="row" style="margin-top:8px"><button class="btn">Agree</button><button class="btn">Pick another option</button><button class="btn">Push back</button></div></div>
+</div></div>
+<div class="card"><h2 style="margin-top:0">6. Security risks</h2><div class="sum">Main risks: checking in for absent friends, teachers seeing other classes, a leaked database password. Each has a fix in the tasks.</div><div class="deeper">Go deeper · 5 risks, 5 fixes</div></div>
+<div class="muted">Sections 2, 4, 5, 7, 9–12 below…</div>
+</section>
+<!-- 3 -->
+<section class="screen" id="s3">
+<div class="muted">Plan · attendance · 3. Stack and why</div><h1>0002 Front end: plain HTML pages, no React</h1>
+<div class="card">
+<table><tr><th>Option</th><th>Good</th><th>Bad</th><th>Fit for this team</th></tr>
+<tr><td><b>Plain HTML</b> (picked)</td><td>no build step, 4 screens</td><td>live list needs a bit of JavaScript</td><td>Yassine and Mouhssine can both work on it</td></tr>
+<tr><td>React</td><td>Mouhssine knows it</td><td>second project, an API for every page</td><td>Yassine has never used it</td></tr></table>
+<h2>How we got here</h2>
+<div class="msg"><b>Architect:</b> plain HTML pages with small scripts. Only the live list needs JavaScript.</div>
+<div class="msg" style="background:#fff;border:1px solid var(--line)"><b>Mouhssine pushed back:</b> I know React, wouldn't it be faster?</div>
+<div class="msg"><b>Architect defended:</b> React means a build step and an API for every page, and Yassine would spend week 1 learning it. For 4 screens, plain pages are faster for this team. You can still write the live list's JavaScript.</div>
+<div class="row" style="margin-top:12px"><button class="btn p">Agree</button><button class="btn">Pick React anyway</button><button class="btn">Push back again</button></div>
+</div>
+<div class="card"><div class="row"><b>Team</b><span class="who" style="background:#0f766e">S</span> agree <span class="who" style="background:#c2410c">Y</span> agree · <span class="muted">"Please no build step, I'm new to this." · Yassine</span></div></div>
+</section>
+<!-- 4 -->
+<section class="screen" id="s4">
+<div class="muted">Team home · attendance</div><h1>Plan</h1>
+<div class="card"><div class="row" style="justify-content:space-between"><b>Week 2 of 6 · 7 of 17 tasks done</b><span class="tag" style="color:var(--warn)">1 risk needs you</span></div><div class="bar" style="margin-top:8px"><i style="width:41%"></i></div>
+<div class="warn" style="margin-top:10px">School Wi-Fi not tested yet. The plan says week 3. <span class="u">Plan a test</span></div></div>
+<h2>This week</h2>
+<table><tr><th>Task</th><th>Who</th><th>Area</th><th>Status</th></tr>
+<tr><td>T4 Teacher login</td><td><span class="who" style="background:#0f766e">S</span></td><td>app/api/</td><td>done</td></tr>
+<tr><td>T5 My classes, with ownership check</td><td><span class="who" style="background:#0f766e">S</span></td><td>app/api/</td><td>in progress</td></tr>
+<tr><td>T8 Login and class pages</td><td><span class="who" style="background:#c2410c">Y</span></td><td>app/templates/</td><td>in progress</td></tr>
+<tr><td>T7 Check-in with rotating code</td><td><span class="who" style="background:#6d28d9">M</span></td><td>app/live/</td><td>next week</td></tr></table>
+<h2>Decisions every agent follows</h2>
+<div class="muted">Flask on the server · plain HTML, no framework · every class request checks the teacher · no secrets in the repo · <span class="u">all 5</span></div>
+<div class="row" style="margin-top:16px"><button class="btn">Change the plan</button><button class="btn">Open the full plan</button><span class="muted">.team/plan.md</span></div>
+</section>
+</main></div>
+<script>const s=new URLSearchParams(location.search).get("s")||"1";document.getElementById("s"+s).classList.add("on")</script>
+</body></html>
