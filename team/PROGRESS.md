@@ -2,6 +2,40 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-23: Planning round 3, one writer + a review from a different AI (eval partial: Codex usage limit)
+
+- **What changed** (`74980b9aa8`), modelled on the council and sol-loop skills (t3dotgg/tstack):
+  - **Write:** one provider writes the plan in a plain chat's style, plus the same plan as data: decisions, tasks with one owner, hours, area and slot, done checks, push-backs, cut-first.
+  - **Review:** the other signed-in provider reviews it read-only, with a score out of 10 and problems marked blocker, should or nit. The sign-in check is `claude auth status` / `codex login status`. With one provider signed in, the same provider reviews in a fresh call and the result says so.
+  - **Fix:** the writer fixes blockers and shoulds, or declines one with a reason. Every answer goes in `decision-log.md`. The word limit and the method-talk check join as code-found shoulds.
+  - **Loop:** a new review only after a fixed blocker, at most 3 rounds, stop when only nits are left. The review prompt says growth is worse, and later rounds check only the open points.
+  - **Page:** the writer's text, then a short decision list in the plan's own heading style. No experts line, no tables. Size now comes from the brief in code (no size turn).
+  - **Deleted:**
+    - The panel: `planExperts`, `planMergePrompts`, `planCaps`, `planBudget`, `planDecisionRender` and the 10 checklists.
+    - The opt-in Codex shared session, with its `team-layer` session edit in `CodexTextGeneration.ts` and `textGenerationOperations.ts`. That file is now back to its pre-round-2 shape.
+  - **Kept:** word count and limits (`planLimits.ts`), decision caps (`numberDecisions`), method talk, the renderer, push-back (now the writer answers it) and the usage parsers.
+  - `team/PLANNING_FEATURE_PLAN.md` gets a section 13 saying the panel is replaced; sections 2, 4, 5 and 6 still describe it until the UI slice.
+- **Files:**
+  - `apps/server/src/team/planning/`: new `planReview.ts` and `planLimits.ts`; rewritten method, prompts, schemas, render, files, provider, usage, push-back and tests.
+  - `apps/server/scripts/team-plan.ts` (flags `--writer`, `--reviewer`, `--writer-model`, `--reviewer-model`).
+  - `evals/project-plans/` (run, report, grade, README).
+  - The upstream session edit removed from `apps/server/src/textGeneration/CodexTextGeneration.ts` and `packages/provider-core/src/server/textGenerationOperations.ts`.
+- **Checked:**
+  - Planning tests (17) and grader tests (2) pass.
+  - Typecheck passes for server, evals and provider-core; `check:changed` passes (27 packages); fmt, lint and knip pass on commit.
+  - Live: one smoke run on weekend-todo, with Codex writing and Claude reviewing. This is the first live run of the Claude path; it worked.
+- **Eval:** `test-screenshots` `2026-11-23-plan-eval-3/` (`ef48ac0700`), with `blind/` and `answers/` kept apart.
+  - **Only weekend-todo ran.** The Codex usage limit was reached on the first turn of the full run, and the message said to try again at 23:44 (2026-11-22).
+  - weekend-todo: 463 words (539 at the first review, then a fix turn and a shorten turn). Claude scored it 9/10 with one nit.
+  - Tokens: Codex 3 turns, 44.1k in / 4.1k out; Claude 1 turn, 6.2k / 0.8k. Round 2's panel used 100.9k / 4.8k; the plain chat used 13.2k / 0.7k.
+- **What's left:**
+  - From `evals/`: `pnpm project-plans --out project-plans/runs/2026-11-23-r3 --case attendance,hackathon-pitch,planted-mistakes`.
+  - Then copy those cases into `2026-11-23-plan-eval-3/` and add them to its REPORT.md.
+- **Unsure:**
+  - The writer uses `##` headings while plain chats vary (plain paragraphs, bold lines), so the layout may still give the sides away.
+  - Codex runs its own web search in some turns, which adds tokens.
+  - The reviewer is Claude Sonnet 5.5 at medium effort, the runner's default; the council skill would use the flagship at high effort.
+
 ## 2026-11-22 — Title bar on glass, user guide links, no upstream links; Beta released
 
 - **Title bar** (`2450e6f4c9`): with glass on, `elbo.css` hides the Beta/Dev art, but the title, sidebar toggle and back/forward arrows kept the art's white colours, so they vanished on light glass. With glass on, they now take the theme's text colours (`elbo.css`, plus a `data-team-history-nav` hook in `SidebarChrome.tsx`). The arrows show full text colour, muted when disabled; before, in the Elbo theme both arrows were the same grey. With glass off, the art keeps upstream's white controls.
