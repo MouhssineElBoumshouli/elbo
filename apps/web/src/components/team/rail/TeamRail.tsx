@@ -16,6 +16,7 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { memo, useEffect } from "react";
+import elboIconUrl from "../../../../../../assets/team/elbo-192.png";
 
 import { useHandleNewThread } from "~/hooks/useHandleNewThread";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
@@ -164,12 +165,7 @@ export const TeamRail = memo(function TeamRail() {
       aria-label="Places"
       className="sticky top-0 z-20 hidden h-dvh w-(--team-rail-width) shrink-0 flex-col items-center gap-1 border-e border-sidebar-border bg-sidebar pt-3 pb-3 text-sidebar-foreground md:flex"
     >
-      <div
-        aria-hidden
-        className="mb-3 grid size-8 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
-      >
-        e
-      </div>
+      <img src={elboIconUrl} alt="" aria-hidden className="mb-3 size-8" />
       <RailButton
         label="Chats"
         icon={MessagesSquareIcon}

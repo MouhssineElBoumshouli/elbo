@@ -462,19 +462,6 @@
         object-fit: contain;
       }
 
-      /* team-layer: the mark's "e" is cut out in the splash background. */
-      #boot-shell-logo g {
-        stroke: #ffffff;
-      }
-
-      html.dark #boot-shell-logo g {
-        stroke: #000000;
-      }
-
-      html[data-theme-selected="true"] #boot-shell-logo g {
-        stroke: var(--boot-background);
-      }
-
       /* App CSS locks body and #root scrolling once main loads, so the error screen scrolls itself. */
       #boot-shell:has(> #boot-error) {
         height: 100%;
@@ -717,14 +704,8 @@
     <div id="root">
       <div id="boot-shell">
         <div id="boot-shell-card" aria-label="Elbo is starting">
-          <!-- team-layer: Elbo's mark in the text color (was T3 Code's icon). -->
-          <svg id="boot-shell-logo" viewBox="0 0 1024 1024" aria-hidden="true">
-            <rect width="1024" height="1024" rx="232" fill="currentColor" />
-            <g fill="none" stroke-width="148">
-              <path d="M 742 512 A 230 230 0 1 0 700.4 644" />
-              <path d="M 282 512 H 806" />
-            </g>
-          </svg>
+          <!-- team-layer: the build swaps this for each channel's Elbo icon. -->
+          <img id="boot-shell-logo" src="/apple-touch-icon.png" alt="" />
         </div>
       </div>
     </div>
