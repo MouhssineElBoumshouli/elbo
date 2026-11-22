@@ -1,9 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 
-import { draftFor, merge } from "../../apps/server/src/team/planning/planFixtures.testkit.ts";
-import type { PlanResult } from "../../apps/server/src/team/planning/planSchemas.ts";
 import { planCases } from "./cases.ts";
-import { badTasks, pushedBack, unansweredSecurity } from "./grade.ts";
+import { badTasks, pushedBack } from "./grade.ts";
 
 const planted = planCases.find((c) => c.id === "planted-mistakes")?.planted ?? [];
 const mistake = (id: string) => {
@@ -11,21 +9,6 @@ const mistake = (id: string) => {
   if (!found) throw new Error(id);
   return found;
 };
-
-const plan = (overrides: Partial<PlanResult>): PlanResult => ({
-  size: "medium",
-  schedule: "weeks",
-  sizeReason: "",
-  panel: ["project-manager", "architect", "security"],
-  drafts: [],
-  problems: [],
-  choices: [],
-  merge: merge(["Ana", "Ben"]),
-  decisions: [],
-  overruns: [],
-  wordsBeforeShorten: 0,
-  ...overrides,
-});
 
 describe("pushedBack", () => {
   it("passes only when one line names the mistake and pushes back on it", () => {
@@ -75,35 +58,17 @@ describe("pushedBack", () => {
 
 describe("plan structure", () => {
   it("names tasks without exactly one owner from the brief or without an area", () => {
-    const base = merge(["Ana", "Ben"]);
+    const task = { title: "List page", owner: "Ana", hours: 4, area: "app/", when: "Week 1" };
     const tasks = [
-      ...base.tasks,
-      { ...base.tasks[0]!, id: "T3", owner: "all" },
-      { ...base.tasks[0]!, id: "T4", owner: "Ana and Ben" },
-      { ...base.tasks[0]!, id: "T5", area: "" },
+      task,
+      { ...task, title: "Pitch", owner: "all" },
+      { ...task, title: "Login", owner: "Ana and Ben" },
+      { ...task, title: "Tests", area: "" },
     ];
-    assert.deepStrictEqual(badTasks(plan({ merge: { ...base, tasks } }), ["Ana", "Ben"]), [
-      "T3 (all · app/)",
-      "T4 (Ana and Ben · app/)",
-      "T5 (Ana · no area)",
+    assert.deepStrictEqual(badTasks(tasks, ["Ana", "Ben"]), [
+      "Pitch (all · app/)",
+      "Login (Ana and Ben · app/)",
+      "Tests (Ana · no area)",
     ]);
-  });
-
-  it("names security items left unanswered, and is undefined without a security engineer", () => {
-    const security = draftFor("security", {
-      checklist: [
-        { id: "S1", relevant: true, answer: "School login." },
-        { id: "S2", relevant: false, answer: "" },
-      ],
-    });
-    assert.deepStrictEqual(
-      unansweredSecurity(plan({ drafts: [{ expert: "security", draft: security }] }), [
-        "S1",
-        "S2",
-        "S3",
-      ]),
-      ["S2", "S3"],
-    );
-    assert.isUndefined(unansweredSecurity(plan({ drafts: [] }), ["S1"]));
   });
 });

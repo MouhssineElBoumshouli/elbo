@@ -36,7 +36,7 @@ import {
 import { getCodexServiceTierOptionValue } from "../codexModelOptions.ts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 // team-layer: token counts for the planning runner.
-import { codexThreadId, codexUsage } from "../team/planning/providerUsage.ts";
+import { codexUsage } from "../team/planning/providerUsage.ts";
 
 const CODEX_TIMEOUT_MS = 180_000;
 const CODEX_MCP_LIST_TIMEOUT_MS = 10_000;
@@ -235,7 +235,6 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
     investigate,
     timeoutMs,
     onUsage,
-    session,
   }: TextGenerationOperations.Request<S>): Effect.fn.Return<
     S["Type"],
     TextGenerationError,
@@ -315,8 +314,6 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
         binary,
         [
           "exec",
-          // team-layer: continue the planning chat; resume takes no -s flag.
-          ...(session?.resume ? ["resume", session.resume] : []),
           // Before launch args: a later table would replace servers their -c flags define.
           ...(mcpServersOff ? ["--config", mcpServersOff] : []),
           ...execLaunchArgs,
@@ -325,9 +322,10 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
           ...(mcpServersOff && launchArgsSetMcpTable ? ["--config", mcpServersOff] : []),
           // After launch args, so a launch arg's enabled=true cannot turn a server back on.
           ...codexMcpServerOffFlags(enabledMcpServers),
-          ...(session ? [] : ["--ephemeral"]),
+          "--ephemeral",
           "--skip-git-repo-check",
-          ...(session?.resume ? ["--config", 'sandbox_mode="read-only"'] : ["-s", "read-only"]),
+          "-s",
+          "read-only",
           "--model",
           model,
           "--config",
@@ -343,7 +341,7 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
           "--output-last-message",
           outputPath,
           // team-layer: events on stdout carry the token counts.
-          ...(onUsage || session ? ["--json"] : []),
+          ...(onUsage ? ["--json"] : []),
           ...imagePaths.flatMap((imagePath) => ["--image", imagePath]),
           "-",
         ],
@@ -382,8 +380,6 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
 
       const usage = onUsage && exitCode === 0 ? codexUsage(stdout) : undefined;
       if (usage) onUsage?.(usage);
-      const startedId = session?.onStart && exitCode === 0 ? codexThreadId(stdout) : undefined;
-      if (startedId) session?.onStart?.(startedId);
       if (exitCode !== 0) {
         const stderrDetail = stderr.trim();
         const stdoutDetail = stdout.trim();

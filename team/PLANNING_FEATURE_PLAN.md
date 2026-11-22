@@ -197,3 +197,7 @@ Slices 1 and 2 decide whether the idea works. If the plans are not clearly bette
 2. **Who confirms:** a team picks a decider at the start; the default is the person who started the session.
 3. **Second opinion:** off by default, and offered only for large plans.
 4. **Testing plans:** runs use Mouhssine's Claude and Codex subscriptions through the providers, like normal chats, not API keys (section 10).
+
+## 13. Changed (2026-11-23): one writer and a review from a different AI
+
+After two blind rounds where the plain chat beat the panel 7 of 7, at about 15 times the tokens, the panel is gone. One provider writes the plan in a plain chat's style. The person's other provider reviews it read-only, with a score out of 10 and problems marked blocker, should or nit. The writer fixes blockers and shoulds or declines one with a reason; both go in the decision log. A new review runs only after a fixed blocker, for at most 3 rounds. With one provider signed in, the same provider reviews in a fresh session and the plan says so. This replaces the panel in sections 2, 4 (step 4), 5 and 6 and decision 3 above. Those sections still describe the panel until the UI slice rewrites them. Code: `apps/server/src/team/planning/`.

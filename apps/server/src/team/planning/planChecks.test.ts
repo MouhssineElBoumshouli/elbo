@@ -1,50 +1,89 @@
 import { assert, describe, it } from "@effect/vitest";
 
-import { budgetDecisions, overWordLimit } from "./planBudget.ts";
-import { decision, draftFor } from "./planFixtures.testkit.ts";
-import { applyPushBack } from "./planPushBack.ts";
-import { checklistIds } from "./planPrompts.ts";
+import { decision, problem, words } from "./planFixtures.testkit.ts";
+import { overWordLimit, suggestSize } from "./planLimits.ts";
 import { withoutApiKeys } from "./planProvider.ts";
+import { applyPushBack } from "./planPushBack.ts";
+import { checkProblems, logAnswers, numberDecisions, pickReviewer, toFix } from "./planReview.ts";
 import { methodTalk } from "./planWords.ts";
-import { claudeUsage, codexThreadId, codexUsage } from "./providerUsage.ts";
+import { claudeUsage, codexUsage } from "./providerUsage.ts";
 
-describe("budgetDecisions", () => {
-  const drafts = [
-    {
-      expert: "architect" as const,
-      draft: draftFor("architect", { decisions: ["A", "B", "C"].map((t) => decision(t, "stack")) }),
-    },
-    {
-      expert: "security" as const,
-      draft: draftFor("security", { decisions: [decision("D", "security")] }),
-    },
-  ];
+describe("review loop rules", () => {
+  it("picks the other provider to review, or the same one when it is the only one signed in", () => {
+    assert.deepStrictEqual(pickReviewer("codex", ["codex", "claude"]), {
+      provider: "claude",
+      sameProvider: false,
+    });
+    assert.deepStrictEqual(pickReviewer("claude", ["codex", "claude"]), {
+      provider: "codex",
+      sameProvider: false,
+    });
+    assert.deepStrictEqual(pickReviewer("codex", ["codex"]), {
+      provider: "codex",
+      sameProvider: true,
+    });
+  });
 
-  it("keeps the ranked decisions up to the size's limit as cards, first, and the rest as smaller choices", () => {
-    const records = budgetDecisions(drafts, "small", [" d ", "nope", "B", "A"]);
+  it("sends blockers and shoulds to the fix turn, never nits", () => {
     assert.deepStrictEqual(
-      records.map((r) => [r.number, r.decision.title, r.main]),
+      toFix([problem("R1", "nit"), problem("R2", "should"), problem("R3", "blocker")]).map(
+        (found) => [found.id, found.from],
+      ),
       [
-        ["0001", "D", true],
-        ["0002", "B", true],
-        ["0003", "A", false],
-        ["0004", "C", false],
+        ["R2", "reviewer"],
+        ["R3", "reviewer"],
       ],
     );
   });
 
-  it("keeps the first ones in plan order when nothing ranked matches", () => {
+  it("finds an over-long plan and lines about the method", () => {
+    assert.deepStrictEqual(checkProblems(words(500), "small"), []);
+    const found = checkProblems(`${words(501)}\nThe other experts agreed.`, "small");
     assert.deepStrictEqual(
-      budgetDecisions(drafts, "small", []).map((r) => r.main),
-      [true, true, false, false],
+      found.map((entry) => [entry.id, entry.severity, entry.from]),
+      [
+        ["C1", "should", "check"],
+        ["C2", "should", "check"],
+      ],
+    );
+    assert.include(found[0]?.problem, "505 words");
+    assert.include(found[1]?.problem, "The other experts agreed.");
+  });
+
+  it("logs a problem the writer did not answer as such", () => {
+    const entries = logAnswers(2, toFix([problem("R1", "blocker"), problem("R2", "should")]), [
+      { id: "R1", outcome: "fixed", reason: "Done." },
+    ]);
+    assert.deepStrictEqual(
+      entries.map((entry) => [entry.round, entry.id, entry.outcome, entry.point]),
+      [
+        [2, "R1", "fixed", "R1 problem"],
+        [2, "R2", "no answer", "R2 problem"],
+      ],
     );
   });
 
-  it("counts words against the size's limit", () => {
-    const words = (n: number) => Array.from({ length: n }, () => "w").join(" ");
+  it("keeps the size's number of decisions; the rest are smaller choices", () => {
+    const records = numberDecisions(
+      ["A", "B", "C"].map((title) => decision(title)),
+      "small",
+    );
+    assert.deepStrictEqual(
+      records.map((record) => [record.number, record.decision.title, record.main]),
+      [
+        ["0001", "A", true],
+        ["0002", "B", true],
+        ["0003", "C", false],
+      ],
+    );
+  });
+
+  it("sizes the plan from the team and counts words against its limit", () => {
+    assert.strictEqual(suggestSize(1, 10, 2), "small");
+    assert.strictEqual(suggestSize(3, 144, 42), "medium");
+    assert.strictEqual(suggestSize(4, 400, 100), "large");
     assert.isFalse(overWordLimit(words(500), "small"));
     assert.isTrue(overWordLimit(words(501), "small"));
-    assert.isFalse(overWordLimit(words(1500), "medium"));
   });
 });
 
@@ -57,7 +96,6 @@ describe("methodTalk", () => {
       "Other experts agreed on polling.",
       "T11 Draft the three-minute pitch (Noor · Presentation)",
       "Teachers use the admin panel to fix the list.",
-      "Raised by the security engineer and the software architect.",
     ].join("\n");
     assert.deepStrictEqual(methodTalk(plan), [
       "The supplied manager breakdown supports 36 planned person-hours.",
@@ -69,26 +107,18 @@ describe("methodTalk", () => {
 });
 
 describe("push-back", () => {
-  const record = {
-    number: "0001",
-    owner: "architect" as const,
-    decidedBy: "software architect, proposed",
-    status: "proposed",
-    decision: decision("Front end", "stack"),
-    history: [],
-    main: true,
-  };
+  const record = { number: "0001", decision: decision("Front end"), main: true, history: [] };
 
   it("a defended decision stays and the exchange is kept", () => {
     const kept = applyPushBack(record, "Adam", "I know React.", {
       verdict: "defend",
       answer: "Still best.",
-      decision: { ...record.decision, picked: "React" },
+      decision: decision("Front end", "React"),
     });
     assert.strictEqual(kept.decision.picked, "Plain pages");
     assert.deepStrictEqual(kept.history, [
       `Adam pushed back: "I know React."`,
-      "The software architect defended it: Still best.",
+      "Kept: Still best.",
     ]);
   });
 
@@ -96,24 +126,20 @@ describe("push-back", () => {
     const changed = applyPushBack(record, "Sara", "None of us can learn it in time.", {
       verdict: "change",
       answer: "Fair.",
-      decision: { ...record.decision, picked: "React" },
+      decision: decision("Front end", "React"),
     });
     assert.strictEqual(changed.decision.picked, "React");
-    assert.match(changed.history[1] ?? "", /changed it/);
+    assert.strictEqual(changed.history[1], "Changed: Fair.");
   });
 });
 
 describe("provider shell", () => {
-  it("reads checklist ids", () => {
-    assert.deepStrictEqual(checklistIds("- S1: a?\n- QS2: b?\nnot an item"), ["S1", "QS2"]);
-  });
-
   it("drops billed API keys from the provider environment", () => {
     const env = withoutApiKeys({ ANTHROPIC_API_KEY: "k", OPENAI_API_KEY: "k", HOME: "/home/user" });
     assert.deepStrictEqual(env, { HOME: "/home/user" });
   });
 
-  it("reads token counts and the session id from the CLIs' output", () => {
+  it("reads token counts from the CLIs' output", () => {
     assert.deepStrictEqual(
       claudeUsage(
         JSON.stringify([
@@ -141,8 +167,6 @@ describe("provider shell", () => {
       cachedInputTokens: 800,
       outputTokens: 300,
     });
-    assert.strictEqual(codexThreadId(codex), "019a-thread");
     assert.isUndefined(codexUsage(""));
-    assert.isUndefined(codexThreadId("not json"));
   });
 });

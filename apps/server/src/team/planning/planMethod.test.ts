@@ -1,192 +1,135 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 
-import { capDraft } from "./planCaps.ts";
-import { normalizePanel } from "./planExperts.ts";
 import {
-  decision,
-  draftFor,
-  fakeAsk,
-  merge,
+  problem,
+  scriptedAsk,
   teamBrief,
   weekendBrief,
+  words,
+  written,
 } from "./planFixtures.testkit.ts";
 import { runMethod } from "./planMethod.ts";
 
-const checklists = {
-  architect: "- A1: Does the team know this stack?",
-  security: "- S1: How do people log in?\n- S2: How are passwords stored?",
-  "quick-security": "- QS1: Where do secrets live?",
-};
-
-describe("runMethod", () => {
-  it.effect(
-    "a small plan has two writers, no cross-review, and the architect answers quick security",
-    () =>
-      Effect.gen(function* () {
-        const fake = fakeAsk({
-          size: { size: "small", panel: ["designer", "security"] },
-          merge: merge(["Lina"]),
-        });
-        const result = yield* runMethod({ brief: weekendBrief, checklists, ask: fake.ask });
-        assert.deepStrictEqual(result.panel, ["project-manager", "architect"]);
-        assert.deepStrictEqual(fake.steps, [
-          "size",
-          "draft:project-manager",
-          "draft:architect",
-          "merge",
-        ]);
-        assert.include(fake.prompts["draft:architect"], "QS1");
-        assert.include(fake.prompts["draft:architect"], "simplest storage");
-      }),
-  );
-
-  it.effect(
-    "a medium plan fixes every part in one turn and keeps only the parts the review named",
-    () =>
-      Effect.gen(function* () {
-        const fake = fakeAsk({
-          size: { size: "medium", panel: ["designer"] },
-          drafts: {
-            architect: draftFor("architect", {
-              checklist: [{ id: "A1", relevant: true, answer: "Yes." }],
-            }),
-          },
-          reviews: [
-            [
-              {
-                from: "security",
-                to: "architect",
-                problem: "Firebase breaks the EU rule.",
-                fix: "EU host",
-              },
-              { from: "security", to: "security", problem: "self", fix: "ignored" },
-            ],
-          ],
-          merge: merge(["Sara", "Yassine"]),
-        });
-        const result = yield* runMethod({ brief: teamBrief, checklists, ask: fake.ask });
-        assert.deepStrictEqual(fake.steps, [
-          "size",
-          "draft:project-manager",
-          "draft:architect",
-          "draft:security",
-          "draft:designer",
-          "review:1",
-          "fix:1",
-          "merge",
-        ]);
-        assert.notInclude(fake.prompts["draft:architect"], "QS1");
-        assert.deepStrictEqual(
-          result.problems.map((p) => p.to),
-          ["architect"],
-        );
-        assert.deepStrictEqual(
-          result.decisions.map((r) => r.decision.title),
-          ["Fixed by architect"],
-        );
-        assert.deepStrictEqual(
-          result.drafts.find((d) => d.expert === "architect")?.draft.checklist,
-          [{ id: "A1", relevant: true, answer: "Yes." }],
-        );
-      }),
-  );
-
-  it.effect("in one shared chat, later prompts do not repeat the brief or the parts", () =>
-    Effect.gen(function* () {
-      const fake = fakeAsk({
-        size: { size: "medium", panel: [] },
-        reviews: [[{ from: "security", to: "architect", problem: "p", fix: "f" }]],
-        merge: merge(["Sara", "Yassine"]),
-      });
-      yield* runMethod({ brief: teamBrief, checklists, ask: fake.ask, sharedChat: true });
-      assert.include(fake.prompts.size, "A club shop for our school club.");
-      for (const step of ["draft:architect", "review:1", "fix:1", "merge"]) {
-        assert.notInclude(fake.prompts[step], "A club shop for our school club.", step);
-        assert.notInclude(fake.prompts[step], "summary for", step);
-      }
-    }),
-  );
-
-  it.effect("a plan over its word limit gets one shorten turn", () =>
-    Effect.gen(function* () {
-      const long = Array.from({ length: 600 }, () => "word").join(" ");
-      const fake = fakeAsk({
-        size: { size: "small", panel: [] },
-        merge: merge(["Lina"], { sections: [{ section: "what", summary: long, details: "" }] }),
-        shorter: merge(["Lina"]),
-      });
-      const result = yield* runMethod({ brief: weekendBrief, checklists, ask: fake.ask });
-      assert.deepStrictEqual(fake.steps.slice(-2), ["merge", "shorten"]);
-      assert.isAbove(result.wordsBeforeShorten, 600);
-      assert.strictEqual(result.merge.sections[0]?.summary, "What we build, in short.");
-    }),
-  );
-
-  it.effect("a size set by the person wins over the panel's pick", () =>
-    Effect.gen(function* () {
-      const fake = fakeAsk({ size: { size: "medium", panel: [] }, merge: merge(["Lina"]) });
-      const result = yield* runMethod({
-        brief: weekendBrief,
-        checklists,
-        ask: fake.ask,
-        size: "small",
-      });
-      assert.strictEqual(result.size, "small");
-      assert.isFalse(fake.steps.some((step) => step.startsWith("review")));
-    }),
-  );
+const fixed = (plan: ReturnType<typeof written>, answers: ReadonlyArray<[string, string]>) => ({
+  plan,
+  answers: answers.map(([id, outcome]) => ({ id, outcome, reason: `${id} ${outcome}` })),
 });
 
-describe("panel and caps", () => {
-  it("seats experts by kind: a one-day hackathon gets the pitch coach, not a security seat", () => {
-    const panel = (kind: "app" | "hackathon", deadlineDays: number) =>
-      normalizePanel({
-        size: "medium",
-        kind,
-        isSoftware: true,
-        deadlineDays,
-        requested: ["security", "designer", "ai-engineer"],
-      });
-    assert.deepStrictEqual(panel("hackathon", 1), [
-      "project-manager",
-      "architect",
-      "hackathon",
-      "designer",
-    ]);
-    assert.deepStrictEqual(panel("app", 42), [
-      "project-manager",
-      "architect",
-      "security",
-      "designer",
-    ]);
-    assert.deepStrictEqual(
-      normalizePanel({
-        size: "medium",
-        kind: "other",
-        isSoftware: false,
-        deadlineDays: 42,
-        requested: [],
-      }),
-      ["project-manager", "architect", "designer"],
-    );
+const run = (
+  writer: ReturnType<typeof scriptedAsk>,
+  reviewer: ReturnType<typeof scriptedAsk>,
+  brief = teamBrief,
+) =>
+  runMethod({
+    brief,
+    write: writer.ask,
+    review: reviewer.ask,
+    writer: "codex gpt-6-astra",
+    reviewer: "claude claude-sonnet-5-5",
+    sameProvider: false,
   });
 
-  it("records overruns without cutting text, and drops only whole extra options", () => {
-    const long = Array.from({ length: 200 }, () => "word").join(" ");
-    const draft = draftFor("architect", {
-      parts: [{ section: "stack", summary: "a\nb\nc\nd", details: long, diagram: "" }],
-      decisions: [
-        {
-          ...decision("Backend", "stack"),
-          options: [1, 2, 3, 4].map((n) => ({ name: `O${n}`, good: "", bad: "", fit: "" })),
+describe("runMethod", () => {
+  it.effect("reviews again after a fixed blocker and stops when only nits are left", () =>
+    Effect.gen(function* () {
+      const writer = scriptedAsk({
+        write: written("First plan."),
+        "fix:1": fixed(written("Fixed plan."), [
+          ["R1", "fixed"],
+          ["R2", "declined"],
+        ]),
+      });
+      const reviewer = scriptedAsk({
+        "review:1": {
+          score: 5,
+          problems: [problem("R1", "blocker"), problem("R2", "should"), problem("R3", "nit")],
         },
-      ],
-    });
-    const { value, overruns } = capDraft(draft, "architect");
-    assert.strictEqual(value.parts[0]?.details, long);
-    assert.strictEqual(value.parts[0]?.summary, "a\nb\nc\nd");
-    assert.strictEqual(value.decisions[0]?.options.length, 3);
-    assert.strictEqual(overruns.length, 3);
-  });
+        "review:2": { score: 8, problems: [problem("R4", "nit")] },
+      });
+      const result = yield* run(writer, reviewer);
+
+      assert.deepStrictEqual(writer.steps, ["write", "fix:1"]);
+      assert.deepStrictEqual(reviewer.steps, ["review:1", "review:2"]);
+      assert.notInclude(writer.prompts["fix:1"], "R3 problem");
+      assert.include(reviewer.prompts["review:2"], "R1 [blocker] R1 problem → fixed: R1 fixed");
+      assert.deepStrictEqual(
+        result.rounds.map((round) => round.score),
+        [5, 8],
+      );
+      assert.deepStrictEqual(
+        result.log.map((entry) => [entry.id, entry.outcome, entry.reason]),
+        [
+          ["R1", "fixed", "R1 fixed"],
+          ["R2", "declined", "R2 declined"],
+        ],
+      );
+      assert.strictEqual(result.plan.plan, "Fixed plan.");
+      assert.match(result.stopReason, /round 2: only nits left/);
+      assert.strictEqual(result.size, "medium");
+    }),
+  );
+
+  it.effect("a fixed should or a declined blocker earns no new review", () =>
+    Effect.gen(function* () {
+      const writer = scriptedAsk({
+        write: written("Plan."),
+        "fix:1": fixed(written("Plan."), [
+          ["R1", "declined"],
+          ["R2", "fixed"],
+        ]),
+      });
+      const reviewer = scriptedAsk({
+        "review:1": { score: 6, problems: [problem("R1", "blocker"), problem("R2", "should")] },
+      });
+      const result = yield* run(writer, reviewer);
+      assert.deepStrictEqual(reviewer.steps, ["review:1"]);
+      assert.match(result.stopReason, /no blocker was fixed/);
+    }),
+  );
+
+  it.effect("stops after 3 review rounds", () =>
+    Effect.gen(function* () {
+      const blocker = { score: 4, problems: [problem("R1", "blocker")] };
+      const fix = fixed(written("Plan."), [["R1", "fixed"]]);
+      const writer = scriptedAsk({
+        write: written("Plan."),
+        "fix:1": fix,
+        "fix:2": fix,
+        "fix:3": fix,
+      });
+      const reviewer = scriptedAsk({
+        "review:1": blocker,
+        "review:2": blocker,
+        "review:3": blocker,
+      });
+      const result = yield* run(writer, reviewer);
+      assert.deepStrictEqual(reviewer.steps, ["review:1", "review:2", "review:3"]);
+      assert.deepStrictEqual(writer.steps, ["write", "fix:1", "fix:2", "fix:3"]);
+      assert.match(result.stopReason, /after 3 review rounds/);
+    }),
+  );
+
+  it.effect("sends the word limit to the fix turn, then shortens a plan still over it", () =>
+    Effect.gen(function* () {
+      const long = written(words(600));
+      const writer = scriptedAsk({
+        write: long,
+        "fix:1": fixed(long, [["C1", "fixed"]]),
+        shorten: written(words(400)),
+      });
+      const reviewer = scriptedAsk({ "review:1": { score: 7, problems: [] } });
+      const result = yield* run(writer, reviewer, weekendBrief);
+
+      assert.strictEqual(result.size, "small");
+      assert.deepStrictEqual(writer.steps, ["write", "fix:1", "shorten"]);
+      assert.include(writer.prompts["fix:1"], "limit for a small plan is 500");
+      assert.deepStrictEqual(
+        result.log.map((entry) => [entry.id, entry.from]),
+        [["C1", "check"]],
+      );
+      assert.isAbove(result.wordsBeforeShorten, 600);
+      assert.strictEqual(result.plan.plan, words(400));
+    }),
+  );
 });

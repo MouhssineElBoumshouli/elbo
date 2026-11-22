@@ -1,37 +1,38 @@
 # Project plans
 
-Whether Elbo's planning method (team/PLANNING_FEATURE_PLAN.md) writes better project plans than a plain "make me a project plan for this" chat on the same model.
+Whether Elbo's planning flow (`apps/server/src/team/planning/`) writes better project plans than a plain "make me a project plan for this" chat.
 
-Each case is a brief in `cases/`. The eval runs it once through the method (`apps/server/src/team/planning/`) and once as a plain chat, with the same provider, model and effort. Both go through Elbo's own text-generation runner on your Claude or Codex login, like a normal chat. API keys are removed from the environment, so nothing is billed to a key and no `.env` is read.
+The flow: one provider writes the plan; the other signed-in provider reviews it read-only, with a score out of 10 and problems marked blocker, should or nit. The writer fixes blockers and shoulds, or declines one with a reason. A new review runs only after a fixed blocker, for at most 3 rounds. With only one provider signed in, the same provider reviews in a fresh session, and the result says so.
+
+Each case is a brief in `cases/`. The eval runs it once through the flow and once as a plain chat on the writer's provider and model. Both go through Elbo's own text-generation runner on your Claude and Codex logins, like a normal chat. API keys are removed from the environment, so nothing is billed to a key and no `.env` is read.
 
 ## Run it
 
 From `evals/`:
 
 ```sh
-pnpm project-plans --out project-plans/runs/<name> [--provider codex|claude] [--model id] [--effort medium] [--case attendance,weekend-todo] [--shared-chat]
+pnpm project-plans --out project-plans/runs/<name> [--writer codex|claude] [--reviewer codex|claude] [--writer-model id] [--reviewer-model id] [--effort medium] [--case attendance,weekend-todo]
 ```
 
-Start with `--case weekend-todo` (4 method turns and 1 chat turn) to check that the login works.
+Without `--reviewer`, the reviewer is the other provider if it is signed in. Start with `--case weekend-todo` to check both logins.
 
 ## What a run writes
 
-- `<case>/A.md` and `<case>/B.md`: the method's plan and the plain chat's plan, in random order. Judge these blind, with `REVIEW.md`.
-- `key.json`: which letter is which. `checks.md`: the code checks and token counts, naming the method. Open both only after judging.
-- `<case>/method/`: the method's `plan.md`, decision files, `plan.json` and `usage.json` (tokens per turn). `<case>/baseline.md`: the plain chat's plan.
+- `<case>/A.md` and `<case>/B.md`: the flow's plan and the plain chat's plan, in random order. Judge these blind, with `REVIEW.md`. Both use the same plain layout; the flow adds its decisions as a short list at the end.
+- `key.json`: which letter is which. `checks.md`: the code checks, review scores per round, what each review found and what the writer did, and tokens per provider. Open both only after judging.
+- `<case>/method/`: `plan.md`, `decision-log.md`, `plan.json` and `usage.json` (tokens per turn and provider). `<case>/baseline.md`: the plain chat's plan.
 - `results.json`: one row per case and arm.
 
 ## Checks
 
 The code checks, in `grade.ts` (tested in `grade.test.ts`):
 
-- a case marked `onePage` stays under 500 words; every method plan has its word and decision counts next to its size's limits (`planBudget.ts`);
-- no line talks about the planning session instead of the project ("the supplied breakdown", "the architect's draft"), on both sides (`planWords.ts`);
+- a case marked `onePage` stays under 500 words; every flow plan has its word and decision counts next to its size's limits (`planLimits.ts`);
+- no line talks about the planning session instead of the project, on both sides (`planWords.ts`);
 - every planted mistake is pushed back on: one line of the plan names it and argues against it (a keyword check, so read the plans too);
-- every method task has exactly one owner from the brief and an area;
-- every security checklist item has an answer or a reason it does not apply.
+- every task in the flow's data has exactly one owner from the brief and an area.
 
-The last two need the method's structured output, so the plain chat is not checked on them. Which plan is better is decided by people reading the A/B pairs, not by a model judge.
+Which plan is better is decided by people reading the A/B pairs, not by a model judge.
 
 ## Add a case
 
@@ -39,6 +40,4 @@ Add a brief to `cases/` and an entry to `cases.ts` with its source. A planted mi
 
 ## Cost
 
-Runs use subscription usage, not a bill. With Codex, every turn carries about 14k tokens of Codex's own instructions, and separate turns barely share a cache. A medium case takes about 8 method turns. `checks.md` records each run's tokens, for both sides, next to section 5's estimates.
-
-`--shared-chat` runs the method's turns in one Codex session (`codex exec resume`). It costs more, not less: each resumed turn re-sends the whole chat, and on the weekend case it used 318k input tokens instead of 76k.
+Runs use subscription usage, not a bill. With Codex, every turn carries about 13k tokens of Codex's own instructions. A case takes 3 to 7 turns: write, then up to 3 reviews and 3 fixes.

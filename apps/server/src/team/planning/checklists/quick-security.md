@@ -1,3 +1,0 @@
-- QS1: Where do secrets live? Never in the repo, never in the page or app sent to users.
-- QS2: What personal data is kept, and can we keep less (or none)?
-- QS3: Is all traffic over HTTPS, and is every input checked on the server?

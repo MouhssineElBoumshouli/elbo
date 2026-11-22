@@ -1,0 +1,26 @@
+import * as Schema from "effect/Schema";
+
+export const PlanSize = Schema.Literals(["small", "medium", "large"]);
+export type PlanSize = typeof PlanSize.Type;
+
+/** Hard limits per plan size, counted on the plan the team reads. */
+export const PLAN_LIMITS: Record<PlanSize, { readonly decisions: number; readonly words: number }> =
+  {
+    small: { decisions: 2, words: 500 },
+    medium: { decisions: 6, words: 1_500 },
+    large: { decisions: 10, words: 3_000 },
+  };
+
+/** At or under this many days, the schedule goes in time blocks and storage stays simple. */
+export const SHORT_DEADLINE_DAYS = 7;
+
+export function suggestSize(people: number, hours: number, days: number): PlanSize {
+  if (people <= 1 && hours <= 20) return "small";
+  if (people >= 3 && days >= 70) return "large";
+  return "medium";
+}
+
+export const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
+export const overWordLimit = (markdown: string, size: PlanSize) =>
+  wordCount(markdown) > PLAN_LIMITS[size].words;

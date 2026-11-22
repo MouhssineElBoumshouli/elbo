@@ -1,191 +1,123 @@
 import * as Schema from "effect/Schema";
 
-import { ExpertId, PlanKind, PlanSize, SectionId } from "./planExperts.ts";
+import { PlanSize } from "./planLimits.ts";
 
-// Every field is required: Codex's structured output rejects optional ones. Length caps live in
-// planCaps.ts, not here, because providers disagree on which JSON Schema limits they accept.
+// Every field is required: Codex's structured output rejects optional ones.
 
-const Level = Schema.Literals(["low", "medium", "high"]);
-
-export const PlanOption = Schema.Struct({
-  name: Schema.String,
-  good: Schema.String,
-  bad: Schema.String,
-  fit: Schema.String,
-});
-
-export const PlanDecision = Schema.Struct({
+export const Decision = Schema.Struct({
   title: Schema.String,
-  section: SectionId,
-  options: Schema.Array(PlanOption),
   picked: Schema.String,
+  /** Every option looked at, the picked one included. */
+  options: Schema.Array(Schema.String),
   why: Schema.String,
-  disagreement: Schema.String,
 });
-export type PlanDecision = typeof PlanDecision.Type;
+export type Decision = typeof Decision.Type;
 
-export const PlanPart = Schema.Struct({
-  section: SectionId,
-  summary: Schema.String,
-  details: Schema.String,
-  diagram: Schema.String,
-});
-
-export const DraftRisk = Schema.Struct({
-  risk: Schema.String,
-  chance: Level,
-  impact: Level,
-  action: Schema.String,
-});
-
-export const DraftTask = Schema.Struct({
+export const PlanTask = Schema.Struct({
   title: Schema.String,
-  area: Schema.String,
+  owner: Schema.String,
   hours: Schema.Number,
+  area: Schema.String,
+  /** "Week 2", "Saturday", "Hours 0-4": the slot in the plan's schedule. */
+  when: Schema.String,
 });
+export type PlanTask = typeof PlanTask.Type;
 
-export const ChecklistAnswer = Schema.Struct({
-  id: Schema.String,
-  relevant: Schema.Boolean,
-  answer: Schema.String,
+/** The writer's answer: the plan as the team reads it, plus the same plan as data for the app. */
+export const WrittenPlan = Schema.Struct({
+  title: Schema.String,
+  plan: Schema.String,
+  decisions: Schema.Array(Decision),
+  tasks: Schema.Array(PlanTask),
+  doneChecks: Schema.Array(Schema.Struct({ mustHave: Schema.String, done: Schema.String })),
+  pushBacks: Schema.Array(
+    Schema.Struct({ idea: Schema.String, problem: Schema.String, better: Schema.String }),
+  ),
+  cutFirst: Schema.Array(Schema.String),
 });
+export type WrittenPlan = typeof WrittenPlan.Type;
 
-export const Challenge = Schema.Struct({
-  idea: Schema.String,
-  problem: Schema.String,
-  better: Schema.String,
-});
-export type Challenge = typeof Challenge.Type;
-
-export const ExpertDraft = Schema.Struct({
-  parts: Schema.Array(PlanPart),
-  decisions: Schema.Array(PlanDecision),
-  risks: Schema.Array(DraftRisk),
-  tasks: Schema.Array(DraftTask),
-  checklist: Schema.Array(ChecklistAnswer),
-  challenges: Schema.Array(Challenge),
-  questions: Schema.Array(Schema.String),
-});
-export type ExpertDraft = typeof ExpertDraft.Type;
-
-export const SizeAndPanel = Schema.Struct({
-  size: PlanSize,
-  sizeReason: Schema.String,
-  kind: PlanKind,
-  isSoftware: Schema.Boolean,
-  panel: Schema.Array(ExpertId),
-});
+export const Severity = Schema.Literals(["blocker", "should", "nit"]);
+export type Severity = typeof Severity.Type;
 
 export const ReviewProblem = Schema.Struct({
-  from: ExpertId,
-  to: ExpertId,
+  id: Schema.String,
+  severity: Severity,
   problem: Schema.String,
+  why: Schema.String,
   fix: Schema.String,
 });
 export type ReviewProblem = typeof ReviewProblem.Type;
 
-export const Review = Schema.Struct({ problems: Schema.Array(ReviewProblem) });
-
-export const OpenChoice = Schema.Struct({
-  question: Schema.String,
-  options: Schema.Array(Schema.String),
-  raisedBy: ExpertId,
+export const Review = Schema.Struct({
+  score: Schema.Number,
+  problems: Schema.Array(ReviewProblem),
 });
-export type OpenChoice = typeof OpenChoice.Type;
+export type Review = typeof Review.Type;
 
-/** One turn fixes every part that got problems in the cross-review. */
-export const FixedDrafts = Schema.Struct({
-  fixes: Schema.Array(Schema.Struct({ expert: ExpertId, draft: ExpertDraft })),
-  unresolved: Schema.Array(OpenChoice),
-});
-
-export const PlanArea = Schema.Struct({
-  name: Schema.String,
-  folders: Schema.Array(Schema.String),
-  owner: Schema.String,
-});
-
-export const PlanTask = Schema.Struct({
+export const FixAnswer = Schema.Struct({
   id: Schema.String,
-  title: Schema.String,
-  owner: Schema.String,
-  area: Schema.String,
-  week: Schema.Number,
-  dependsOn: Schema.Array(Schema.String),
+  outcome: Schema.Literals(["fixed", "declined"]),
+  reason: Schema.String,
 });
-export type PlanTask = typeof PlanTask.Type;
+export type FixAnswer = typeof FixAnswer.Type;
 
-export const PlanRisk = Schema.Struct({
-  risk: Schema.String,
-  chance: Level,
-  impact: Level,
-  action: Schema.String,
-  watcher: Schema.String,
+export const FixReply = Schema.Struct({
+  plan: WrittenPlan,
+  answers: Schema.Array(FixAnswer),
 });
 
-/** The plan as the team reads it: the project manager rewrites every section in plain words. */
-export const Merge = Schema.Struct({
-  title: Schema.String,
-  sections: Schema.Array(
-    Schema.Struct({ section: SectionId, summary: Schema.String, details: Schema.String }),
-  ),
-  pushBacks: Schema.Array(
-    Schema.Struct({
-      idea: Schema.String,
-      problem: Schema.String,
-      better: Schema.String,
-      raisedBy: Schema.Array(ExpertId),
-    }),
-  ),
-  choices: Schema.Array(
-    Schema.Struct({ question: Schema.String, options: Schema.Array(Schema.String) }),
-  ),
-  /** Decision titles, most important first; the plan keeps as many as its size allows. */
-  mainDecisions: Schema.Array(Schema.String),
-  doneChecks: Schema.Array(Schema.Struct({ mustHave: Schema.String, done: Schema.String })),
-  milestones: Schema.Array(
-    Schema.Struct({ when: Schema.String, what: Schema.String, cutFirst: Schema.String }),
-  ),
-  areas: Schema.Array(PlanArea),
-  tasks: Schema.Array(PlanTask),
-  risks: Schema.Array(PlanRisk),
-  glossary: Schema.Array(Schema.Struct({ term: Schema.String, meaning: Schema.String })),
+/** One review pass: the reviewer's score and everything it found, nits included. */
+export const ReviewRound = Schema.Struct({
+  round: Schema.Number,
+  score: Schema.Number,
+  words: Schema.Number,
+  problems: Schema.Array(ReviewProblem),
 });
-export type Merge = typeof Merge.Type;
+export type ReviewRound = typeof ReviewRound.Type;
 
-export const PushBackReply = Schema.Struct({
-  verdict: Schema.Literals(["defend", "change"]),
-  answer: Schema.String,
-  decision: PlanDecision,
+/** A blocker or should the writer was asked to fix: what was raised, and what the writer did. */
+export const LogEntry = Schema.Struct({
+  round: Schema.Number,
+  id: Schema.String,
+  severity: Severity,
+  /** "reviewer", or "check" for a problem the code found (word limit, method talk). */
+  from: Schema.Literals(["reviewer", "check"]),
+  point: Schema.String,
+  outcome: Schema.Literals(["fixed", "declined", "no answer"]),
+  reason: Schema.String,
 });
-export type PushBackReply = typeof PushBackReply.Type;
+export type LogEntry = typeof LogEntry.Type;
 
-/** A decision as the plan keeps it: numbered, owned, and with its push-back history. */
 export const DecisionRecord = Schema.Struct({
   number: Schema.String,
-  owner: ExpertId,
-  decidedBy: Schema.String,
-  status: Schema.String,
-  decision: PlanDecision,
-  history: Schema.Array(Schema.String),
-  /** False for a "smaller choice": one line in the plan instead of a card. */
+  decision: Decision,
+  /** False for a "smaller choice" past the size's decision limit. */
   main: Schema.Boolean,
+  history: Schema.Array(Schema.String),
 });
 export type DecisionRecord = typeof DecisionRecord.Type;
 
-/** The whole method's result; the runner saves it as plan.json so a push-back can reopen it. */
+/** The whole run; the runner saves it as plan.json so a push-back can reopen it. */
 export const PlanResult = Schema.Struct({
   size: PlanSize,
-  schedule: Schema.Literals(["weeks", "blocks"]),
-  sizeReason: Schema.String,
-  panel: Schema.Array(ExpertId),
-  drafts: Schema.Array(Schema.Struct({ expert: ExpertId, draft: ExpertDraft })),
-  problems: Schema.Array(ReviewProblem),
-  choices: Schema.Array(OpenChoice),
-  merge: Merge,
+  writer: Schema.String,
+  reviewer: Schema.String,
+  /** True when no other provider was signed in, so the writer's provider reviewed in a fresh session. */
+  sameProvider: Schema.Boolean,
+  plan: WrittenPlan,
   decisions: Schema.Array(DecisionRecord),
-  overruns: Schema.Array(Schema.String),
+  rounds: Schema.Array(ReviewRound),
+  log: Schema.Array(LogEntry),
+  stopReason: Schema.String,
   /** Words before the shorten turn; 0 when the plan fit without one. */
   wordsBeforeShorten: Schema.Number,
 });
 export type PlanResult = typeof PlanResult.Type;
+
+export const PushBackReply = Schema.Struct({
+  verdict: Schema.Literals(["defend", "change"]),
+  answer: Schema.String,
+  decision: Decision,
+});
+export type PushBackReply = typeof PushBackReply.Type;

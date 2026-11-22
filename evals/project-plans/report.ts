@@ -3,48 +3,62 @@ import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 
-import {
-  briefText,
-  decodeBrief,
-  estimateTokens,
-} from "../../apps/server/src/team/planning/planBrief.ts";
-import { decodePlan, loadChecklists } from "../../apps/server/src/team/planning/planFiles.ts";
-import { checklistIds } from "../../apps/server/src/team/planning/planPrompts.ts";
+import { decodeBrief } from "../../apps/server/src/team/planning/planBrief.ts";
+import { decodePlan } from "../../apps/server/src/team/planning/planFiles.ts";
+import { PLAN_LIMITS } from "../../apps/server/src/team/planning/planLimits.ts";
 import { renderPlan } from "../../apps/server/src/team/planning/planRender.ts";
-import { totalUsage, usageLine } from "../../apps/server/src/team/planning/planUsage.ts";
+import type { PlanResult } from "../../apps/server/src/team/planning/planSchemas.ts";
+import { usageLine } from "../../apps/server/src/team/planning/planUsage.ts";
 import { type PlanCase, planCases } from "./cases.ts";
-import { PLAN_LIMITS } from "../../apps/server/src/team/planning/planBudget.ts";
-import {
-  badTasks,
-  methodTalk,
-  ONE_PAGE_WORDS,
-  pushedBack,
-  unansweredSecurity,
-  wordCount,
-} from "./grade.ts";
+import { badTasks, methodTalk, ONE_PAGE_WORDS, pushedBack, wordCount } from "./grade.ts";
 
 const Usage = Schema.Struct({
   inputTokens: Schema.Number,
   cachedInputTokens: Schema.Number,
   outputTokens: Schema.Number,
 });
-export const UsageFile = Schema.Struct({ turns: Schema.Array(Usage) });
+const Turn = Schema.Struct({ ...Usage.fields, step: Schema.String });
+export const UsageFile = Schema.Struct({ turns: Schema.Array(Turn) });
+const MethodUsageFile = Schema.Struct({
+  providers: Schema.Array(Schema.Struct({ who: Schema.String, turns: Schema.Array(Turn) })),
+});
 const decodeUsageFile = Schema.decodeEffect(Schema.fromJsonString(UsageFile));
+const decodeMethodUsage = Schema.decodeEffect(Schema.fromJsonString(MethodUsageFile));
 export const RunInfo = Schema.Struct({
-  provider: Schema.String,
-  model: Schema.String,
+  writer: Schema.String,
+  reviewer: Schema.String,
+  sameProvider: Schema.Boolean,
+  baseline: Schema.String,
   effort: Schema.String,
 });
 const decodeRunInfo = Schema.decodeEffect(Schema.fromJsonString(RunInfo));
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 const yesNo = (pass: boolean) => (pass ? "yes" : "**no**");
+const talkCell = (found: ReadonlyArray<string>) =>
+  found.length === 0
+    ? "none"
+    : `**${found.length}**: ${found.map((l) => `"${l.slice(0, 80)}"`).join("; ")}`;
+
+/** What each review found, and what the writer did with the blockers and shoulds. */
+function reviewLines(plan: PlanResult): ReadonlyArray<string> {
+  return plan.rounds.flatMap((round) => [
+    `- Round ${round.round}: ${round.score}/10 on ${round.words} words.`,
+    ...round.problems.map((problem) => {
+      const done = plan.log.find((entry) => entry.round === round.round && entry.id === problem.id);
+      const outcome = done ? ` → ${done.outcome}${done.reason ? `: ${done.reason}` : ""}` : "";
+      return `  - ${problem.id} [${problem.severity}] ${problem.problem}${outcome}`;
+    }),
+    ...plan.log
+      .filter((entry) => entry.round === round.round && entry.from === "check")
+      .map((entry) => `  - ${entry.id} [check] ${entry.point} → ${entry.outcome}`),
+  ]);
+}
 
 /** Reads what a run left in `outDir`, case by case, and writes key.json, results.json, checks.md and REVIEW.md. */
 export const summarize = Effect.fn("projectPlans.summarize")(function* (outDir: string) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const securityIds = checklistIds((yield* loadChecklists()).security ?? "");
   const info = yield* decodeRunInfo(yield* fs.readFileString(path.join(outDir, "run.json")));
   const key: Record<string, { A: string; B: string }> = {};
   const rows: unknown[] = [];
@@ -53,81 +67,73 @@ export const summarize = Effect.fn("projectPlans.summarize")(function* (outDir: 
 
   for (const planCase of planCases) {
     const caseDir = path.join(outDir, planCase.id);
-    const files = ["method/plan.json", "method/usage.json", "baseline.md", "A.md"].map((f) =>
-      path.join(caseDir, f),
-    );
+    const files = [
+      "method/plan.json",
+      "method/usage.json",
+      "baseline.md",
+      "baseline-usage.json",
+      "A.md",
+    ].map((f) => path.join(caseDir, f));
     if (!(yield* Effect.forEach(files, (f) => fs.exists(f))).every(Boolean)) continue;
     done.push(planCase);
-    const [planJson, usageJson, baselineText, aText] = yield* Effect.forEach(files, (f) =>
-      fs.readFileString(f),
+    const [planJson, usageJson, baselineText, baselineUsageJson, aText] = yield* Effect.forEach(
+      files,
+      (f) => fs.readFileString(f),
     );
     const brief = yield* decodeBrief(
       yield* fs.readFileString(path.join(import.meta.dirname, "cases", planCase.briefFile)),
     );
     const plan = yield* decodePlan(planJson ?? "");
-    const methodText = renderPlan(plan);
-    const methodTurns = (yield* decodeUsageFile(usageJson ?? "")).turns;
-    const baselineUsagePath = path.join(caseDir, "baseline-usage.json");
-    const baselineTurns = (yield* fs.exists(baselineUsagePath))
-      ? (yield* decodeUsageFile(yield* fs.readFileString(baselineUsagePath))).turns
-      : undefined;
+    const methodText = renderPlan(plan.plan, plan.decisions);
+    const baseline = baselineText ?? "";
+    const methodUsage = (yield* decodeMethodUsage(usageJson ?? "")).providers;
+    const baselineTurns = (yield* decodeUsageFile(baselineUsageJson ?? "")).turns;
     key[planCase.id] =
-      aText === baselineText ? { A: "baseline", B: "method" } : { A: "method", B: "baseline" };
+      aText === baseline ? { A: "baseline", B: "method" } : { A: "method", B: "baseline" };
 
+    const words = [wordCount(methodText), wordCount(baseline)] as const;
+    const limit = PLAN_LIMITS[plan.size];
     const tasks = badTasks(
-      plan,
+      plan.plan.tasks,
       brief.people.map((person) => person.name),
     );
-    const security = unansweredSecurity(plan, securityIds);
-    const methodUsage = totalUsage(methodTurns);
-    const baselineUsage = baselineTurns ? totalUsage(baselineTurns) : undefined;
     const pushes = (text: string) =>
       Object.fromEntries(planCase.planted.map((m) => [m.id, pushedBack(text, m)]));
     rows.push(
       {
         id: planCase.id,
         arm: "method",
-        words: wordCount(methodText),
+        size: plan.size,
+        words: words[0],
+        wordsBeforeShorten: plan.wordsBeforeShorten,
+        scores: plan.rounds.map((round) => round.score),
+        stopReason: plan.stopReason,
+        log: plan.log,
         pushedBack: pushes(methodText),
         methodTalk: methodTalk(methodText),
-        size: plan.size,
-        decisions: plan.decisions.filter((r) => r.main).length,
-        smallerChoices: plan.decisions.filter((r) => !r.main).length,
-        wordsBeforeShorten: plan.wordsBeforeShorten,
         badTasks: tasks,
-        unansweredSecurity: security ?? null,
-        overruns: plan.overruns,
-        turns: methodTurns.length,
-        usage: methodUsage,
+        usage: methodUsage.map(({ who, turns }) => ({ who, line: usageLine(who, turns) })),
       },
       {
         id: planCase.id,
         arm: "baseline",
-        words: wordCount(baselineText ?? ""),
-        pushedBack: pushes(baselineText ?? ""),
-        methodTalk: methodTalk(baselineText ?? ""),
-        turns: baselineTurns?.length ?? null,
-        usage: baselineUsage ?? null,
+        words: words[1],
+        pushedBack: pushes(baseline),
+        methodTalk: methodTalk(baseline),
+        usage: usageLine("baseline", baselineTurns),
       },
     );
-    const words = [wordCount(methodText), wordCount(baselineText ?? "")] as const;
-    const limit = PLAN_LIMITS[plan.size];
-    const main = plan.decisions.filter((r) => r.main).length;
-    const talk = [methodTalk(methodText), methodTalk(baselineText ?? "")] as const;
-    const talkCell = (found: ReadonlyArray<string>) =>
-      found.length === 0
-        ? "none"
-        : `**${found.length}**: ${found.map((l) => `"${l.slice(0, 80)}"`).join("; ")}`;
     lines.push(
       `## ${planCase.id}`,
       "",
-      `Brief: about ${estimateTokens(briefText(brief))} tokens (target under 600). Method size: ${plan.size}, panel: ${plan.panel.join(", ")}, ${main} decisions + ${plan.decisions.length - main} smaller choices, ${plan.merge.tasks.length} tasks.`,
+      `Size ${plan.size}. ${plan.stopReason}`,
       "",
-      "| Check | Method | Plain chat |",
+      "| Check | Writer + review | Plain chat |",
       "| --- | --- | --- |",
       `| Words | ${words[0]} (limit ${limit.words}${plan.wordsBeforeShorten > 0 ? `; ${plan.wordsBeforeShorten} before the shorten turn` : ""}) | ${words[1]} |`,
-      `| Decisions shown as cards | ${main} (limit ${limit.decisions}) | not counted (free text) |`,
-      `| Lines about the method, not the project | ${talkCell(talk[0])} | ${talkCell(talk[1])} |`,
+      `| Review scores per round | ${plan.rounds.map((round) => `${round.score}/10`).join(" → ")} | none |`,
+      `| Decisions listed | ${plan.decisions.filter((r) => r.main).length} (limit ${limit.decisions}) | not counted (free text) |`,
+      `| Lines about the method, not the project | ${talkCell(methodTalk(methodText))} | ${talkCell(methodTalk(baseline))} |`,
       ...(planCase.onePage
         ? [
             `| One page (≤ ${ONE_PAGE_WORDS} words) | ${yesNo(words[0] <= ONE_PAGE_WORDS)} | ${yesNo(words[1] <= ONE_PAGE_WORDS)} |`,
@@ -135,16 +141,18 @@ export const summarize = Effect.fn("projectPlans.summarize")(function* (outDir: 
         : []),
       ...planCase.planted.map(
         (m) =>
-          `| Pushes back: ${m.id} | ${yesNo(pushedBack(methodText, m))} | ${yesNo(pushedBack(baselineText ?? "", m))} |`,
+          `| Pushes back: ${m.id} | ${yesNo(pushedBack(methodText, m))} | ${yesNo(pushedBack(baseline, m))} |`,
       ),
       `| Every task has one owner and an area | ${tasks.length === 0 ? "yes" : `**no**: ${tasks.join(", ")}`} | not checked (free text) |`,
-      `| Security checklist answered | ${security === undefined ? "no security engineer on the panel" : security.length === 0 ? "yes" : `**no**: ${security.join(", ")}`} | not checked (free text) |`,
       "",
-      `Method tokens: ${usageLine(plan.size, methodTurns.length, methodUsage)}.`,
-      `Plain chat tokens: ${baselineUsage ? `${baselineTurns?.length} turn, input ${baselineUsage.inputTokens}, output ${baselineUsage.outputTokens}` : "not recorded in this run"}.`,
-      ...(plan.overruns.length > 0
-        ? ["", `Field caps the model went over (kept, not cut): ${plan.overruns.join("; ")}.`]
-        : []),
+      "What the reviews found:",
+      "",
+      ...reviewLines(plan),
+      "",
+      "Tokens:",
+      "",
+      ...methodUsage.map(({ who, turns }) => `- ${usageLine(who, turns)}`),
+      `- ${usageLine("plain chat", baselineTurns)}`,
       "",
     );
   }
@@ -156,7 +164,7 @@ export const summarize = Effect.fn("projectPlans.summarize")(function* (outDir: 
     [
       "# Project plan checks",
       "",
-      `Provider ${info.provider}, model ${info.model}, effort ${info.effort}. This file names the method: read A.md and B.md first.`,
+      `Writer ${info.writer}, reviewer ${info.reviewer}${info.sameProvider ? " (same provider, fresh session: no other provider was signed in)" : ""}, plain chat ${info.baseline}, effort ${info.effort}. This file names the sides: read A.md and B.md first.`,
       "",
       ...lines,
     ].join("\n"),

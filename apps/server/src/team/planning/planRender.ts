@@ -1,158 +1,91 @@
-import { decisionCard, decisionLine, table } from "./planDecisionRender.ts";
-import { EXPERTS, SECTION_TITLES, type SectionId } from "./planExperts.ts";
-import type { PlanResult } from "./planSchemas.ts";
+import type { DecisionRecord, PlanResult, WrittenPlan } from "./planSchemas.ts";
 
-export { decisionFileName, renderDecision } from "./planDecisionRender.ts";
+const cell = (text: string) => text.replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ");
+const row = (cells: ReadonlyArray<string>) => `| ${cells.map(cell).join(" | ")} |`;
+const table = (head: ReadonlyArray<string>, rows: ReadonlyArray<ReadonlyArray<string>>) =>
+  [row(head), row(head.map(() => "---")), ...rows.map(row)].join("\n");
 
-const FULL_ORDER: ReadonlyArray<SectionId> = [
-  "what",
-  "scope",
-  "stack",
-  "parts",
-  "data",
-  "security",
-  "look",
-  "ai",
-  "extra",
-  "work",
-  "risks",
-];
-const SMALL_ORDER: ReadonlyArray<SectionId> = ["what", "scope", "stack", "risks", "work"];
-
-const names = (ids: ReadonlyArray<keyof typeof EXPERTS>) => {
-  const all = ids.map((id) => `the ${EXPERTS[id].name}`);
-  return all.length <= 1 ? (all[0] ?? "") : `${all.slice(0, -1).join(", ")} and ${all.at(-1)}`;
-};
-
-function sectionBody(plan: PlanResult, section: SectionId): string {
-  const small = plan.size === "small";
-  const written = plan.merge.sections.find((entry) => entry.section === section);
-  const out: string[] = written?.summary.trim() ? [`**In short:** ${written.summary.trim()}`] : [];
-  if (!small && written?.details.trim()) {
-    out.push(`> Go deeper: ${written.details.trim().replace(/\n+/g, "\n> ")}`);
-  }
-  if (!small) {
-    const diagram = plan.drafts
-      .flatMap((d) => d.draft.parts)
-      .find((part) => part.section === section && part.diagram.trim())?.diagram;
-    if (diagram) out.push("```\n" + diagram.trim() + "\n```");
-  }
-  if (section === "scope" && plan.merge.doneChecks.length > 0) {
-    out.push(
-      `**Done means:**\n${plan.merge.doneChecks.map((c) => `- ${c.mustHave}: ${c.done}`).join("\n")}`,
-    );
-  }
-  const decisions = plan.decisions.filter((r) => r.main && r.decision.section === section);
-  out.push(...decisions.map((r) => (small ? decisionLine(r) : decisionCard(r))));
-  return out.join("\n\n");
+/** A heading in the plan's own style, so the decisions list reads like the rest of the page. */
+function heading(markdown: string, text: string): string {
+  if (/^## /m.test(markdown)) return `## ${text}`;
+  if (/^\*\*[^*\n]+\*\*\s*$/m.test(markdown)) return `**${text}**`;
+  return text;
 }
 
-function workBody(plan: PlanResult): string {
-  const { merge } = plan;
-  const out: string[] = [];
-  const summary = merge.sections.find((s) => s.section === "work")?.summary.trim();
-  if (summary) out.push(`**In short:** ${summary}`);
-  if (plan.size === "small") {
-    out.push(
-      merge.tasks.map((task) => `- [ ] ${task.title} (${task.owner} · ${task.area})`).join("\n"),
-    );
-  } else {
-    if (merge.areas.length > 0) {
-      out.push(
-        table(
-          ["Area", "Folders", "Owner"],
-          merge.areas.map((a) => [a.name, a.folders.map((f) => `\`${f}\``).join(", "), a.owner]),
-        ),
-      );
-    }
-    const weeks = [...new Set(merge.tasks.map((task) => task.week))].toSorted((a, b) => a - b);
-    out.push(
-      table(
-        [plan.schedule === "blocks" ? "Block" : "Week", "Tasks"],
-        weeks.map((week) => [
-          String(week),
-          merge.tasks
-            .filter((task) => task.week === week)
-            .map((task) => `${task.id} ${task.title} (${task.owner} · ${task.area})`)
-            .join(" · "),
-        ]),
-      ),
-    );
-  }
-  if (merge.milestones.length > 0) {
-    out.push(
-      table(
-        ["When", "Working by then", "Cut first if it slips"],
-        merge.milestones.map((m) => [m.when, m.what, m.cutFirst]),
-      ),
-    );
-  }
-  return out.join("\n\n");
+function decisionLine({ decision }: DecisionRecord): string {
+  const others = decision.options.filter((option) => option !== decision.picked);
+  return `**${decision.title}:** ${decision.picked}${others.length > 0 ? ` (also looked at: ${others.join(", ")})` : ""}. ${decision.why}`;
 }
 
-function risksBody(plan: PlanResult): string {
-  const risks = plan.size === "small" ? plan.merge.risks.slice(0, 3) : plan.merge.risks;
-  const summary = plan.merge.sections.find((s) => s.section === "risks")?.summary.trim();
-  return [
-    ...(summary ? [`**In short:** ${summary}`] : []),
-    table(
-      ["Risk", "Chance", "Impact", "What we do", "Who watches"],
-      risks.map((r) => [r.risk, r.chance, r.impact, r.action, r.watcher]),
-    ),
-  ].join("\n\n");
-}
-
-/** The plan as one Markdown page, in the shape of team/PLANNING_EXAMPLE_ATTENDANCE.md. */
-export function renderPlan(plan: PlanResult): string {
-  const small = plan.size === "small";
-  const { merge } = plan;
-  const present = new Set(plan.drafts.flatMap((d) => d.draft.parts.map((part) => part.section)));
-  const order = (small ? SMALL_ORDER : FULL_ORDER).filter(
-    (section) => section === "work" || section === "risks" || present.has(section),
-  );
-  const extraTitle = plan.panel.map((id) => EXPERTS[id].extraTitle).find(Boolean);
-  const titled = order.map((section) => {
-    if (section === "work") return { title: SECTION_TITLES.work, body: workBody(plan) };
-    if (section === "risks") {
-      return { title: small ? "Top risks" : SECTION_TITLES.risks, body: risksBody(plan) };
-    }
-    const title =
-      section === "extra" ? (extraTitle ?? SECTION_TITLES.extra) : SECTION_TITLES[section];
-    return { title, body: sectionBody(plan, section) };
-  });
-  const smaller = plan.decisions.filter((r) => !r.main);
+/** The plan the team reads: the writer's text, then the decisions as a short list. */
+export function renderPlan(written: WrittenPlan, decisions: ReadonlyArray<DecisionRecord>): string {
+  const text = written.plan.trim();
+  const main = decisions.filter((record) => record.main);
+  const smaller = decisions.filter((record) => !record.main);
+  const blocks = [text];
+  if (main.length > 0) {
+    blocks.push(
+      `${heading(text, "Decisions")}\n\n${main.map((record) => `- ${decisionLine(record)}`).join("\n")}`,
+    );
+  }
   if (smaller.length > 0) {
-    titled.push({
-      title: "Smaller choices",
-      body: smaller.map((r) => `- ${decisionLine(r)}`).join("\n"),
-    });
-  }
-  if (!small && merge.glossary.length > 0) {
-    titled.push({
-      title: "Words used",
-      body: merge.glossary.map((entry) => `- **${entry.term}:** ${entry.meaning}`).join("\n"),
-    });
-  }
-
-  const blocks = [
-    `# Plan: ${merge.title}`,
-    `${plan.size[0]?.toUpperCase()}${plan.size.slice(1)} plan · ${merge.tasks.length} tasks · Experts: ${plan.panel.map((id) => EXPERTS[id].name).join(", ")}. Decisions are proposals until you agree.`,
-  ];
-  if (merge.pushBacks.length > 0) {
     blocks.push(
-      `## Where we disagree with the brief\n\n${merge.pushBacks
-        .map(
-          (p) =>
-            `- **${p.idea}** (raised by ${names(p.raisedBy)}): ${p.problem} Better: ${p.better}`,
-        )
-        .join("\n")}`,
+      `Smaller choices: ${smaller.map(({ decision }) => `${decision.title}: ${decision.picked}`).join("; ")}.`,
     );
   }
-  if (merge.choices.length > 0) {
-    blocks.push(
-      `## Choices for you\n\n${merge.choices.map((c) => `- ${c.question} (${c.options.join(" / ")})`).join("\n")}`,
-    );
-  }
-  titled.forEach(({ title, body }, index) => blocks.push(`## ${index + 1}. ${title}\n\n${body}`));
   return `${blocks.join("\n\n")}\n`;
+}
+
+/** decision-log.md: every decision, every review round, and what the writer did with each point. */
+export function renderDecisionLog(result: PlanResult): string {
+  const reviewer = result.sameProvider
+    ? `${result.reviewer} (no other provider was signed in, so the writer's provider reviewed in a fresh session)`
+    : result.reviewer;
+  const decisions = result.decisions.map((record) =>
+    [
+      `### ${record.number} ${record.decision.title}`,
+      `Picked: ${record.decision.picked}. Looked at: ${record.decision.options.join(", ")}.`,
+      `Why: ${record.decision.why}`,
+      ...record.history.map((line) => `- ${line}`),
+    ].join("\n\n"),
+  );
+  const rounds = table(
+    ["Round", "Score", "Words", "Blockers", "Shoulds", "Nits"],
+    result.rounds.map((round) => [
+      String(round.round),
+      `${round.score}/10`,
+      String(round.words),
+      ...(["blocker", "should", "nit"] as const).map((severity) =>
+        String(round.problems.filter((problem) => problem.severity === severity).length),
+      ),
+    ]),
+  );
+  const log = table(
+    ["Round", "Id", "Severity", "From", "Point", "Outcome", "Reason"],
+    result.log.map((entry) => [
+      String(entry.round),
+      entry.id,
+      entry.severity,
+      entry.from,
+      entry.point,
+      entry.outcome,
+      entry.reason,
+    ]),
+  );
+  const nits = result.rounds.flatMap((round) =>
+    round.problems
+      .filter((problem) => problem.severity === "nit")
+      .map((problem) => `- Round ${round.round}, ${problem.id}: ${problem.problem}`),
+  );
+  return [
+    `# Decision log: ${result.plan.title}`,
+    `Written by ${result.writer}, reviewed by ${reviewer}. ${result.stopReason}`,
+    "## Decisions",
+    ...decisions,
+    "## Reviews",
+    rounds,
+    "## What the writer did with each point",
+    result.log.length > 0 ? log : "Nothing to fix.",
+    ...(nits.length > 0 ? ["## Nits, left as they are", nits.join("\n")] : []),
+  ].join("\n\n");
 }

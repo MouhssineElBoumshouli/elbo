@@ -1,9 +1,9 @@
 import * as Effect from "effect/Effect";
+import type * as Schema from "effect/Schema";
 
 import type { PlanBrief } from "./planBrief.ts";
-import { EXPERTS, type ExpertId, type PlanKind } from "./planExperts.ts";
-import type { Ask } from "./planMethod.ts";
-import type { ExpertDraft, Merge, PlanDecision, ReviewProblem } from "./planSchemas.ts";
+import type { Ask, StepRequest } from "./planMethod.ts";
+import type { Decision, ReviewProblem, WrittenPlan } from "./planSchemas.ts";
 
 export const weekendBrief: PlanBrief = {
   what: "A to-do list for myself in the browser.",
@@ -32,118 +32,52 @@ export const teamBrief: PlanBrief = {
   ],
 };
 
-export const decision = (title: string, section: PlanDecision["section"]): PlanDecision => ({
+export const decision = (title: string, picked = "Plain pages"): Decision => ({
   title,
-  section,
-  options: [
-    { name: "Plain pages", good: "simple", bad: "less interactive", fit: "Yassine knows HTML" },
-    { name: "React", good: "rich", bad: "a build step", fit: "nobody knows it" },
-  ],
-  picked: "Plain pages",
+  picked,
+  options: ["Plain pages", "React"],
   why: "The team knows HTML.",
-  disagreement: "",
 });
 
-export function draftFor(expert: ExpertId, overrides: Partial<ExpertDraft> = {}): ExpertDraft {
+export function written(text: string, overrides: Partial<WrittenPlan> = {}): WrittenPlan {
   return {
-    parts: EXPERTS[expert].sections.map((section) => ({
-      section,
-      summary: `${expert} summary for ${section}.`,
-      details: `${expert} details for ${section}.`,
-      diagram: "",
-    })),
-    decisions: [],
-    risks: [{ risk: `${expert} risk`, chance: "medium", impact: "low", action: "watch it" }],
-    tasks: [{ title: `${expert} task`, area: "app/", hours: 4 }],
-    checklist: [],
-    challenges: [],
-    questions: [],
+    title: "Club shop",
+    plan: text,
+    decisions: [decision("Front end")],
+    tasks: [
+      { title: "Build the list page", owner: "Sara", hours: 4, area: "app/", when: "Week 1" },
+    ],
+    doneChecks: [{ mustHave: "add a task", done: "A task appears after Enter." }],
+    pushBacks: [],
+    cutFirst: ["due dates"],
     ...overrides,
   };
 }
 
-export const merge = (people: ReadonlyArray<string>, overrides: Partial<Merge> = {}): Merge => ({
-  title: "Test plan",
-  sections: [{ section: "what", summary: "What we build, in short.", details: "More about it." }],
-  pushBacks: [],
-  choices: [],
-  mainDecisions: [],
-  doneChecks: [{ mustHave: "Add a task", done: "Type a task, press Enter, it shows." }],
-  milestones: [{ when: "Saturday evening", what: "Add and tick work", cutFirst: "styling" }],
-  areas: [{ name: "Pages", folders: ["app/"], owner: people[0] ?? "" }],
-  tasks: people.map((owner, index) => ({
-    id: `T${index + 1}`,
-    title: `Task ${index + 1}`,
-    owner,
-    area: "app/",
-    week: index + 1,
-    dependsOn: [],
-  })),
-  risks: [1, 2, 3, 4].map((n) => ({
-    risk: `Risk ${n}`,
-    chance: "low" as const,
-    impact: "low" as const,
-    action: "watch",
-    watcher: people[0] ?? "",
-  })),
-  glossary: [{ term: "API", meaning: "the part other parts ask for data" }],
-  ...overrides,
+export const problem = (id: string, severity: ReviewProblem["severity"]): ReviewProblem => ({
+  id,
+  severity,
+  problem: `${id} problem`,
+  why: `${id} why`,
+  fix: `${id} fix`,
 });
 
-/** A fake model: answers each step from `outputs` by its step name and records every request. */
-export function fakeAsk(outputs: {
-  readonly size: {
-    size: "small" | "medium" | "large";
-    panel: ReadonlyArray<ExpertId>;
-    kind?: PlanKind;
-  };
-  readonly drafts?: Partial<Record<ExpertId, ExpertDraft>>;
-  readonly reviews?: ReadonlyArray<ReadonlyArray<ReviewProblem>>;
-  readonly merge: Merge;
-  readonly shorter?: Merge;
-}) {
+export const words = (n: number) => Array.from({ length: n }, () => "word").join(" ");
+
+/**
+ * An `Ask` that answers each step from `script`: a value, or a function of the prompt. Every step
+ * and prompt is kept, so a test can check which turns ran and what they were told.
+ */
+export function scriptedAsk(script: Record<string, unknown | ((prompt: string) => unknown)>) {
   const steps: string[] = [];
   const prompts: Record<string, string> = {};
-  const ask: Ask<never> = (request) => {
+  const ask: Ask<never> = <S extends Schema.Top>(request: StepRequest<S>) => {
     steps.push(request.step);
     prompts[request.step] = request.prompt;
-    const [kind, first] = request.step.split(":");
-    const answer = (): unknown => {
-      switch (kind) {
-        case "size":
-          return { kind: "app", ...outputs.size, sizeReason: "fake", isSoftware: true };
-        case "draft":
-          return outputs.drafts?.[first as ExpertId] ?? draftFor(first as ExpertId);
-        case "review":
-          return { problems: outputs.reviews?.[Number(first) - 1] ?? [] };
-        case "fix":
-          // Fixes for two experts; the method must keep only those the review named.
-          return {
-            fixes: (["architect", "designer"] as const).map((expert) => ({
-              expert,
-              draft: draftFor(expert, { decisions: [decision(`Fixed by ${expert}`, "stack")] }),
-            })),
-            unresolved: [
-              {
-                question: "Will teachers use their own phones?",
-                options: ["yes", "no"],
-                raisedBy: "security",
-              },
-            ],
-          };
-        case "merge":
-          return outputs.merge;
-        case "shorten":
-          return outputs.shorter ?? outputs.merge;
-        default:
-          return {
-            verdict: "defend",
-            answer: "Still best.",
-            decision: decision("Front end", "stack"),
-          };
-      }
-    };
-    return Effect.succeed(answer() as never);
+    const entry = script[request.step];
+    if (entry === undefined) return Effect.die(`no scripted answer for ${request.step}`);
+    const value = typeof entry === "function" ? entry(request.prompt) : entry;
+    return Effect.succeed(value as S["Type"]);
   };
   return { ask, steps, prompts };
 }

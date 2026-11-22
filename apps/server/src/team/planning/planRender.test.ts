@@ -1,109 +1,71 @@
 import { assert, describe, it } from "@effect/vitest";
-import * as Effect from "effect/Effect";
 
-import {
-  decision,
-  draftFor,
-  fakeAsk,
-  merge,
-  teamBrief,
-  weekendBrief,
-} from "./planFixtures.testkit.ts";
-import { runMethod } from "./planMethod.ts";
-import { decisionFileName, renderDecision, renderPlan } from "./planRender.ts";
+import { decision, problem, written } from "./planFixtures.testkit.ts";
+import { renderDecisionLog, renderPlan } from "./planRender.ts";
+import { numberDecisions } from "./planReview.ts";
+import type { PlanResult } from "./planSchemas.ts";
+
+const records = numberDecisions(
+  [decision("Front end"), decision("Storage", "SQLite"), decision("Hosting", "School server")],
+  "small",
+);
 
 describe("renderPlan", () => {
-  it.effect(
-    "a small plan: one-line decisions, done checks, a to-do list, top 3 risks, no glossary",
-    () =>
-      Effect.gen(function* () {
-        const fake = fakeAsk({
-          size: { size: "small", panel: [] },
-          drafts: {
-            architect: draftFor("architect", {
-              decisions: ["Stack", "Storage", "Hosting"].map((t) => decision(t, "stack")),
-            }),
-          },
-          merge: merge(["Lina"]),
-        });
-        const markdown = renderPlan(
-          yield* runMethod({ brief: weekendBrief, checklists: {}, ask: fake.ask }),
-        );
-        assert.include(markdown, "**Stack:** Plain pages (also looked at: React).");
-        assert.include(markdown, "## 6. Smaller choices\n\n- **Hosting:** Plain pages");
-        assert.include(markdown, "- Add a task: Type a task, press Enter, it shows.");
-        assert.include(markdown, "- [ ] Task 1 (Lina · app/)");
-        assert.include(markdown, "| Saturday evening | Add and tick work | styling |");
-        assert.notInclude(markdown, "Risk 4");
-        assert.notInclude(markdown, "Go deeper");
-        assert.notInclude(markdown, "Words used");
-      }),
-  );
+  it("adds the decisions as a short list in the plan's own heading style", () => {
+    const page = renderPlan(written("# Club shop\n\n## Steps\n\nWeek 1: list page."), records);
+    assert.include(
+      page,
+      "## Decisions\n\n- **Front end:** Plain pages (also looked at: React). The team knows HTML.",
+    );
+    assert.include(page, "Smaller choices: Hosting: School server.");
+    assert.notInclude(page, "Experts");
+    assert.notInclude(page, "| ");
 
-  it.effect(
-    "a medium plan: one push-back naming every expert who raised it, choices, decision cards",
-    () =>
-      Effect.gen(function* () {
-        const fake = fakeAsk({
-          size: { size: "medium", panel: [] },
-          drafts: {
-            architect: draftFor("architect", { decisions: [decision("Front end", "stack")] }),
-          },
-          merge: merge(["Sara", "Yassine"], {
-            sections: [
-              { section: "stack", summary: "Plain pages.", details: "Written for the team." },
-            ],
-            pushBacks: [
-              {
-                idea: "Passwords in plain text",
-                problem: "A leak exposes them.",
-                better: "bcrypt",
-                raisedBy: ["security", "architect"],
-              },
-            ],
-            choices: [{ question: "Will teachers use their own phones?", options: ["yes", "no"] }],
-          }),
-        });
-        const markdown = renderPlan(
-          yield* runMethod({ brief: teamBrief, checklists: {}, ask: fake.ask }),
-        );
-        assert.include(
-          markdown,
-          "- **Passwords in plain text** (raised by the security engineer and the software architect): A leak exposes them. Better: bcrypt",
-        );
-        assert.include(
-          markdown,
-          "## Choices for you\n\n- Will teachers use their own phones? (yes / no)",
-        );
-        assert.include(markdown, "> Go deeper: Written for the team.");
-        assert.notInclude(markdown, "architect details for stack");
-        assert.include(
-          markdown,
-          "| **Plain pages** (picked) | simple | less interactive | Yassine knows HTML |",
-        );
-        assert.include(markdown, "| 2 | T2 Task 2 (Yassine · app/) |");
-      }),
-  );
+    assert.include(renderPlan(written("**Steps**\n\nSaturday: page."), records), "**Decisions**");
+    assert.match(renderPlan(written("Steps\n\nSaturday: page."), records), /\n\nDecisions\n\n- /);
+  });
 });
 
-describe("renderDecision", () => {
-  it("writes the rulebook front matter with the planning fields", () => {
-    const record = {
-      number: "0003",
-      owner: "architect" as const,
-      decidedBy: "software architect, proposed",
-      status: "proposed",
-      decision: decision("Database and hosting: Postgres on a free EU host", "stack"),
-      history: [],
-      main: true,
-    };
-    assert.strictEqual(
-      decisionFileName(record),
-      "0003-database-and-hosting-postgres-on-a-free-eu-host.md",
+describe("renderDecisionLog", () => {
+  const result: PlanResult = {
+    size: "small",
+    writer: "codex gpt-6-astra",
+    reviewer: "codex gpt-6-astra",
+    sameProvider: true,
+    plan: written("Plan."),
+    decisions: records,
+    rounds: [
+      {
+        round: 1,
+        score: 6,
+        words: 320,
+        problems: [problem("R1", "blocker"), problem("R2", "nit")],
+      },
+    ],
+    log: [
+      {
+        round: 1,
+        id: "R1",
+        severity: "blocker",
+        from: "reviewer",
+        point: "Passwords in plain text.",
+        outcome: "fixed",
+        reason: "Hashed now.",
+      },
+    ],
+    stopReason: "Stopped after round 1: no blocker was fixed, so no new review.",
+    wordsBeforeShorten: 0,
+  };
+
+  it("says when the writer's own provider reviewed, and keeps every round and answer", () => {
+    const log = renderDecisionLog(result);
+    assert.include(log, "no other provider was signed in");
+    assert.include(log, "| 1 | 6/10 | 320 | 1 | 0 | 1 |");
+    assert.include(
+      log,
+      "| 1 | R1 | blocker | reviewer | Passwords in plain text. | fixed | Hashed now. |",
     );
-    const file = renderDecision(record, "2026-11-22");
-    assert.include(file, 'options: ["Plain pages", "React"]');
-    assert.include(file, 'decided_by: "software architect, proposed"');
-    assert.include(file, "status: proposed");
+    assert.include(log, "- Round 1, R2: R2 problem");
+    assert.include(log, "### 0002 Storage");
   });
 });
