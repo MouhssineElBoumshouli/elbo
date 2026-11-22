@@ -16,7 +16,6 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { memo, useEffect } from "react";
-import elboIconUrl from "../../../../../../assets/team/elbo-192.png";
 
 import { useHandleNewThread } from "~/hooks/useHandleNewThread";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
@@ -26,6 +25,7 @@ import { useTeamFeed } from "~/state/teamFeed";
 import { resolveThreadRouteTarget } from "~/threadRoutes";
 
 import { useSidebar } from "../../ui/sidebar";
+import { ElboIcon } from "../look/ElboIcon";
 import { useTeamSetupRows } from "../setup/TeamSetupPanel";
 import { teamHomeTarget } from "../teamHomeTarget";
 import { TEAM_SETUP_PATH, teamRailActive, teamSetupNeedsYou } from "./teamRail";
@@ -165,7 +165,7 @@ export const TeamRail = memo(function TeamRail() {
       aria-label="Places"
       className="sticky top-0 z-20 hidden h-dvh w-(--team-rail-width) shrink-0 flex-col items-center gap-1 border-e border-sidebar-border bg-sidebar pt-3 pb-3 text-sidebar-foreground md:flex"
     >
-      <img src={elboIconUrl} alt="" aria-hidden className="mb-3 size-8" />
+      <ElboIcon aria-hidden className="mb-3 size-8" />
       <RailButton
         label="Chats"
         icon={MessagesSquareIcon}

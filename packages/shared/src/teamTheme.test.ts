@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { ELBO_THEME, onAccent } from "./teamTheme.ts";
+import { contrastRatio, ELBO_THEME, onAccent } from "./teamTheme.ts";
 
 // Status and highlight colors have a hue, and so do the keys accentColors() fills; greys do not.
 const HUED =
@@ -15,6 +15,19 @@ describe("Elbo theme", () => {
         return r !== g || g !== b;
       });
       expect(tinted).toEqual([]);
+    }
+  });
+
+  it("colors links and text with a shade that reads on the canvas", () => {
+    const light = ELBO_THEME.colors;
+    const dark = ELBO_THEME.variants!.dark!;
+    expect(light.updateForeground).toBe("#15355b");
+    expect(dark.updateForeground).toBe("#21b0c0");
+    for (const colors of [light, dark]) {
+      expect(contrastRatio(colors.updateForeground, colors.canvas)).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrastRatio(colors.accentSurfaceForeground, colors.accentSurface),
+      ).toBeGreaterThanOrEqual(4.5);
     }
   });
 

@@ -462,6 +462,14 @@
         object-fit: contain;
       }
 
+      /* team-layer: the icon's navy vanishes on dark, so dark mode sets it on a white tile. */
+      html.dark #boot-shell-logo {
+        box-sizing: border-box;
+        padding: 4px;
+        border-radius: 14px;
+        background: #ffffff;
+      }
+
       /* App CSS locks body and #root scrolling once main loads, so the error screen scrolls itself. */
       #boot-shell:has(> #boot-error) {
         height: 100%;

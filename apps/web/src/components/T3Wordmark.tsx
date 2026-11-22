@@ -1,7 +1,7 @@
-import type { SVGProps } from "react";
-import { ElboMark } from "./team/look/ElboMark"; // team-layer
+import type { HTMLAttributes } from "react";
+import { ElboIcon } from "./team/look/ElboIcon"; // team-layer
 
-// team-layer: Elbo's mark wherever upstream drew T3's wordmark (chat events, standalone pages).
-export function T3Wordmark(props: SVGProps<SVGSVGElement>) {
-  return <ElboMark {...props} />;
+// team-layer: Elbo's icon wherever upstream drew T3's wordmark (chat events, standalone pages).
+export function T3Wordmark(props: HTMLAttributes<HTMLSpanElement>) {
+  return <ElboIcon {...props} />;
 }

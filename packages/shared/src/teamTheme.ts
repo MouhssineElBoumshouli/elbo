@@ -11,6 +11,12 @@ export const ELBO_THEME_ID = "elbo";
  * below is neutral, so the accent is the only tint.
  */
 const ELBO_ACCENT = { light: "#21b0c0", dark: "#21b0c0" } as const;
+/**
+ * Links and colored text. Cyan on white is 2.6:1, so light mode uses the icon's navy (12:1); navy
+ * on dark is 1.4:1, so dark mode keeps the cyan (6.5:1 on the canvas). CSS reads it as
+ * update-foreground (elbo.css).
+ */
+const ELBO_ACCENT_TEXT = { light: "#15355b", dark: "#21b0c0" } as const;
 
 const channels = (hex: string) =>
   [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));
@@ -36,25 +42,30 @@ const luminance = (hex: string) => {
   return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 };
 
-/** Text that reads on the accent: near-black or white, whichever has more contrast (WCAG). */
-export function onAccent(accent: string): string {
-  const background = luminance(accent);
-  const onDark = 1.05 / (background + 0.05);
-  const onLight = (background + 0.05) / (luminance("#141414") + 0.05);
-  return onLight >= onDark ? "#141414" : "#ffffff";
+/** WCAG contrast ratio of two #rrggbb colors, 1 to 21. */
+export function contrastRatio(first: string, second: string): number {
+  const [a, b] = [luminance(first), luminance(second)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-function accentColors(accent: string, canvas: string) {
+/** Text that reads on the accent: near-black or white, whichever has more contrast (WCAG). */
+export function onAccent(accent: string): string {
+  return contrastRatio(accent, "#141414") >= contrastRatio(accent, "#ffffff")
+    ? "#141414"
+    : "#ffffff";
+}
+
+function accentColors(accent: string, text: string, canvas: string) {
   const foreground = onAccent(accent);
   return {
     focus: accent,
     accent,
     accentForeground: foreground,
     update: accent,
-    updateForeground: accent,
+    updateForeground: text,
     updateSurface: mix(accent, canvas, 0.1),
     accentSurface: mix(accent, canvas, 0.07),
-    accentSurfaceForeground: accent,
+    accentSurfaceForeground: text,
     messageSurface: mix(accent, canvas, 0.07),
     messageAction: accent,
     messageActionForeground: foreground,
@@ -66,7 +77,7 @@ function accentColors(accent: string, canvas: string) {
 
 const LIGHT_CANVAS = "#ffffff";
 const LIGHT: ThemeColors = {
-  ...accentColors(ELBO_ACCENT.light, LIGHT_CANVAS),
+  ...accentColors(ELBO_ACCENT.light, ELBO_ACCENT_TEXT.light, LIGHT_CANVAS),
   searchMatchBackground: "#ffde8b",
   searchMatchForeground: "#21180a",
   searchMatchActiveBackground: "#eea52b",
@@ -118,7 +129,7 @@ const LIGHT: ThemeColors = {
 
 const DARK_CANVAS = "#1c1c1c";
 const DARK: ThemeColors = {
-  ...accentColors(ELBO_ACCENT.dark, DARK_CANVAS),
+  ...accentColors(ELBO_ACCENT.dark, ELBO_ACCENT_TEXT.dark, DARK_CANVAS),
   searchMatchBackground: "#8c6c1f",
   searchMatchForeground: "#f5f5f5",
   searchMatchActiveBackground: "#eea52b",

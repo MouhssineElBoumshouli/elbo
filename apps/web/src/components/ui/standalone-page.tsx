@@ -24,9 +24,9 @@ export function StandalonePageHeader({
   return (
     <>
       <div className="flex items-baseline justify-between gap-3 text-muted-foreground">
-        {/* team-layer: Elbo's mark and name (was T3 Code's wordmark and "Code"). */}
-        <span className="flex items-baseline gap-1.5" role="img" aria-label={APP_BASE_NAME}>
-          <T3Wordmark className="h-3 w-auto shrink-0 text-foreground" aria-hidden />
+        {/* team-layer: Elbo's icon and name (was T3 Code's wordmark and "Code"). */}
+        <span className="flex items-center gap-1.5" role="img" aria-label={APP_BASE_NAME}>
+          <T3Wordmark className="size-5" aria-hidden />
           <span className="text-lg font-medium tracking-tight">{APP_BASE_NAME}</span>
         </span>
         {context ? <span className="text-sm">{context}</span> : null}

@@ -40,11 +40,33 @@ html[data-theme-id="elbo"] {
 }
 
 /* Elbo's accent stands in for upstream's blue and teal; green, red and amber keep their meaning.
+   Colored text takes the theme's text shade (navy in light mode), carried as update-foreground.
    `.dark` matches upstream's dark block (`:root` under the dark variant), which sets its own blue. */
 html[data-theme-id="elbo"],
 html.dark[data-theme-id="elbo"] {
   --info: var(--app-theme-accent);
-  --info-foreground: var(--app-theme-accent);
+  --info-foreground: var(--app-theme-update-foreground);
+}
+
+/* Upstream's `text-primary` is the button color; as text it takes the text shade too. */
+html[data-theme-id="elbo"] :is(.text-primary, .hover\:text-primary:hover) {
+  color: var(--app-theme-update-foreground);
+}
+
+/* The icon (ElboIcon.tsx) in every theme. Its navy lines vanish on dark, so dark sets it on a tile. */
+[data-elbo-icon] > img {
+  width: 100%;
+  height: 100%;
+}
+
+.dark [data-elbo-icon] {
+  border-radius: 22%;
+  background-color: #ffffff;
+}
+
+.dark [data-elbo-icon] > img {
+  width: 88%;
+  height: 88%;
 }
 
 /* The chat ends above the message box: nothing scrolls under or below it. */

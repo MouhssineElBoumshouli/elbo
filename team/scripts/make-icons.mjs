@@ -1,5 +1,7 @@
 // Builds Elbo's app icons from assets/team/elbo-symbol-transparent.png: `node team/scripts/make-icons.mjs`.
 // The drawing is only resized, never changed. Beta adds an amber dot in the empty bottom-right corner.
+// Windows gets a white tile behind it: one icon serves the taskbar, Start and shortcuts, and the
+// navy lines vanish on Windows' dark taskbar.
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 import * as NodeModule from "node:module";
@@ -19,7 +21,17 @@ const BETA_BADGE = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height=
   <circle cx="880" cy="880" r="118" fill="#f59e0b" stroke="#ffffff" stroke-width="24"/>
 </svg>`;
 
+// The drawing spans x 124 to 898 and y 181 to 838, so it keeps over 90 px inside this tile.
+const WINDOWS_TILE = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+  <rect x="32" y="32" width="960" height="960" rx="200" fill="#ffffff"/>
+</svg>`;
+
 const base = await sharp(source).ensureAlpha().png().toBuffer();
+const onTile = (master) =>
+  sharp(Buffer.from(WINDOWS_TILE))
+    .composite([{ input: master }])
+    .png()
+    .toBuffer();
 const VARIANTS = [
   { file: "elbo", master: base },
   {
@@ -61,7 +73,10 @@ for (const { file, master } of VARIANTS) {
   write(`${file}-1024.png`, await png(master, 1024));
   // The source already has margins like macOS's icon grid, so macOS uses the same picture.
   write(`${file}-macos-1024.png`, await png(master, 1024));
-  write(`${file}-windows.ico`, await icoOf(master, [16, 20, 24, 32, 40, 48, 64, 128, 256]));
+  write(
+    `${file}-windows.ico`,
+    await icoOf(await onTile(master), [16, 20, 24, 32, 40, 48, 64, 128, 256]),
+  );
   write(`${file}-web-favicon.ico`, await icoOf(master, [16, 32, 48]));
   for (const size of [16, 32, 180, 192, 512]) write(`${file}-${size}.png`, await png(master, size));
 }
