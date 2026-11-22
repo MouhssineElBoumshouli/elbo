@@ -23,6 +23,7 @@ const plan = (overrides: Partial<PlanResult>): PlanResult => ({
   merge: merge(["Ana", "Ben"]),
   decisions: [],
   overruns: [],
+  wordsBeforeShorten: 0,
   ...overrides,
 });
 

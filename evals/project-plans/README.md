@@ -9,7 +9,7 @@ Each case is a brief in `cases/`. The eval runs it once through the method (`app
 From `evals/`:
 
 ```sh
-pnpm project-plans --out project-plans/runs/<name> [--provider codex|claude] [--model id] [--effort medium] [--case attendance,weekend-todo]
+pnpm project-plans --out project-plans/runs/<name> [--provider codex|claude] [--model id] [--effort medium] [--case attendance,weekend-todo] [--shared-chat]
 ```
 
 Start with `--case weekend-todo` (4 method turns and 1 chat turn) to check that the login works.
@@ -25,7 +25,8 @@ Start with `--case weekend-todo` (4 method turns and 1 chat turn) to check that 
 
 The code checks, in `grade.ts` (tested in `grade.test.ts`):
 
-- a case marked `onePage` stays under 500 words;
+- a case marked `onePage` stays under 500 words; every method plan has its word and decision counts next to its size's limits (`planBudget.ts`);
+- no line talks about the planning session instead of the project ("the supplied breakdown", "the architect's draft"), on both sides (`planWords.ts`);
 - every planted mistake is pushed back on: one line of the plan names it and argues against it (a keyword check, so read the plans too);
 - every method task has exactly one owner from the brief and an area;
 - every security checklist item has an answer or a reason it does not apply.
@@ -38,4 +39,6 @@ Add a brief to `cases/` and an entry to `cases.ts` with its source. A planted mi
 
 ## Cost
 
-Runs use subscription usage, not a bill. With Codex, every turn carries about 14k tokens of Codex's own instructions, and separate turns barely share a cache. A medium case takes about 10 method turns. `checks.md` records each run's tokens next to section 5's estimates.
+Runs use subscription usage, not a bill. With Codex, every turn carries about 14k tokens of Codex's own instructions, and separate turns barely share a cache. A medium case takes about 8 method turns. `checks.md` records each run's tokens, for both sides, next to section 5's estimates.
+
+`--shared-chat` runs the method's turns in one Codex session (`codex exec resume`). It costs more, not less: each resumed turn re-sends the whole chat, and on the weekend case it used 318k input tokens instead of 76k.

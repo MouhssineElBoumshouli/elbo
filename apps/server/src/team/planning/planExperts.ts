@@ -16,6 +16,25 @@ export const ExpertId = Schema.Literals([
 ]);
 export type ExpertId = typeof ExpertId.Type;
 
+export const PlanKind = Schema.Literals([
+  "app",
+  "website",
+  "hackathon",
+  "research",
+  "ml",
+  "mobile",
+  "other",
+]);
+export type PlanKind = typeof PlanKind.Type;
+
+/** The expert a kind of project always gets a seat for. */
+const KIND_EXPERT: Partial<Record<PlanKind, ExpertId>> = {
+  hackathon: "hackathon",
+  research: "research",
+  ml: "ml",
+  mobile: "mobile",
+};
+
 export const SectionId = Schema.Literals([
   "what",
   "scope",
@@ -79,22 +98,34 @@ const PANEL_LIMITS: Record<PlanSize, { readonly min: number; readonly max: numbe
 
 export const REVIEW_ROUNDS: Record<PlanSize, number> = { small: 0, medium: 1, large: 2 };
 
+/** A build this short gets 3 security lines in the architect's checklist instead of a seat. */
+const QUICK_BUILD_DAYS = 1;
+
+export interface PanelInput {
+  readonly size: PlanSize;
+  readonly kind: PlanKind;
+  readonly isSoftware: boolean;
+  readonly deadlineDays: number;
+  readonly requested: ReadonlyArray<ExpertId>;
+}
+
 /**
- * The panel the session runs with. The project manager always leads; software always gets the
- * architect, and the security engineer when there is room. A model's wish list is trimmed to the size.
+ * The panel the session runs with, in seat order: the project manager, the architect for software,
+ * the expert for this kind of project, then the security engineer when the plan is not small and
+ * the build is longer than a day. A model's wish list fills what is left, trimmed to the size.
  */
-export function normalizePanel(
-  size: PlanSize,
-  isSoftware: boolean,
-  requested: ReadonlyArray<ExpertId>,
-): ReadonlyArray<ExpertId> {
+export function normalizePanel(input: PanelInput): ReadonlyArray<ExpertId> {
+  const { size, kind, isSoftware, deadlineDays, requested } = input;
+  const kindExpert = KIND_EXPERT[kind];
+  const securitySeat = isSoftware && size !== "small" && deadlineDays > QUICK_BUILD_DAYS;
   const required: ExpertId[] = ["project-manager"];
   if (isSoftware) required.push("architect");
-  if (isSoftware && size !== "small") required.push("security");
+  if (kindExpert) required.push(kindExpert);
+  if (securitySeat) required.push("security");
   const wanted = [...required, ...requested].filter((id, index, all) => all.indexOf(id) === index);
   const { min, max } = PANEL_LIMITS[size];
-  const panel = wanted.slice(0, max);
-  const fillers: ExpertId[] = ["architect", "designer", "security"];
+  const panel = wanted.filter((id) => id !== "security" || securitySeat).slice(0, max);
+  const fillers: ExpertId[] = ["architect", "designer"];
   for (const filler of fillers) {
     if (panel.length >= min) break;
     if (!panel.includes(filler)) panel.push(filler);

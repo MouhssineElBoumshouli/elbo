@@ -35,6 +35,14 @@ export interface Request<S extends Schema.Top> {
   // team-layer: the planning runner needs long turns and the tokens each one used.
   readonly timeoutMs?: number | undefined;
   readonly onUsage?: ((usage: TokenUsage) => void) | undefined;
+  /** team-layer: one provider session across turns; only the Codex runner keeps one. */
+  readonly session?: ProviderSession | undefined;
+}
+
+// team-layer: `resume` continues a session; without it a new one starts and reports its id.
+export interface ProviderSession {
+  readonly resume?: string | undefined;
+  readonly onStart?: ((id: string) => void) | undefined;
 }
 
 // team-layer: what a provider CLI reports for one call.

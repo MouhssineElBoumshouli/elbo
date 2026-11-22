@@ -13,7 +13,15 @@ import { checklistIds } from "../../apps/server/src/team/planning/planPrompts.ts
 import { renderPlan } from "../../apps/server/src/team/planning/planRender.ts";
 import { totalUsage, usageLine } from "../../apps/server/src/team/planning/planUsage.ts";
 import { type PlanCase, planCases } from "./cases.ts";
-import { badTasks, ONE_PAGE_WORDS, pushedBack, unansweredSecurity, wordCount } from "./grade.ts";
+import { PLAN_LIMITS } from "../../apps/server/src/team/planning/planBudget.ts";
+import {
+  badTasks,
+  methodTalk,
+  ONE_PAGE_WORDS,
+  pushedBack,
+  unansweredSecurity,
+  wordCount,
+} from "./grade.ts";
 
 const Usage = Schema.Struct({
   inputTokens: Schema.Number,
@@ -81,7 +89,11 @@ export const summarize = Effect.fn("projectPlans.summarize")(function* (outDir: 
         arm: "method",
         words: wordCount(methodText),
         pushedBack: pushes(methodText),
+        methodTalk: methodTalk(methodText),
         size: plan.size,
+        decisions: plan.decisions.filter((r) => r.main).length,
+        smallerChoices: plan.decisions.filter((r) => !r.main).length,
+        wordsBeforeShorten: plan.wordsBeforeShorten,
         badTasks: tasks,
         unansweredSecurity: security ?? null,
         overruns: plan.overruns,
@@ -93,19 +105,29 @@ export const summarize = Effect.fn("projectPlans.summarize")(function* (outDir: 
         arm: "baseline",
         words: wordCount(baselineText ?? ""),
         pushedBack: pushes(baselineText ?? ""),
+        methodTalk: methodTalk(baselineText ?? ""),
         turns: baselineTurns?.length ?? null,
         usage: baselineUsage ?? null,
       },
     );
     const words = [wordCount(methodText), wordCount(baselineText ?? "")] as const;
+    const limit = PLAN_LIMITS[plan.size];
+    const main = plan.decisions.filter((r) => r.main).length;
+    const talk = [methodTalk(methodText), methodTalk(baselineText ?? "")] as const;
+    const talkCell = (found: ReadonlyArray<string>) =>
+      found.length === 0
+        ? "none"
+        : `**${found.length}**: ${found.map((l) => `"${l.slice(0, 80)}"`).join("; ")}`;
     lines.push(
       `## ${planCase.id}`,
       "",
-      `Brief: about ${estimateTokens(briefText(brief))} tokens (target under 600). Method size: ${plan.size}, panel: ${plan.panel.join(", ")}, ${plan.decisions.length} decisions, ${plan.merge.tasks.length} tasks.`,
+      `Brief: about ${estimateTokens(briefText(brief))} tokens (target under 600). Method size: ${plan.size}, panel: ${plan.panel.join(", ")}, ${main} decisions + ${plan.decisions.length - main} smaller choices, ${plan.merge.tasks.length} tasks.`,
       "",
       "| Check | Method | Plain chat |",
       "| --- | --- | --- |",
-      `| Words | ${words[0]} | ${words[1]} |`,
+      `| Words | ${words[0]} (limit ${limit.words}${plan.wordsBeforeShorten > 0 ? `; ${plan.wordsBeforeShorten} before the shorten turn` : ""}) | ${words[1]} |`,
+      `| Decisions shown as cards | ${main} (limit ${limit.decisions}) | not counted (free text) |`,
+      `| Lines about the method, not the project | ${talkCell(talk[0])} | ${talkCell(talk[1])} |`,
       ...(planCase.onePage
         ? [
             `| One page (≤ ${ONE_PAGE_WORDS} words) | ${yesNo(words[0] <= ONE_PAGE_WORDS)} | ${yesNo(words[1] <= ONE_PAGE_WORDS)} |`,
@@ -121,7 +143,7 @@ export const summarize = Effect.fn("projectPlans.summarize")(function* (outDir: 
       `Method tokens: ${usageLine(plan.size, methodTurns.length, methodUsage)}.`,
       `Plain chat tokens: ${baselineUsage ? `${baselineTurns?.length} turn, input ${baselineUsage.inputTokens}, output ${baselineUsage.outputTokens}` : "not recorded in this run"}.`,
       ...(plan.overruns.length > 0
-        ? ["", `Length caps the model went over (trimmed): ${plan.overruns.join("; ")}.`]
+        ? ["", `Field caps the model went over (kept, not cut): ${plan.overruns.join("; ")}.`]
         : []),
       "",
     );

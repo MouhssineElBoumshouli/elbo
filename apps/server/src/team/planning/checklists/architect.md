@@ -12,4 +12,5 @@
 - A10: Are files kept small (split one before it grows past about 400 lines), with no comments that repeat the code and no second copy of the same logic?
 - A11: How is it tested, and what is tested first?
 - A12: How does a teammate run it on their own computer in under 15 minutes?
-- A13: Does any idea in the brief not fit the team, the time or the budget? Push back with a better option.
+- A13: If the deadline is a week or less, pick the simplest storage the team can run (for example SQLite or one file) unless the brief needs more.
+- A14: Does any idea in the brief not fit the team, the time or the budget? Push back with a better option.

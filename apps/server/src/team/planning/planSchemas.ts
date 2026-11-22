@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 
-import { ExpertId, PlanSize, SectionId } from "./planExperts.ts";
+import { ExpertId, PlanKind, PlanSize, SectionId } from "./planExperts.ts";
 
 // Every field is required: Codex's structured output rejects optional ones. Length caps live in
 // planCaps.ts, not here, because providers disagree on which JSON Schema limits they accept.
@@ -71,6 +71,7 @@ export type ExpertDraft = typeof ExpertDraft.Type;
 export const SizeAndPanel = Schema.Struct({
   size: PlanSize,
   sizeReason: Schema.String,
+  kind: PlanKind,
   isSoftware: Schema.Boolean,
   panel: Schema.Array(ExpertId),
 });
@@ -92,8 +93,9 @@ export const OpenChoice = Schema.Struct({
 });
 export type OpenChoice = typeof OpenChoice.Type;
 
-export const FixedDraft = Schema.Struct({
-  draft: ExpertDraft,
+/** One turn fixes every part that got problems in the cross-review. */
+export const FixedDrafts = Schema.Struct({
+  fixes: Schema.Array(Schema.Struct({ expert: ExpertId, draft: ExpertDraft })),
   unresolved: Schema.Array(OpenChoice),
 });
 
@@ -121,12 +123,31 @@ export const PlanRisk = Schema.Struct({
   watcher: Schema.String,
 });
 
+/** The plan as the team reads it: the project manager rewrites every section in plain words. */
 export const Merge = Schema.Struct({
   title: Schema.String,
-  summaries: Schema.Array(Schema.Struct({ section: SectionId, summary: Schema.String })),
+  sections: Schema.Array(
+    Schema.Struct({ section: SectionId, summary: Schema.String, details: Schema.String }),
+  ),
+  pushBacks: Schema.Array(
+    Schema.Struct({
+      idea: Schema.String,
+      problem: Schema.String,
+      better: Schema.String,
+      raisedBy: Schema.Array(ExpertId),
+    }),
+  ),
+  choices: Schema.Array(
+    Schema.Struct({ question: Schema.String, options: Schema.Array(Schema.String) }),
+  ),
+  /** Decision titles, most important first; the plan keeps as many as its size allows. */
+  mainDecisions: Schema.Array(Schema.String),
+  doneChecks: Schema.Array(Schema.Struct({ mustHave: Schema.String, done: Schema.String })),
+  milestones: Schema.Array(
+    Schema.Struct({ when: Schema.String, what: Schema.String, cutFirst: Schema.String }),
+  ),
   areas: Schema.Array(PlanArea),
   tasks: Schema.Array(PlanTask),
-  halfwayDemo: Schema.String,
   risks: Schema.Array(PlanRisk),
   glossary: Schema.Array(Schema.Struct({ term: Schema.String, meaning: Schema.String })),
 });
@@ -147,6 +168,8 @@ export const DecisionRecord = Schema.Struct({
   status: Schema.String,
   decision: PlanDecision,
   history: Schema.Array(Schema.String),
+  /** False for a "smaller choice": one line in the plan instead of a card. */
+  main: Schema.Boolean,
 });
 export type DecisionRecord = typeof DecisionRecord.Type;
 
@@ -162,5 +185,7 @@ export const PlanResult = Schema.Struct({
   merge: Merge,
   decisions: Schema.Array(DecisionRecord),
   overruns: Schema.Array(Schema.String),
+  /** Words before the shorten turn; 0 when the plan fit without one. */
+  wordsBeforeShorten: Schema.Number,
 });
 export type PlanResult = typeof PlanResult.Type;

@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect";
 
 import type { PlanBrief } from "./planBrief.ts";
-import { EXPERTS, type ExpertId } from "./planExperts.ts";
+import { EXPERTS, type ExpertId, type PlanKind } from "./planExperts.ts";
 import type { Ask } from "./planMethod.ts";
 import type { ExpertDraft, Merge, PlanDecision, ReviewProblem } from "./planSchemas.ts";
 
@@ -62,9 +62,14 @@ export function draftFor(expert: ExpertId, overrides: Partial<ExpertDraft> = {})
   };
 }
 
-export const merge = (people: ReadonlyArray<string>): Merge => ({
+export const merge = (people: ReadonlyArray<string>, overrides: Partial<Merge> = {}): Merge => ({
   title: "Test plan",
-  summaries: [{ section: "what", summary: "Merged summary of what we build." }],
+  sections: [{ section: "what", summary: "What we build, in short.", details: "More about it." }],
+  pushBacks: [],
+  choices: [],
+  mainDecisions: [],
+  doneChecks: [{ mustHave: "Add a task", done: "Type a task, press Enter, it shows." }],
+  milestones: [{ when: "Saturday evening", what: "Add and tick work", cutFirst: "styling" }],
   areas: [{ name: "Pages", folders: ["app/"], owner: people[0] ?? "" }],
   tasks: people.map((owner, index) => ({
     id: `T${index + 1}`,
@@ -74,7 +79,6 @@ export const merge = (people: ReadonlyArray<string>): Merge => ({
     week: index + 1,
     dependsOn: [],
   })),
-  halfwayDemo: "Add and tick a task.",
   risks: [1, 2, 3, 4].map((n) => ({
     risk: `Risk ${n}`,
     chance: "low" as const,
@@ -83,36 +87,54 @@ export const merge = (people: ReadonlyArray<string>): Merge => ({
     watcher: people[0] ?? "",
   })),
   glossary: [{ term: "API", meaning: "the part other parts ask for data" }],
+  ...overrides,
 });
 
-/** A fake model: answers each step from `outputs` by its step name and records the order of steps. */
+/** A fake model: answers each step from `outputs` by its step name and records every request. */
 export function fakeAsk(outputs: {
-  readonly size: { size: "small" | "medium" | "large"; panel: ReadonlyArray<ExpertId> };
+  readonly size: {
+    size: "small" | "medium" | "large";
+    panel: ReadonlyArray<ExpertId>;
+    kind?: PlanKind;
+  };
   readonly drafts?: Partial<Record<ExpertId, ExpertDraft>>;
   readonly reviews?: ReadonlyArray<ReadonlyArray<ReviewProblem>>;
   readonly merge: Merge;
+  readonly shorter?: Merge;
 }) {
   const steps: string[] = [];
+  const prompts: Record<string, string> = {};
   const ask: Ask<never> = (request) => {
     steps.push(request.step);
-    const [kind, first, second] = request.step.split(":");
+    prompts[request.step] = request.prompt;
+    const [kind, first] = request.step.split(":");
     const answer = (): unknown => {
       switch (kind) {
         case "size":
-          return { ...outputs.size, sizeReason: "fake", isSoftware: true };
+          return { kind: "app", ...outputs.size, sizeReason: "fake", isSoftware: true };
         case "draft":
           return outputs.drafts?.[first as ExpertId] ?? draftFor(first as ExpertId);
         case "review":
           return { problems: outputs.reviews?.[Number(first) - 1] ?? [] };
         case "fix":
+          // Fixes for two experts; the method must keep only those the review named.
           return {
-            draft: draftFor(second as ExpertId, { decisions: [decision("Fixed", "stack")] }),
+            fixes: (["architect", "designer"] as const).map((expert) => ({
+              expert,
+              draft: draftFor(expert, { decisions: [decision(`Fixed by ${expert}`, "stack")] }),
+            })),
             unresolved: [
-              { question: `Choice from ${second}`, options: ["a", "b"], raisedBy: "security" },
+              {
+                question: "Will teachers use their own phones?",
+                options: ["yes", "no"],
+                raisedBy: "security",
+              },
             ],
           };
         case "merge":
           return outputs.merge;
+        case "shorten":
+          return outputs.shorter ?? outputs.merge;
         default:
           return {
             verdict: "defend",
@@ -123,5 +145,5 @@ export function fakeAsk(outputs: {
     };
     return Effect.succeed(answer() as never);
   };
-  return { ask, steps };
+  return { ask, steps, prompts };
 }

@@ -26,6 +26,7 @@ const { values } = NodeUtil.parseArgs({
     model: { type: "string" },
     effort: { type: "string", default: "medium" },
     case: { type: "string" },
+    "shared-chat": { type: "boolean", default: false },
   },
 });
 if (!values.out) throw new Error("Pass --out <dir>.");
@@ -64,8 +65,19 @@ await Effect.runPromise(
         yield* fs.readFileString(path.join(import.meta.dirname, "cases", planCase.briefFile)),
       );
       yield* Effect.logInfo(`${planCase.id}: method`);
-      const method = yield* makeProviderAsk({ provider, model, effort: values.effort, cwd });
-      const plan = yield* runMethod({ brief, checklists, ask: method.ask });
+      const method = yield* makeProviderAsk({
+        provider,
+        model,
+        effort: values.effort,
+        cwd,
+        sharedChat: values["shared-chat"],
+      });
+      const plan = yield* runMethod({
+        brief,
+        checklists,
+        ask: method.ask,
+        sharedChat: method.sharedChat,
+      });
       yield* writePlanFiles({
         outDir: path.join(caseDir, "method"),
         plan,

@@ -2,7 +2,7 @@ import type { TokenUsage } from "@t3tools/provider-core/server/textGenerationOpe
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
-// Token counts for the planning runner, read from output the provider CLIs already print.
+// Token counts and session ids for the planning runner, read from output the provider CLIs print.
 // Both report total input tokens, cached ones included, so runs compare across providers.
 
 const ClaudeUsage = Schema.Struct({
@@ -54,4 +54,18 @@ export function codexUsage(stdout: string): TokenUsage | undefined {
     }),
     { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 },
   );
+}
+
+const decodeCodexThreadStarted = Schema.decodeUnknownOption(
+  Schema.fromJsonString(
+    Schema.Struct({ type: Schema.Literal("thread.started"), thread_id: Schema.String }),
+  ),
+);
+
+/** From `codex exec --json`: the id `codex exec resume` takes to continue the session. */
+export function codexThreadId(stdout: string): string | undefined {
+  return stdout
+    .split("\n")
+    .flatMap((line) => Option.toArray(decodeCodexThreadStarted(line)))
+    .at(0)?.thread_id;
 }

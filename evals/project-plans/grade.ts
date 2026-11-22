@@ -1,7 +1,10 @@
 import type { PlanResult } from "../../apps/server/src/team/planning/planSchemas.ts";
+
+/** Lines that talk about the planning session instead of the project; checked on both sides. */
+export { methodTalk } from "../../apps/server/src/team/planning/planWords.ts";
 import type { PlantedMistake } from "./cases.ts";
 
-/** About one printed page. */
+/** About one printed page; the small plan's limit (planBudget.ts). */
 export const ONE_PAGE_WORDS = 500;
 
 export const wordCount = (text: string) => text.split(/\s+/).filter(Boolean).length;

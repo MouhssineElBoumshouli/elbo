@@ -12,3 +12,5 @@
 - PM10: What are the top risks to finishing on time, and who watches each one?
 - PM11: Is the plan sized to the project? A weekend project gets one page and a to-do list, not weeks and a decisions log.
 - PM12: Does any idea in the brief make the project fail (too big for the time, against an outside rule, unsafe)? Push back with a better option.
+- PM13: For each must-have, one line on how we know it is done (something a person can try and see work).
+- PM14: What are the milestones, and what do we cut first if one slips?

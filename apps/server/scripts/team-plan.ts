@@ -5,6 +5,7 @@
  *
  *   node apps/server/scripts/team-plan.ts --brief brief.json --out plan-out
  *     [--provider codex|claude] [--model id] [--effort medium] [--size small|medium|large]
+ *     [--shared-chat]  (Codex: one session for all turns; costs more, see planProvider.ts)
  *
  * Push back on a decision of a plan written before (step 6):
  *
@@ -26,7 +27,8 @@ import * as ServerConfig from "../src/config.ts";
 import { decodeBrief } from "../src/team/planning/planBrief.ts";
 import { PlanSize } from "../src/team/planning/planExperts.ts";
 import { decodePlan, loadChecklists, writePlanFiles } from "../src/team/planning/planFiles.ts";
-import { pushBack, runMethod } from "../src/team/planning/planMethod.ts";
+import { runMethod } from "../src/team/planning/planMethod.ts";
+import { pushBack } from "../src/team/planning/planPushBack.ts";
 import { makeProviderAsk } from "../src/team/planning/planProvider.ts";
 
 const { values } = NodeUtil.parseArgs({
@@ -40,6 +42,7 @@ const { values } = NodeUtil.parseArgs({
     "push-back": { type: "string" },
     message: { type: "string" },
     by: { type: "string", default: "the team" },
+    "shared-chat": { type: "boolean", default: false },
   },
 });
 
@@ -70,11 +73,12 @@ const program = Effect.gen(function* () {
   const checklists = yield* loadChecklists();
   // Outside any repo, so the provider reads no project's CLAUDE.md or AGENTS.md.
   const cwd = yield* fs.makeTempDirectoryScoped({ prefix: "elbo-plan-" });
-  const { ask, usage } = yield* makeProviderAsk({
+  const { ask, usage, sharedChat } = yield* makeProviderAsk({
     provider,
     model: values.model ?? DEFAULT_MODELS[provider],
     effort: values.effort,
     cwd,
+    sharedChat: values["shared-chat"],
   });
   const date = DateTime.formatIsoDateUtc(yield* DateTime.now);
 
@@ -104,7 +108,7 @@ const program = Effect.gen(function* () {
     };
   } else {
     const size = values.size ? yield* decodeSize(values.size) : undefined;
-    plan = yield* runMethod({ brief, checklists, ask, size });
+    plan = yield* runMethod({ brief, checklists, ask, sharedChat, size });
   }
   const summary = yield* writePlanFiles({ outDir, plan, usage, date });
   yield* Effect.logInfo(`Plan written to ${outDir}: ${summary}`);

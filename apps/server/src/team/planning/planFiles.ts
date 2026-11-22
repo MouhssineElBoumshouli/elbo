@@ -16,7 +16,7 @@ export const loadChecklists = Effect.fn("planning.loadChecklists")(function* () 
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const dir = yield* path.fromFileUrl(CHECKLIST_DIR);
-  const entries = yield* Effect.forEach(ExpertId.literals, (id) =>
+  const entries = yield* Effect.forEach([...ExpertId.literals, "quick-security"] as const, (id) =>
     fs.readFileString(path.join(dir, `${id}.md`)).pipe(Effect.map((text) => [id, text] as const)),
   );
   return Object.fromEntries(entries) as Checklists;
