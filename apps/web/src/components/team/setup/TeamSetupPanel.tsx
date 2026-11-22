@@ -28,6 +28,8 @@ import { ClaudeAI, GitIcon, OpenAI } from "../../Icons";
 import { Button } from "../../ui/button";
 import { toastManager } from "../../ui/toast";
 import { TeamSetupTerminal, type TeamSetupRun } from "./TeamSetupTerminal";
+import { newAccountInstance } from "./newAccount";
+import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity";
 
 /** The rows for one environment, kept current with the provider statuses. */
 export function useTeamSetupRows(environmentId: EnvironmentId) {
@@ -199,6 +201,31 @@ export function TeamSetupRows({
         description:
           "Open a project folder from Ubuntu to use the agents installed there, with their own sign-ins.",
       });
+    } else if (action.kind === "addAccount" && provider !== undefined && serverConfig !== null) {
+      const instance = newAccountInstance(provider, providers ?? []);
+      const saved = await persistProviderInstance({ operation: "upsert", ...instance });
+      if (saved._tag === "Failure") {
+        toastManager.add({ type: "error", title: "Could not add the account" });
+        return;
+      }
+      await refreshProviders({ environmentId, input: { instanceId: instance.instanceId } });
+      await reloadFacts();
+      toastManager.add({
+        type: "success",
+        title: "Account added",
+        description: `Click Sign in on "${instance.instance.displayName}" and sign in with your other account. ${TEAM_IDENTITY.name} asks before it ever switches a chat to it.`,
+      });
+    } else if (action.kind === "removeAccount" && provider !== undefined) {
+      const removed = await persistProviderInstance({
+        operation: "remove",
+        instanceId: provider.instanceId,
+      });
+      if (removed._tag === "Failure") {
+        toastManager.add({ type: "error", title: "Could not remove the account" });
+        return;
+      }
+      await reloadFacts();
+      toastManager.add({ type: "success", title: `${row.name} removed` });
     } else if (action.kind === "update") {
       await navigate({
         to: "/settings/providers",
@@ -212,7 +239,13 @@ export function TeamSetupRows({
   const disabledFor = (action: TeamSetupAction) => {
     if (action.kind === "install" || action.kind === "signIn")
       return !canOperateTerminal || run !== null;
-    if (action.kind === "turnOn" || action.kind === "dontUse" || action.kind === "useAgain") {
+    if (
+      action.kind === "turnOn" ||
+      action.kind === "dontUse" ||
+      action.kind === "useAgain" ||
+      action.kind === "addAccount" ||
+      action.kind === "removeAccount"
+    ) {
       return !canManageProviders;
     }
     return false;
@@ -256,15 +289,16 @@ export function TeamSetupRows({
                       <div className="mt-1 text-xs text-muted-foreground/80">{row.note}</div>
                     ) : null}
                   </div>
-                  {row.actions.length === 0 ? (
+                  {row.actions.length === 0 || row.state === "ready" ? (
                     <StatusPill state={row.state} />
-                  ) : (
+                  ) : null}
+                  {row.actions.length === 0 ? null : (
                     <div className="flex shrink-0 flex-wrap justify-end gap-2">
                       {row.actions.map((action, index) => (
                         <Button
                           key={action.kind}
                           size="sm"
-                          variant={index === 0 ? "default" : "outline"}
+                          variant={index === 0 && row.state !== "ready" ? "default" : "outline"}
                           disabled={busyRow === row.id || disabledFor(action)}
                           onClick={() => void act(row, action)}
                         >

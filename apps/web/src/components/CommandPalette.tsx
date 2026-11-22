@@ -74,6 +74,7 @@ import {
   MessageSquareIcon,
   PaletteIcon,
   RotateCcwIcon,
+  ArrowLeftRightIcon, // team-layer
   SettingsIcon,
   ListChecksIcon, // team-layer
   MonitorIcon,
@@ -282,6 +283,7 @@ import { buildSidebarProjectPickerEntries } from "../sidebarProjectGrouping";
 import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
 import { readPullRequestListPreferences } from "~/components/pullRequest/pullRequestListPreferences";
 import { teamHomeTarget } from "~/components/team/teamHomeTarget"; // team-layer
+import { useLimitActions } from "~/components/team/limits/limitStore"; // team-layer
 import { useThreadRouteTarget } from "../hooks/useThreadRouteTarget";
 import { threadRecentUse } from "@t3tools/shared/paletteSearch";
 
@@ -696,6 +698,7 @@ function OpenCommandPaletteDialog(props: {
   const activeThreadKey = activeThread
     ? scopedThreadKey(scopeThreadRef(activeThread.environmentId, activeThread.id))
     : null;
+  const limitActions = useLimitActions(activeThreadKey); // team-layer
   const previewPanelThreadRef = activeThread
     ? scopeThreadRef(activeThread.environmentId, activeThread.id)
     : activeDraftThread
@@ -1699,6 +1702,18 @@ function OpenCommandPaletteDialog(props: {
       await navigate({ to: "/usage" });
     },
   });
+
+  // team-layer: the "Limit reached" card's buttons for this chat, so the keyboard reaches them.
+  for (const limitAction of limitActions) {
+    actionItems.push({
+      kind: "action",
+      value: `action:limit:${limitAction.id}`,
+      searchTerms: ["limit", "usage", "account", "switch", "continue", "wait", "claude", "chatgpt"],
+      title: limitAction.label,
+      icon: <ArrowLeftRightIcon className={ITEM_ICON_CLASS} />,
+      run: async () => limitAction.run(),
+    });
+  }
 
   // team-layer: the Team home page, "Today" when solo (team/UI_PLAN.md slice 4).
   actionItems.push({

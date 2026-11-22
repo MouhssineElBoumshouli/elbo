@@ -13,7 +13,9 @@ export type TeamSetupActionKind =
   | "useWsl"
   | "dontUse"
   | "useAgain"
-  | "checkAgain";
+  | "checkAgain"
+  | "addAccount"
+  | "removeAccount";
 
 export interface TeamSetupAction {
   readonly kind: TeamSetupActionKind;
@@ -79,6 +81,15 @@ export function teamShellCommand(platform: Platform, file: string, args: string)
 const providerName = (provider: ServerProvider) =>
   NAMES[provider.driver] ?? provider.displayName ?? provider.driver;
 
+/** "Codex (me@school.edu)": with two accounts of one AI, the rows say which is which. */
+function rowName(provider: ServerProvider): string {
+  const name = providerName(provider);
+  const account =
+    provider.auth.email ??
+    (String(provider.instanceId) !== String(provider.driver) ? provider.displayName : undefined);
+  return account === undefined || account === name ? name : `${name} (${account})`;
+}
+
 function providerFile(provider: ServerProvider, facts: TeamSetupFacts | null): string {
   const found = facts?.executables.find((entry) => entry.instanceId === provider.instanceId);
   return found?.path ?? DEFAULT_BINARIES[provider.driver] ?? provider.driver;
@@ -108,7 +119,7 @@ function providerRow(provider: ServerProvider, facts: TeamSetupFacts | null): Te
   const base = {
     id: `provider:${provider.instanceId}`,
     group: "agent" as const,
-    name,
+    name: rowName(provider),
     instanceId: provider.instanceId,
     driver: provider.driver,
   };
@@ -343,8 +354,29 @@ export function buildTeamSetupRows(
         providerName(a).localeCompare(providerName(b)),
     )
     .map((provider) => providerRow(provider, facts));
-  if (facts === null) return agents;
-  return [...agents, ...codexToolRows(providers, facts), ...toolRows(facts)];
+  // One "Add another account" per AI that can hold several, on its last ready row.
+  const lastReady = new Map(
+    agents.flatMap((row, index) =>
+      row.state === "ready" && row.driver !== undefined && row.driver in NAMES
+        ? [[row.driver, index] as const]
+        : [],
+    ),
+  );
+  const withAdd = agents.map((row, index) => {
+    const extraAccount =
+      row.driver !== undefined &&
+      row.driver in NAMES &&
+      String(row.instanceId).toLowerCase() !== String(row.driver).toLowerCase();
+    const actions: TeamSetupAction[] = [...row.actions];
+    if (row.driver !== undefined && lastReady.get(row.driver) === index) {
+      actions.push({ kind: "addAccount", label: "Add another account" });
+    }
+    // The way out of "Add another account", on the accounts it added.
+    if (extraAccount) actions.push({ kind: "removeAccount", label: "Remove" });
+    return actions.length === row.actions.length ? row : { ...row, actions };
+  });
+  if (facts === null) return withAdd;
+  return [...withAdd, ...codexToolRows(providers, facts), ...toolRows(facts)];
 }
 
 /** True once one AI is ready, which is all the first start needs. */
@@ -361,7 +393,10 @@ export function describeTeamSetupRows(rows: ReadonlyArray<TeamSetupRow>): string
           : row.state === "needsAction"
             ? "NEEDS ACTION"
             : row.state.toUpperCase();
-      const next = row.actions.map((action) => action.label).join(" / ");
+      const next = row.actions
+        .filter((action) => action.kind !== "addAccount" && action.kind !== "removeAccount")
+        .map((action) => action.label)
+        .join(" / ");
       return [
         `- [${mark}] ${row.message}`,
         ...(row.note ? [`  ${row.note}`] : []),

@@ -22,6 +22,15 @@ Elbo asks for three things:
 
 Open **Setup** in the left rail, or **Settings → Check my setup**. It lists your AI agents and the tools Elbo uses (Git and the GitHub CLI) and says what is missing. Each row has a button that fixes it: **Install**, **Sign in**, **Update** or **Turn on**. After you fix something outside Elbo, click **Check again**.
 
+## When an AI account hits its limit
+
+When your ChatGPT or Claude account runs out of usage, or its subscription is not active, the chat says so and when the limit resets. You choose what happens next:
+
+- **Continue with** another account of the same AI, or with the other AI. The chat moves there and sends your last message again.
+- **Wait.** The chat picks up on the same account when the limit resets.
+
+Elbo never switches by itself. To add a second account, open **Check my setup**, click **Add another account** on the Codex or Claude row, then **Sign in** on the new row with your other account. After a switch, **Switch back** returns the chat to the first account for your next message. The same choices are in the command palette.
+
 ## Working alone
 
 Every project keeps a memory of its own, even if you never make a team. Your chats know what the others did, leave notes for each other, and warn you before two chats edit the same file. Nothing is added to your project folder. **Today** in the left rail shows what changed and what needs you.

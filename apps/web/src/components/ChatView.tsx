@@ -1,4 +1,6 @@
 import { ChildThreadApprovals } from "./chat/ChildThreadApprovals";
+import { useLimitCard } from "./team/limits/useLimitCard"; // team-layer
+import type { OrchestrationV2LimitRecoveryUpdate } from "@t3tools/contracts"; // team-layer
 import { workspaceAreaProps } from "../lib/workspaceFocus";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { resolveNewThreadModelSelection } from "@t3tools/shared/usageLimits";
@@ -1757,7 +1759,32 @@ export default function ChatView(props: ChatViewProps) {
   )
     ? activeProviderStatus
     : null;
-  const hasTimelineTopBanner = Boolean(timelineThreadError) || visibleProviderStatus !== null;
+  const changeLimitRecovery = async (limitRecovery: OrchestrationV2LimitRecoveryUpdate) => {
+    if (activeThreadShell === null) return;
+    const result = await updateThreadMetadata({
+      environmentId,
+      input: { threadId: activeThreadShell.id, limitRecovery },
+    });
+    if (result._tag === "Failure") throw squashAtomCommandFailure(result);
+  };
+  // team-layer: the "Limit reached" card replaces upstream's limit banner and the raw error.
+  const limitCard = useLimitCard({
+    environmentId,
+    threadRef: activeThreadRef,
+    threadKey: activeThreadKey,
+    projection: serverProjection,
+    runtime: serverRuntime,
+    resumableRunId,
+    providers: providerStatuses,
+    recovery: activeThreadShell?.limitRecovery ?? null,
+    settled: activeThreadShell?.settledOverride === "settled",
+    requestPending: pendingApprovals.length > 0 || pendingUserInputs.length > 0,
+    timestampFormat,
+    runtimeMode,
+    onRecoveryChange: changeLimitRecovery,
+  });
+  const shownThreadError = limitCard.hidesError ? null : timelineThreadError;
+  const hasTimelineTopBanner = Boolean(shownThreadError) || visibleProviderStatus !== null;
   const activeProjectCwd = activeProject?.workspaceRoot ?? null;
   const activeThreadWorktreePath = activeThread?.worktreePath ?? null;
   const activeWorkspaceRoot = activeThreadWorktreePath ?? activeProjectCwd ?? undefined;
@@ -2606,13 +2633,7 @@ export default function ChatView(props: ChatViewProps) {
           recovery: activeThreadShell.limitRecovery ?? null,
           snoozedUntil: activeThreadShell.snoozedUntil,
           timestampFormat,
-          onChange: async (limitRecovery) => {
-            const result = await updateThreadMetadata({
-              environmentId,
-              input: { threadId: activeThreadShell.id, limitRecovery },
-            });
-            if (result._tag === "Failure") throw squashAtomCommandFailure(result);
-          },
+          onChange: changeLimitRecovery,
         })
       : null;
   const composerBannerItems = (() => {
@@ -2661,7 +2682,12 @@ export default function ChatView(props: ChatViewProps) {
             }),
           ]
         : [];
-    const limitRecoveryItems = limitRecoveryBanner === null ? [] : [limitRecoveryBanner];
+    const limitRecoveryItems =
+      limitCard.item !== null
+        ? [limitCard.item]
+        : limitRecoveryBanner === null
+          ? []
+          : [limitRecoveryBanner];
     const extensionStatusBanner = extensionStatusBannerItem(
       deriveProviderExtensionStatuses(serverProjection),
     );
@@ -3424,7 +3450,7 @@ export default function ChatView(props: ChatViewProps) {
               providerStatusDismissalKey={providerStatusDismissalKey}
               onOpenProviderSetup={openProviderSetupStable}
               threadId={activeThread.id}
-              threadError={timelineThreadError}
+              threadError={shownThreadError}
               threadErrorClass={
                 threadErrorIsServerRuntimeError ? (serverRuntime?.lastErrorClass ?? null) : null
               }

@@ -152,6 +152,26 @@ describe("buildTeamSetupRows", () => {
     });
   });
 
+  it("offers one more account per AI on its last ready row, and names each account", () => {
+    const rows = buildTeamSetupRows(
+      [
+        provider("codex", { auth: { status: "authenticated", email: "me@school.edu" } }),
+        provider("codex", {
+          instanceId: ProviderInstanceId.make("codex_2"),
+          displayName: "Codex account 2",
+          auth: { status: "unauthenticated" },
+        }),
+        provider("claudeAgent", { status: "error", message: "Broken" }),
+      ],
+      null,
+    );
+    expect(rows.map((row) => [row.name, row.actions.map((action) => action.kind)])).toEqual([
+      ["Claude", ["checkAgain"]],
+      ["Codex (me@school.edu)", ["addAccount"]],
+      ["Codex (Codex account 2)", ["signIn", "removeAccount"]],
+    ]);
+  });
+
   it("shows agents while the server's facts are still on their way", () => {
     const rows = buildTeamSetupRows([provider("claudeAgent")], null);
     expect(rows.map((entry) => entry.id)).toEqual(["provider:claudeagent"]);

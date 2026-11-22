@@ -31,9 +31,10 @@ export function MultipleAccountsNote({
     <Alert variant="info" role="note">
       <InfoIcon aria-hidden />
       <AlertDescription>
-        {/* team-layer: no "More info" link; Elbo's guide does not cover several accounts. */}
+        {/* team-layer: Elbo supports a second account for when one runs out. */}
         <p>
-          We do not recommend managing multiple {providerName} accounts in {APP_DISPLAY_NAME}.
+          You can add a second {providerName} account for when one runs out. {APP_DISPLAY_NAME} will
+          ask before it switches a chat to it.
         </p>
       </AlertDescription>
     </Alert>
