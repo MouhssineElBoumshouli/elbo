@@ -1,4 +1,4 @@
-// team-layer: Elbo's placeholder icons (team/scripts/make-icons.mjs). Stable uses "elbo", Beta
+// team-layer: Elbo's icons (team/scripts/make-icons.mjs). Stable uses "elbo", Beta
 // (upstream's nightly channel) uses "elbo-beta". Development keeps upstream's blueprint icons.
 export const TEAM_BRAND_ASSET_PATHS = {
   productionMacIconPng: "assets/team/elbo-macos-1024.png",

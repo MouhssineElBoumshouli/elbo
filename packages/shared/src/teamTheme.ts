@@ -6,11 +6,11 @@ import type { ThemeColors, ThemeDefinition } from "./themePalettes.ts";
 export const ELBO_THEME_ID = "elbo";
 
 /**
- * Elbo's one accent: buttons, the current rail entry, focus, your messages. Neutral until the new
- * app icon picks a color; change it here (and in apps/web/index.html's boot copy, which a test
- * keeps in sync). Every grey below is neutral, so the accent is the only tint.
+ * Elbo's one accent, the app icon's cyan: buttons, the current rail entry, focus, your messages.
+ * Change it here and in apps/web/index.html's boot copy (a test keeps them in sync). Every grey
+ * below is neutral, so the accent is the only tint.
  */
-const ELBO_ACCENT = { light: "#1a1a1a", dark: "#ededed" } as const;
+const ELBO_ACCENT = { light: "#21b0c0", dark: "#21b0c0" } as const;
 
 const channels = (hex: string) =>
   [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));
@@ -28,10 +28,20 @@ function mix(color: string, base: string, amount: number): string {
     .join("")}`;
 }
 
-/** Text that reads on the accent: near-black on a light accent, white on a dark one. */
-function onAccent(accent: string): string {
-  const [r, g, b] = channels(accent);
-  return 0.299 * r! + 0.587 * g! + 0.114 * b! > 150 ? "#141414" : "#ffffff";
+const luminance = (hex: string) => {
+  const [r, g, b] = channels(hex).map((value) => {
+    const c = value / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+};
+
+/** Text that reads on the accent: near-black or white, whichever has more contrast (WCAG). */
+export function onAccent(accent: string): string {
+  const background = luminance(accent);
+  const onDark = 1.05 / (background + 0.05);
+  const onLight = (background + 0.05) / (luminance("#141414") + 0.05);
+  return onLight >= onDark ? "#141414" : "#ffffff";
 }
 
 function accentColors(accent: string, canvas: string) {

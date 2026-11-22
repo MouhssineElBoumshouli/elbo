@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { ELBO_THEME } from "./teamTheme.ts";
+import { ELBO_THEME, onAccent } from "./teamTheme.ts";
 
-// Status and highlight colors have a hue; every grey does not. The accent is neutral for now:
-// once it gets a color, add the keys accentColors() fills to this list.
-const HUED = /^(error|warning|searchMatch)/u;
+// Status and highlight colors have a hue, and so do the keys accentColors() fills; greys do not.
+const HUED =
+  /^(error|warning|searchMatch|focus|accent|update|message(Surface|Action)|terminal(Cursor|Selection))/u;
 
 describe("Elbo theme", () => {
   it("has neutral greys only, so the accent is the one tint", () => {
@@ -16,5 +16,12 @@ describe("Elbo theme", () => {
       });
       expect(tinted).toEqual([]);
     }
+  });
+
+  it("puts the text with more contrast on the accent", () => {
+    expect(onAccent("#21b0c0")).toBe("#141414");
+    expect(onAccent("#15355b")).toBe("#ffffff");
+    expect(onAccent("#ededed")).toBe("#141414");
+    expect(onAccent("#1a1a1a")).toBe("#ffffff");
   });
 });
