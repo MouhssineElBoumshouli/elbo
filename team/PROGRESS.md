@@ -2,6 +2,45 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-22: "Limit reached" card, a second account from Check my setup
+
+- **What changed** (`62eaa2ea10`):
+  - **Classifier:** a pure function in `packages/shared/src/limitFailure.ts` sorts a failed turn into limit (with the reset time, or the provider's own words such as "11:44 PM" or "in 2h"), subscription not active, or other. It reads the class, code, message and reset time the adapters already pass; the adapters are unchanged. Subscription is checked first, because Claude reports an ended trial as a 429.
+  - **Card:** `apps/web/src/components/team/limits/useLimitCard.tsx`, wired into ChatView in place of upstream's limit banner and the raw error.
+    - It reads: "ChatGPT usage limit reached / Your ChatGPT account <email> reached its usage limit. It resets at <time>."
+    - Buttons appear only when they apply: "Continue with <other account of the same AI>", "Continue with <other AI>", "Wait".
+    - "Continue" sets the composer to that account and sends upstream's manual continuation with the new model. The server resends the original message if the AI never got it, and hands the context over. A failure that isn't a usage limit resends the last message text instead.
+    - "Wait" is upstream's resume at reset. Upstream's "Snooze until reset" is left out of this card.
+    - Nothing switches without a click; there is no setting for it.
+    - The card's sentence sits below the title, because upstream's one-line description cut off the reset time.
+  - **Switch back:** after a switch, a card says "This chat now uses Claude", with "Switch back to ChatGPT". It puts the composer back for the next message. The record lives in `limitStore.ts`, in memory for the app session.
+  - **Keyboard:** the card's buttons are also listed in the command palette, from the same store, and run the same handlers.
+  - **Check my setup:**
+    - "Add another account" sits on the last ready Codex and Claude row. It creates an account with its own sign-in folder in `~/.elbo/accounts/<id>`. Codex uses upstream's `shadowHomePath`, which shares its settings with the first account; Claude uses its own `homePath`.
+    - The new row then shows "Sign in".
+    - "Remove" on accounts added this way is the way back out.
+    - Rows name each account (its email, or "Codex account 2").
+  - **Text:** the multiple-accounts note now says you can add a second account for when one runs out, and that Elbo asks before switching. `docs/user/README.md` gets "When an AI account hits its limit".
+- **Files:**
+  - `packages/shared/src/{limitFailure,teamSetupRows}.ts` and tests; `packages/shared/package.json` (export).
+  - `apps/web/src/components/team/limits/*` and `team/setup/{newAccount.ts,TeamSetupPanel.tsx}`.
+  - `ChatView.tsx` and `CommandPalette.tsx` (`team-layer` lines), `settings/MultipleAccountsNote.tsx`, `docs/user/README.md`.
+- **Checked:**
+  - Classifier tests: 13, on real messages from our Codex run, upstream's adapter tests and claude-code issues.
+  - Card logic tests (5), setup row tests (7), new-account test (1).
+  - `vp run check:changed` passes: typecheck of 41 packages, 13 test files, lint, knip, React compiler.
+  - Live in a headless browser with Codex really at its limit:
+    - The card appeared, and "Continue with Claude" from the command palette continued the chat (handoff, Claude answered, no duplicate message).
+    - "Switch back" put the composer on Codex. A bug found here is fixed: the pick has to be marked explicit.
+    - "Add another account" made a "Sign in" row, and "Remove" took it away.
+  - 4 pictures, emails masked: `test-screenshots` `2026-11-22-limit-card/` (`5ae3453ef7`).
+- **Released:** Beta `1.0.0-nightly.20261122.9` from `62eaa2ea10` (Team release run 45080804364). The first try failed on a GitHub artifact hiccup: the Windows job saw `cli-linux-x64` as ready, then got "Artifact not found". Re-running the failed job passed; the installer `.exe`, blockmap and `nightly.yml` are on the Releases page.
+- **Not done / unsure:**
+  - Not tried: signing in a real second ChatGPT or Claude account, "Wait", and the subscription card (no account in that state).
+  - Mobile is hidden in Elbo (no phone app), so no mobile card.
+  - The switch-back record is per app session and per device. After a reload, the model picker is the way back.
+  - Upstream's setting "Resume after usage limits" can resume on the same account by itself. That isn't switching, so I left it.
+
 ## 2026-11-23: Planning round 3, one writer + a review from a different AI (eval partial: Codex usage limit)
 
 - **What changed** (`74980b9aa8`), modelled on the council and sol-loop skills (t3dotgg/tstack):
