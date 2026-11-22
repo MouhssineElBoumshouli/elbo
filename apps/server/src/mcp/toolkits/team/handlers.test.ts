@@ -380,7 +380,7 @@ describe("team toolkit", () => {
         assert.deepEqual(result, {
           inTeam: false,
           message:
-            "This project is in team Core, but the project's remote has no team state yet (t3 team init starts it). Team tools do nothing here.",
+            "This project is in team Core, but the project's remote has no team state yet (elbo team init starts it). Team tools do nothing here.",
         });
       }
       assert.equal(originStateRefs(), "");
