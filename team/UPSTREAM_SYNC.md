@@ -12,7 +12,7 @@ Upstream moves about 1,300 commits a week, so a sync is always big. "How to keep
 
 ## Keep deleted
 
-- **`docs/user/`**: upstream's user guides (T3's installers, phone app, Connect). Only `docs/user/README.md`, Elbo's own guide, is ours. A merge that brings back or changes an upstream guide: `git rm` it (`git rm -r $(git diff --name-only --diff-filter=AU main...HEAD -- docs/user ':!docs/user/README.md')`, or by hand for a modify/delete conflict). `ConnectReachability.test.ts` read one of them; its test is removed there with a `team-layer` note.
+- **`docs/user/`**: upstream's user guides (T3's installers, phone app, Connect). Only `docs/user/README.md`, Elbo's own guide, is ours. A merge that brings back or changes an upstream guide: `git rm` it (`git rm -r $(git diff --name-only --diff-filter=AU main...HEAD -- docs/user ':!docs/user/README.md')`, or by hand for a modify/delete conflict). `ConnectReachability.test.ts` read one of them; its test is removed there with a `team-layer` note, and `T3_CONNECT_TROUBLESHOOTING_SECTIONS` (`contracts/src/environmentHttp.ts`) is tagged `@public` so knip keeps it.
 
 ## Steps
 
