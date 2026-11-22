@@ -3030,6 +3030,8 @@ describe("CodexAdapterV2 post-settle continuation", () => {
       Effect.gen(function* () {
         const nativeThreadId = "mcp-startup-failed-thread";
         const nativeTurnId = "mcp-startup-failed-turn";
+        // team-layer: Elbo shows a failed tool once per server run, so each case names its own.
+        const toolName = `example_mcp_${timing}`;
         const startupError =
           "MCP client for `example_mcp` failed to start: MCP startup failed: handshaking with MCP server failed";
         const startup: Array<CodexReplay.CodexAppServerReplayEntry> = [
@@ -3040,7 +3042,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
               method: "mcpServer/startupStatus/updated",
               params: {
                 threadId: nativeThreadId,
-                name: "example_mcp",
+                name: toolName,
                 status: "starting",
                 error: null,
                 failureReason: null,
@@ -3054,7 +3056,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
               method: "mcpServer/startupStatus/updated",
               params: {
                 threadId: nativeThreadId,
-                name: "example_mcp",
+                name: toolName,
                 status: "failed",
                 error: startupError,
                 failureReason: null,
@@ -3065,7 +3067,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
         const preamble = codexReplayPreamble({
           nativeThreadId,
           nativeTurnId,
-          prompt: "use example_mcp",
+          prompt: `use ${toolName}`,
         });
         const turnStart = preamble.findIndex(
           (entry) => entry.type === "expect_outbound" && entry.label === "turn/start",
@@ -3096,13 +3098,13 @@ describe("CodexAdapterV2 post-settle continuation", () => {
             providerThread: harness.providerThread,
             now: yield* DateTime.now,
             attemptId: RunAttemptId.make("mcp-startup-failed-attempt"),
-            text: "use example_mcp",
+            text: `use ${toolName}`,
           }),
         );
         yield* harness.firstTerminal;
         const surfaced = harness.events.filter((event) => {
           const serialized = JSON.stringify(event);
-          return serialized.includes("example_mcp") && serialized.includes("failed to start");
+          return serialized.includes(toolName) && serialized.includes("failed to start");
         });
         assert.isNotEmpty(surfaced);
       }).pipe(
