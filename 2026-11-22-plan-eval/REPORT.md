@@ -49,7 +49,7 @@ My overall read: the plain chat wins all 3 finished pairs as a plan to follow; t
 - **Caching is weak**: each turn is a separate `codex exec`, a new session, so the cache is barely reused. Section 5's "one chat, roles per turn" would let Codex reuse its cache; the runner does not do that yet.
 - Output is over because the drafts were over their caps (22 trimmed fields in attendance) and every expert got a fix turn: the review found a problem in all 4 parts.
 - The plain chat's tokens were not saved in this run (the eval now saves them). One turn of the same size would be about 14k in and 1.5k to 3k out.
-- The four briefs and the partial fifth case used up the Codex usage window in about 45 minutes.
+- This run (3 cases and part of the fourth, plus one earlier 4-turn test) reached the Codex usage limit after about 40 minutes.
 
 ## What to change in the checklists and the method
 
