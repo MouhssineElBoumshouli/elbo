@@ -1,0 +1,14 @@
+{
+  "what": "A to-do list web page for myself: add tasks, tick them off, they stay after I close the browser.",
+  "users": "Just me, on my laptop.",
+  "mustHaves": ["Add a task", "Tick a task off", "Delete a task", "Tasks stay after a reload"],
+  "niceToHaves": ["Due dates", "Dark mode"],
+  "deadline": "this weekend",
+  "deadlineDays": 2,
+  "people": [{ "name": "Lina", "skills": ["HTML/CSS", "a little JavaScript"], "hours": 12 }],
+  "budget": "free only",
+  "outsideRules": [],
+  "ai": "no",
+  "feel": "calm and minimal",
+  "notes": "I want to learn JavaScript by doing this."
+}
