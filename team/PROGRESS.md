@@ -2,6 +2,12 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-23: Elbo 1.0 Part 0, the finish line
+
+- **What changed:** `team/FINISH_LINE.md` (the seven things that make 1.0 done, and the scope rule) and `team/LATER.md` (what is not in 1.0, one line each, including what earlier rounds left open).
+- **Checked:** docs only; `vp fmt`.
+- **Next:** Part 1 of the 1.0 prompt: (1) the Ctrl+K typing that lands in the chat box, with a browser test; (2) plans follow the project's existing AGENTS.md / CLAUDE.md; (3) fewer, shorter rules, then one attendance rerun. Then Parts 2 to 5 as listed in FINISH_LINE.md.
+
 ## 2026-11-23: Planning hardening (before slice 6)
 
 - **What changed** (`598e7173ed`):
