@@ -2,6 +2,55 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-23: Planning slice 5, the challenge loop, and slice 4 fixes
+
+- **What changed** (`42b3fbe575`):
+  - **Deciding:** each decision on the plan page has Agree, Pick another option and Push back (Ctrl+Enter sends, Escape cancels).
+    - A push-back or a pick is one writer turn. It carries the brief, the decision and only the plan parts and tasks that mention it, judged by the decision's rare words: "SQLite" counts, "class" in an attendance plan doesn't. Only those parts can change, and the card says what was updated (`planChallenge.ts`, `planPushBack.ts`).
+    - The writer defends or changes. A pick the writer didn't make is kept, marked "chosen against advice", and its risk line stays in the plan. Picking the advice again goes back to "agreed".
+    - A pick also gets a writer turn, so the plan text follows it.
+  - **How we got here:** shown on the card and saved in the decision file. When only the history grew, the file is updated in place rather than replaced.
+  - **Saving:** only once no decision is open. The page names the open ones, and the server refuses too.
+  - **Fix 7:** the save preview lists `.team/rulebook.md` only when its code rules change, so Files and Code rules always agree.
+  - **Fix 8:** tasks get a separate `folders` list. Only real code folders become paths: never `planning/`, and never `./` (the whole repo, which a team task refuses).
+  - **Fix 9:** "1 small remark left as it is".
+  - **Fix 10:** New project goes in `~/Elbo projects` (`Documents\Elbo projects` on Windows). Typing a full path (`~/code/shop`) chooses another folder on every client, and desktop also has "Choose folder…". The server's data folder is used only when an old client sends no folder.
+  - **Fix 11:** "Plan the next part" keeps earlier decisions and their code rules active, and the preview lists them. The design doc says slice 7 will mark dropped ones as replaced.
+  - **Also fixed:**
+    - A plan lost to a server restart now says so, with "Back to the questions". Before this, slice 4 showed "Loading the plan…" forever; its entry was wrong to say the page said so.
+    - Ctrl+K "Plan the next part" on the plan page uses that page's project.
+- **Files:**
+  - Server: `apps/server/src/team/planning/{planChallenge,planSaveDecisions,planFixtureRun}.ts` (new), `{TeamPlanning,planPushBack,planPrompts,planSave,planRender,planRun,planSchemas,planReview}.ts`, `apps/server/src/team/newProjectFolder.ts` (new), `project/ManagedProjectFolders.ts`, `ws.ts`, `scripts/team-plan.ts`
+  - Contracts and client runtime: `packages/contracts/src/{teamPlanning,project,rpc,clientRpcPermissions}.ts`, `packages/client-runtime/src/state/teamPlanning.ts`
+  - Web: `apps/web/src/components/team/planning/{PlanDecisions,planDecisions.logic}.tsx/ts` (new), `PlanPage`, `PlanSteps`, `PlanSaveDialog`, `components/team/newProjectTarget.logic.ts` (new), `CommandPalette.tsx`, `CommandPaletteAddProject.tsx`, `hooks/useNewProject.ts`
+  - Mobile: `AddProjectScreen.tsx` (sends the folder it shows)
+  - Also: `evals/project-plans/grade.test.ts`, `team/PLANNING_FEATURE_PLAN.md`
+- **Checked:**
+  - **Tests:**
+    - new `planChallenge.test.ts`: what a decision touches, applying an answer, the states, saving blocked;
+    - save rows for fix 7, fix 8 (including `./`), fix 11 and how we got here;
+    - New project folder (server and web);
+    - plan page logic (save blocked, newest state).
+  - **`check:changed`:** all pass (41 packages typechecked, 21 test files).
+  - **Headless browser:**
+    - New project → `~/code/team-demo27`, created there, then Plan it first. Escape on New project created nothing.
+    - Fixture run: push-back (keyboard), pick against the advice and back, the "answering" line, save blocked then allowed. Saved on team-demo26: in-place "adds how we got here", earlier 0007/0008 kept, no rulebook line.
+    - **One real plan** (small, 2 days; Codex writing, Claude reviewing): 8.5/10 with 1 fix and a shorten turn.
+    - **One real push-back** ("learn React for my CV") → Codex changed it to React and updated 2 parts and 1 task. **Tokens: 14,328 in, 828 out** (4 parts and 1 task sent; about 13k of the input is Codex's own instructions).
+  - **Bug found by the real run:**
+    - The real plan's save wrote the files, then failed on a task with folder `./`.
+    - Fixed and tested, then shown through the screens with a fixture task using `./` (team-demo28).
+    - The real run itself was lost to the server restart, so its tasks were never saved: team-demo27 has the files but no tasks.
+  - 6 pictures: `test-screenshots` `2026-11-23-planning-slice5/` (`8051be9190`).
+- **Released:** Beta `1.0.0-nightly.20261123.11` from `42b3fbe575` (Team release run 45231357626). The installer `.exe`, blockmap and `nightly.yml` are on the Releases page.
+- **Not done / unsure:**
+  - The project-plans eval was not rerun after the prompt changes (task `folders`, the answer prompt); the one real plan and push-back used both.
+  - **Plan files saved before this slice won't load:** `plan.json` files from earlier runs can't be reopened by the runner's `--push-back`, because the decision history and task fields changed shape and Codex needs every field required. The dev fixture was converted.
+  - **Changed options list:** after a change, the writer's options can repeat the new pick in other words (the real run listed "React" and "React, a JavaScript library…").
+  - **Going back to the advice:** it takes a writer turn too, and since the "why" is rewritten the decision file is replaced, not kept.
+  - **New project folder:** the default is in the person's home even on a dev server with `--home-dir`. Mobile always sends the server's suggested folder and has no way to change it yet.
+  - **Runs live in memory:** a server restart still loses an unsaved plan, and a decision being answered with it.
+
 ## 2026-11-23: Planning slice 4, the questions and the plan page
 
 - **What changed** (`a59bf73cb9`):
