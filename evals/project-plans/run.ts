@@ -16,12 +16,14 @@ import { runMethod } from "../../apps/server/src/team/planning/planMethod.ts";
 import { baselinePrompt } from "../../apps/server/src/team/planning/planPrompts.ts";
 import {
   DEFAULT_MODELS,
+  REVIEW_DEFAULTS,
   makeProviderAsk,
   signedInProviders,
 } from "../../apps/server/src/team/planning/planProvider.ts";
 import { renderPlan } from "../../apps/server/src/team/planning/planRender.ts";
 import { pickReviewer } from "../../apps/server/src/team/planning/planReview.ts";
 import { planCases } from "./cases.ts";
+import { sameLayout } from "./layout.ts";
 import { RunInfo, summarize, UsageFile } from "./report.ts";
 
 const { values } = NodeUtil.parseArgs({
@@ -30,7 +32,8 @@ const { values } = NodeUtil.parseArgs({
     writer: { type: "string", default: "codex" },
     reviewer: { type: "string" },
     "writer-model": { type: "string" },
-    "reviewer-model": { type: "string" },
+    "review-model": { type: "string" },
+    "review-effort": { type: "string" },
     effort: { type: "string", default: "medium" },
     case: { type: "string" },
   },
@@ -61,7 +64,8 @@ await Effect.runPromise(
       values.reviewer === "codex" || values.reviewer === "claude"
         ? { provider: values.reviewer, sameProvider: values.reviewer === writer }
         : pickReviewer(writer, yield* signedInProviders());
-    const reviewerModel = values["reviewer-model"] ?? DEFAULT_MODELS[reviewer.provider];
+    const reviewerModel = values["review-model"] ?? REVIEW_DEFAULTS[reviewer.provider].model;
+    const reviewEffort = values["review-effort"] ?? REVIEW_DEFAULTS[reviewer.provider].effort;
     // Outside any repo, so the provider reads no project's CLAUDE.md or AGENTS.md.
     const cwd = yield* fs.makeTempDirectoryScoped({ prefix: "elbo-plan-eval-" });
     yield* fs.makeDirectory(outDir, { recursive: true });
@@ -69,7 +73,7 @@ await Effect.runPromise(
       path.join(outDir, "run.json"),
       yield* encodeRunInfo({
         writer: `${writer} ${writerModel}`,
-        reviewer: `${reviewer.provider} ${reviewerModel}`,
+        reviewer: `${reviewer.provider} ${reviewerModel} (effort ${reviewEffort})`,
         sameProvider: reviewer.sameProvider,
         baseline: `${writer} ${writerModel}`,
         effort: values.effort,
@@ -91,7 +95,7 @@ await Effect.runPromise(
       const review = yield* makeProviderAsk({
         provider: reviewer.provider,
         model: reviewerModel,
-        effort: values.effort,
+        effort: reviewEffort,
         cwd,
       });
       const plan = yield* runMethod({
@@ -99,7 +103,7 @@ await Effect.runPromise(
         write: write.ask,
         review: review.ask,
         writer: `${writer} ${writerModel}`,
-        reviewer: `${reviewer.provider} ${reviewerModel}`,
+        reviewer: `${reviewer.provider} ${reviewerModel} (effort ${reviewEffort})`,
         sameProvider: reviewer.sameProvider,
       });
       yield* writePlanFiles({
@@ -126,8 +130,10 @@ await Effect.runPromise(
         yield* encodeUsage({ turns: baseline.usage }),
       );
       const methodIsA = yield* Random.nextBoolean;
-      yield* fs.writeFileString(path.join(caseDir, "A.md"), methodIsA ? methodText : baselineText);
-      yield* fs.writeFileString(path.join(caseDir, "B.md"), methodIsA ? baselineText : methodText);
+      // Both in one heading style, so the layout does not give the sides away.
+      const [method, plain] = [sameLayout(methodText), sameLayout(baselineText)];
+      yield* fs.writeFileString(path.join(caseDir, "A.md"), methodIsA ? method : plain);
+      yield* fs.writeFileString(path.join(caseDir, "B.md"), methodIsA ? plain : method);
       // After every case, so a run cut short by a usage limit keeps what it finished.
       yield* summarize(outDir);
     }

@@ -10,6 +10,7 @@ import { renderPlan } from "../../apps/server/src/team/planning/planRender.ts";
 import type { PlanResult } from "../../apps/server/src/team/planning/planSchemas.ts";
 import { usageLine } from "../../apps/server/src/team/planning/planUsage.ts";
 import { type PlanCase, planCases } from "./cases.ts";
+import { sameLayout } from "./layout.ts";
 import { badTasks, methodTalk, ONE_PAGE_WORDS, pushedBack, wordCount } from "./grade.ts";
 
 const Usage = Schema.Struct({
@@ -89,7 +90,9 @@ export const summarize = Effect.fn("projectPlans.summarize")(function* (outDir: 
     const methodUsage = (yield* decodeMethodUsage(usageJson ?? "")).providers;
     const baselineTurns = (yield* decodeUsageFile(baselineUsageJson ?? "")).turns;
     key[planCase.id] =
-      aText === baseline ? { A: "baseline", B: "method" } : { A: "method", B: "baseline" };
+      aText === sameLayout(baseline)
+        ? { A: "baseline", B: "method" }
+        : { A: "method", B: "baseline" };
 
     const words = [wordCount(methodText), wordCount(baseline)] as const;
     const limit = PLAN_LIMITS[plan.size];

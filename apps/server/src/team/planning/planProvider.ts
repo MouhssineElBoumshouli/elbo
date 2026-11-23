@@ -35,6 +35,15 @@ export const DEFAULT_MODELS: Record<PlanProvider, string> = {
   claude: "claude-sonnet-5-5",
 };
 
+/** The review is small (about 6k tokens a round), so it gets the strongest model at high effort. */
+export const REVIEW_DEFAULTS: Record<
+  PlanProvider,
+  { readonly model: string; readonly effort: string }
+> = {
+  claude: { model: "claude-opus-5-5", effort: "high" },
+  codex: { model: "gpt-6-astra", effort: "high" },
+};
+
 const STEP_TIMEOUT_MS = 10 * 60_000;
 const decodeClaudeSettings = Schema.decodeEffect(ClaudeSettings);
 const decodeCodexSettings = Schema.decodeEffect(CodexSettings);

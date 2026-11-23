@@ -5,8 +5,10 @@
  * or Codex login:
  *
  *   node apps/server/scripts/team-plan.ts --brief brief.json --out plan-out
- *     [--writer codex|claude] [--reviewer codex|claude] [--writer-model id] [--reviewer-model id]
- *     [--effort medium] [--size small|medium|large]
+ *     [--writer codex|claude] [--reviewer codex|claude] [--writer-model id] [--effort medium]
+ *     [--review-model id] [--review-effort high] [--size small|medium|large]
+ *
+ * The review defaults to the reviewer's strongest model at high effort (REVIEW_DEFAULTS).
  *
  * Push back on a decision of a plan written before (the writer answers):
  *
@@ -31,6 +33,7 @@ import { PlanSize } from "../src/team/planning/planLimits.ts";
 import { runMethod } from "../src/team/planning/planMethod.ts";
 import {
   DEFAULT_MODELS,
+  REVIEW_DEFAULTS,
   makeProviderAsk,
   signedInProviders,
 } from "../src/team/planning/planProvider.ts";
@@ -44,7 +47,8 @@ const { values } = NodeUtil.parseArgs({
     writer: { type: "string", default: "codex" },
     reviewer: { type: "string" },
     "writer-model": { type: "string" },
-    "reviewer-model": { type: "string" },
+    "review-model": { type: "string" },
+    "review-effort": { type: "string" },
     effort: { type: "string", default: "medium" },
     size: { type: "string" },
     "push-back": { type: "string" },
@@ -116,11 +120,12 @@ const program = Effect.gen(function* () {
   const picked = values.reviewer
     ? { provider: yield* decodeProvider(values.reviewer), sameProvider: values.reviewer === writer }
     : pickReviewer(writer, yield* signedInProviders());
-  const reviewerModel = values["reviewer-model"] ?? DEFAULT_MODELS[picked.provider];
+  const reviewerModel = values["review-model"] ?? REVIEW_DEFAULTS[picked.provider].model;
+  const reviewEffort = values["review-effort"] ?? REVIEW_DEFAULTS[picked.provider].effort;
   const review = yield* makeProviderAsk({
     provider: picked.provider,
     model: reviewerModel,
-    effort: values.effort,
+    effort: reviewEffort,
     cwd,
   });
   const size = values.size ? yield* decodeSize(values.size) : undefined;
@@ -129,7 +134,7 @@ const program = Effect.gen(function* () {
     write: write.ask,
     review: review.ask,
     writer: `${writer} ${writerModel}`,
-    reviewer: `${picked.provider} ${reviewerModel}`,
+    reviewer: `${picked.provider} ${reviewerModel} (effort ${reviewEffort})`,
     sameProvider: picked.sameProvider,
     size,
   });

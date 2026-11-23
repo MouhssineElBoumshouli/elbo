@@ -11,14 +11,14 @@ Each case is a brief in `cases/`. The eval runs it once through the flow and onc
 From `evals/`:
 
 ```sh
-pnpm project-plans --out project-plans/runs/<name> [--writer codex|claude] [--reviewer codex|claude] [--writer-model id] [--reviewer-model id] [--effort medium] [--case attendance,weekend-todo]
+pnpm project-plans --out project-plans/runs/<name> [--writer codex|claude] [--reviewer codex|claude] [--writer-model id] [--effort medium] [--review-model id] [--review-effort high] [--case attendance,weekend-todo]
 ```
 
-Without `--reviewer`, the reviewer is the other provider if it is signed in. Start with `--case weekend-todo` to check both logins.
+Without `--reviewer`, the reviewer is the other provider if it is signed in. The review runs on that provider's strongest model at high effort (`REVIEW_DEFAULTS` in `planProvider.ts`); it costs about 6k tokens a round. Start with `--case weekend-todo` to check both logins.
 
 ## What a run writes
 
-- `<case>/A.md` and `<case>/B.md`: the flow's plan and the plain chat's plan, in random order. Judge these blind, with `REVIEW.md`. Both use the same plain layout; the flow adds its decisions as a short list at the end.
+- `<case>/A.md` and `<case>/B.md`: the flow's plan and the plain chat's plan, in random order. Judge these blind, with `REVIEW.md`. Both are written with one heading style (`layout.ts`), so the layout does not tell them apart; the flow adds its decisions as a short list at the end. `baseline.md` keeps the plain chat's own text.
 - `key.json`: which letter is which. `checks.md`: the code checks, review scores per round, what each review found and what the writer did, and tokens per provider. Open both only after judging.
 - `<case>/method/`: `plan.md`, `decision-log.md`, `plan.json` and `usage.json` (tokens per turn and provider). `<case>/baseline.md`: the plain chat's plan.
 - `results.json`: one row per case and arm.
