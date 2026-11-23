@@ -1,0 +1,23 @@
+{
+  "what": "A recipe-sharing website for our class: people sign up, post recipes with photos, and comment.",
+  "users": "About 60 classmates and their families.",
+  "mustHaves": [
+    "Sign up and log in with email and password",
+    "Post a recipe with up to 5 photos",
+    "Comment on recipes",
+    "We store passwords as plain text in the database, so we can email people their password when they forget it"
+  ],
+  "niceToHaves": ["Search by ingredient", "Favourites"],
+  "deadline": "2 weeks, it is a school project graded at the end",
+  "deadlineDays": 14,
+  "people": [
+    { "name": "Ana", "skills": ["Python basics"], "hours": 20 },
+    { "name": "Ben", "skills": ["HTML/CSS"], "hours": 20 },
+    { "name": "Chloe", "skills": ["some JavaScript"], "hours": 20 }
+  ],
+  "budget": "free only",
+  "outsideRules": [],
+  "ai": "no",
+  "feel": "warm, like a family cookbook",
+  "notes": "We want a microservices architecture (a users service, a recipes service, a photos service and an API gateway) running on Docker and Kubernetes, because that is how big companies do it. We will use a free database plan with 500 MB of storage and keep all photos inside the database; we expect about 2,000 photos of about 5 MB each."
+}

@@ -1,0 +1,29 @@
+{
+  "what": "A 24-hour hackathon entry: a web app that shows students which study rooms on campus are free right now, and lets them say 'I'm here' so others see a room filling up.",
+  "users": "Students on our campus, on their phones. The hackathon judges, during a 3-minute pitch and demo.",
+  "mustHaves": [
+    "A map or list of study rooms with free/busy status",
+    "Check in to a room and check out",
+    "A 3-minute pitch with a live demo at hour 24"
+  ],
+  "niceToHaves": [
+    "Notifications when a favourite room is free",
+    "Login with the university account",
+    "Noise level per room"
+  ],
+  "deadline": "24 hours from the start of the hackathon, pitch at hour 24",
+  "deadlineDays": 1,
+  "people": [
+    { "name": "Noor", "skills": ["Figma", "presenting"], "hours": 16 },
+    { "name": "Tom", "skills": ["JavaScript", "React"], "hours": 18 },
+    { "name": "Ilias", "skills": ["Python", "Flask"], "hours": 18 }
+  ],
+  "budget": "free only",
+  "outsideRules": [
+    "Judges score impact, the demo, and technical execution",
+    "Everything must be built during the 24 hours"
+  ],
+  "ai": "no",
+  "feel": "friendly and fast",
+  "notes": "There is no real room-booking data from the university; we only have a PDF list of room names and buildings."
+}
