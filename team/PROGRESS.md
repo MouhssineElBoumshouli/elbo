@@ -2,6 +2,38 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-23: Planning slice 3, saving the plan into the project (plus a cost trim)
+
+- **Cost trim** (`ad95ecbca5`):
+  - A plan up to 10% over its word limit is no longer a problem.
+  - The fix turn now carries the plan's word count and target.
+  - A shorten turn sends only the plan, not the brief.
+  - Decisions gain a `rule` line for agents (empty when the code needn't follow it).
+  - **Attendance rerun:** writer 2 turns, 50.4k in / 8.7k out (3b: 3 turns, 89.5k / 12.1k). Reviewer (Opus, high) 9.3k / 4.6k (3b: 9.3k / 3.9k). Total 59.7k in, against 98.8k. No shorten turn; score 7.5/10 as in 3b.
+- **Saving** (`a4506d5dec`):
+  - **Pure core:** `planning/planSave.ts`, `previewPlanSave` → files (new / changed / same, with content), Code rules lines added and removed, and tasks (create / update / keep).
+  - **What it writes:**
+    - `.team/plan.md`: the plan, plus links to the decision files.
+    - Decision files in the rulebook's format, plus `options`, `decided_by`, `status`, and `from: plan` so a later save finds them. Numbering continues after the team's own decisions.
+    - "Code rules" lines ending `(plan decision NNNN)`.
+    - One task per plan task, in plan order. The owner is matched to a team member by name; otherwise the note says "for Adam". Folders in the area become `paths`. The note starts "From the plan".
+  - **Saving again** changes nothing. A changed decision gets a new number, the old file's status becomes "replaced by NNNN", and its rule line is swapped. Files the team wrote itself are never touched.
+  - **Shell:** the `TeamPlanSave` service (`planSaveService.ts`) reads the project, previews and writes. It reuses `readFrontMatter`, extracted from `parseDecision` in `memory.ts`; a new `replaceCodeRules` and `readCodeRulesSection` next to the rulebook readers in `rulebook.ts`; and `TeamService`'s tasks.
+  - **Agents:** MCP `team_save_plan` with `{ planFile, apply? }`. Without `apply` it only previews.
+  - **Runner:** `--save-to <folder> [--dry-run] [--home-dir ~/.t3-dev]`. It opens the project's team through `openProjectTeam`, extracted from `resolve.ts`, and builds the team state like `elbo team` (the CLI's `teamStateLayer` is now exported).
+- **Checked:**
+  - `planSave` tests (3: first save, same plan again, changed decision), rulebook editor tests (2), and the existing team tool tests (75). `check:changed` passes; knip passes after two unexports.
+  - **Live on `~/code/team-demo24`** (fresh Git repo, solo team, dev home), with the attendance plan:
+    - `--dry-run` listed 8 new files, 6 rule lines and 18 tasks, and wrote nothing.
+    - The save wrote them. Saving again showed every file "same", no rule change, and 18 "keep".
+    - A copy with one decision's pick changed made 0007 (active), set 0002 to "replaced by 0007" and swapped that one rule line; the tasks were kept.
+- **Not done / unsure:**
+  - Not tried in a shared (GitHub) team. Owners there match by display name, which is a login, so "Adam" won't match "adam-k".
+  - The writer gave all 6 decisions a rule. One ("load tests only with IT permission") is not a code rule; the prompt may need "most decisions have none".
+  - A solo project still gets a `.team/` folder when you save a plan into it; until now, solo use added nothing to the folder. The preview shows it before anything is written.
+  - Option names with commas show with ";" in the front matter's list.
+  - `handlers.ts` is past 400 lines; the new handler is its own file plus two lines there.
+
 ## 2026-11-23: Planning round 3 finished: Opus reviewer, all 4 cases, one layout, design doc rewritten
 
 - **What changed:**
