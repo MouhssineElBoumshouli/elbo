@@ -4,6 +4,7 @@ import {
   ProviderInstanceId,
   type TextGenerationError,
 } from "@t3tools/contracts";
+import type * as TextGenerationOperations from "@t3tools/provider-core/server/textGenerationOperations";
 import type { TokenUsage } from "@t3tools/provider-core/server/textGenerationOperations";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -73,9 +74,42 @@ export const signedInProviders = Effect.fn("planning.signedInProviders")(functio
 });
 
 /**
- * An `Ask` on Elbo's own text-generation path (the code that writes titles and PR texts), so it
- * runs the provider CLI on the person's login. Every turn is a fresh, read-only call; its tokens
- * land in `usage`.
+ * An `Ask` on a provider instance's text-generation runner: a fresh, read-only call per turn, its
+ * tokens added to `usage`. The app passes the person's configured instance; the scripts build one.
+ */
+export function askFromRunner(options: {
+  readonly run: TextGenerationOperations.Runner;
+  readonly provider: PlanProvider;
+  readonly instanceId: ProviderInstanceId;
+  readonly model: string;
+  readonly effort: string;
+  readonly cwd: string;
+}) {
+  const usage: UsageRow[] = [];
+  const effortOption = options.provider === "claude" ? "effort" : "reasoningEffort";
+  const ask: Ask<TextGenerationError> = (request) =>
+    options
+      .run({
+        // The runner names its operation in errors only; planning has none of its own.
+        operation: "generatePrContent",
+        cwd: options.cwd,
+        prompt: request.prompt,
+        outputSchema: request.schema,
+        modelSelection: {
+          instanceId: options.instanceId,
+          model: options.model,
+          options: [{ id: effortOption, value: options.effort }],
+        },
+        timeoutMs: STEP_TIMEOUT_MS,
+        onUsage: (tokens) => usage.push({ step: request.step, ...tokens }),
+      })
+      .pipe(Effect.tap(() => Effect.logInfo(`planning: ${options.provider} ${request.step} done`)));
+  return { ask, usage };
+}
+
+/**
+ * An `Ask` on Elbo's own text-generation path (the code that writes titles and PR texts), built
+ * from the CLI on the person's login, without the app's settings. For the dev scripts.
  */
 export const makeProviderAsk = Effect.fn("planning.makeProviderAsk")(function* (options: {
   readonly provider: PlanProvider;
@@ -91,26 +125,9 @@ export const makeProviderAsk = Effect.fn("planning.makeProviderAsk")(function* (
           yield* mergeClaudeProcessEnvironment({ homePath: "" }, undefined, env),
         )
       : yield* makeCodexTextGeneration(yield* decodeCodexSettings({}), env);
-  const usage: UsageRow[] = [];
-  const effortOption = options.provider === "claude" ? "effort" : "reasoningEffort";
-  const ask: Ask<TextGenerationError> = (request) =>
-    generation
-      .run({
-        // The runner names its operation in errors only; planning has none of its own.
-        operation: "generatePrContent",
-        cwd: options.cwd,
-        prompt: request.prompt,
-        outputSchema: request.schema,
-        modelSelection: {
-          instanceId: ProviderInstanceId.make(
-            options.provider === "claude" ? "claudeAgent" : "codex",
-          ),
-          model: options.model,
-          options: [{ id: effortOption, value: options.effort }],
-        },
-        timeoutMs: STEP_TIMEOUT_MS,
-        onUsage: (tokens) => usage.push({ step: request.step, ...tokens }),
-      })
-      .pipe(Effect.tap(() => Effect.logInfo(`planning: ${options.provider} ${request.step} done`)));
-  return { ask, usage };
+  return askFromRunner({
+    ...options,
+    run: generation.run,
+    instanceId: ProviderInstanceId.make(options.provider === "claude" ? "claudeAgent" : "codex"),
+  });
 });

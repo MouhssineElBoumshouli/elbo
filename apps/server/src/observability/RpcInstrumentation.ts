@@ -241,6 +241,11 @@ const RPC_AGGREGATES = {
   [WS_METHODS.teamMergeFix]: "team", // team-layer
   [WS_METHODS.teamSetupFacts]: "team", // team-layer
   [WS_METHODS.teamSetupChoose]: "team", // team-layer
+  [WS_METHODS.teamPlanStart]: "team", // team-layer
+  [WS_METHODS.subscribeTeamPlan]: "team", // team-layer
+  [WS_METHODS.teamPlanStop]: "team", // team-layer
+  [WS_METHODS.teamPlanPreviewSave]: "team", // team-layer
+  [WS_METHODS.teamPlanSave]: "team", // team-layer
 } as const satisfies Readonly<Record<WsRpcMethod, string>>;
 
 const RPC_SPAN_PREFIX = "ws.rpc";

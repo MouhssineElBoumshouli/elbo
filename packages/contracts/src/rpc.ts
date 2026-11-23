@@ -424,6 +424,14 @@ import {
   TeamSetupFacts,
   TeamSetupFactsInput,
 } from "./teamSetup.ts"; // team-layer
+import {
+  TeamPlanningError,
+  TeamPlanRunInput,
+  TeamPlanRunState,
+  TeamPlanSavePreview,
+  TeamPlanStartInput,
+  TeamPlanStartResult,
+} from "./teamPlanning.ts"; // team-layer
 
 export const WS_METHODS = {
   projectsListEntries: "projects.listEntries",
@@ -653,6 +661,12 @@ export const WS_METHODS = {
   // team-layer: Check my setup (WINDOWS_RELEASE_PLAN.md section 4a).
   teamSetupFacts: "team.setupFacts",
   teamSetupChoose: "team.setupChoose",
+  // team-layer: planning a project (PLANNING_FEATURE_PLAN.md slice 4).
+  teamPlanStart: "team.planStart",
+  subscribeTeamPlan: "team.subscribePlan",
+  teamPlanStop: "team.planStop",
+  teamPlanPreviewSave: "team.planPreviewSave",
+  teamPlanSave: "team.planSave",
 } as const;
 
 const WsServerUpsertKeybindingRpc = Rpc.make(WS_METHODS.serverUpsertKeybinding, {
@@ -2170,6 +2184,34 @@ const WsTeamMergeFixRpc = Rpc.make(WS_METHODS.teamMergeFix, {
   error: Schema.Union([TeamMergeFixError, EnvironmentAuthorizationError]),
 });
 
+// team-layer: planning a project (fork-only, see team/PLANNING_FEATURE_PLAN.md slice 4).
+const WsTeamPlanStartRpc = Rpc.make(WS_METHODS.teamPlanStart, {
+  payload: TeamPlanStartInput,
+  success: TeamPlanStartResult,
+  error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
+});
+const WsSubscribeTeamPlanRpc = Rpc.make(WS_METHODS.subscribeTeamPlan, {
+  payload: TeamPlanRunInput,
+  success: TeamPlanRunState,
+  error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
+  stream: true,
+});
+const WsTeamPlanStopRpc = Rpc.make(WS_METHODS.teamPlanStop, {
+  payload: TeamPlanRunInput,
+  success: Schema.Struct({}),
+  error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
+});
+const WsTeamPlanPreviewSaveRpc = Rpc.make(WS_METHODS.teamPlanPreviewSave, {
+  payload: TeamPlanRunInput,
+  success: TeamPlanSavePreview,
+  error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
+});
+const WsTeamPlanSaveRpc = Rpc.make(WS_METHODS.teamPlanSave, {
+  payload: TeamPlanRunInput,
+  success: TeamPlanSavePreview,
+  error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
+});
+
 const WsSubscribeResourceTelemetryRpc = Rpc.make(WS_METHODS.subscribeResourceTelemetry, {
   payload: Schema.Struct({}),
   success: ResourceTelemetrySnapshot,
@@ -2388,6 +2430,11 @@ export const WsRpcGroup = RpcGroup.make(
   WsTeamMergeFixRpc, // team-layer
   WsTeamSetupFactsRpc, // team-layer
   WsTeamSetupChooseRpc, // team-layer
+  WsTeamPlanStartRpc, // team-layer
+  WsSubscribeTeamPlanRpc, // team-layer
+  WsTeamPlanStopRpc, // team-layer
+  WsTeamPlanPreviewSaveRpc, // team-layer
+  WsTeamPlanSaveRpc, // team-layer
   WsOrchestrationV2DispatchCommandRpc,
   WsOrchestrationV2GetWorkflowScriptRpc,
   WsOrchestrationV2GetNativeChildWorkRpc,

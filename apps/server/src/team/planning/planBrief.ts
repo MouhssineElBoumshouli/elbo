@@ -1,34 +1,14 @@
+import { TeamPlanBrief, type TeamPlanPerson, teamPlanHours } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
 
-/** The answers to the planning questions (team/PLANNING_FEATURE_PLAN.md section 4). An empty answer means "not sure, suggest something". */
-export const PlanPerson = Schema.Struct({
-  name: Schema.String,
-  skills: Schema.Array(Schema.String),
-  /** Hours this person can give before the deadline, in total. */
-  hours: Schema.Number,
-});
-export type PlanPerson = typeof PlanPerson.Type;
-
-export const PlanBrief = Schema.Struct({
-  what: Schema.String,
-  users: Schema.String,
-  mustHaves: Schema.Array(Schema.String),
-  niceToHaves: Schema.Array(Schema.String),
-  deadline: Schema.String,
-  deadlineDays: Schema.Number,
-  people: Schema.Array(PlanPerson),
-  budget: Schema.String,
-  outsideRules: Schema.Array(Schema.String),
-  ai: Schema.String,
-  feel: Schema.String,
-  notes: Schema.String,
-});
-export type PlanBrief = typeof PlanBrief.Type;
+/** The answers to the planning questions; defined in contracts so clients build it too. */
+export const PlanBrief = TeamPlanBrief;
+export type PlanBrief = TeamPlanBrief;
+export type PlanPerson = TeamPlanPerson;
 
 export const decodeBrief = Schema.decodeUnknownEffect(Schema.fromJsonString(PlanBrief));
 
-export const totalHours = (brief: PlanBrief) =>
-  brief.people.reduce((sum, person) => sum + person.hours, 0);
+export const totalHours = teamPlanHours;
 
 const NOT_SURE = "not sure, suggest something";
 const answer = (text: string) => (text.trim().length === 0 ? NOT_SURE : text.trim());

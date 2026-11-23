@@ -1,6 +1,6 @@
 # Planning feature: design
 
-Status: method, eval and saving built (slices 1 to 3), no UI. Rewritten 2026-11-23 for "one writer and a review from a different AI", which replaced the expert panel after two blind rounds where a plain chat beat it 7 of 7 at about 15 times the tokens.
+Status: method, eval, saving and the first screens built (slices 1 to 4). Rewritten 2026-11-23 for "one writer and a review from a different AI", which replaced the expert panel after two blind rounds where a plain chat beat it 7 of 7 at about 15 times the tokens.
 Worked example: [PLANNING_EXAMPLE_ATTENDANCE.md](PLANNING_EXAMPLE_ATTENDANCE.md). Mockups: `test-screenshots`, `2026-11-22-planning-mockups/` (drawn for the panel; the screens still apply, minus the panel rows). Code: `apps/server/src/team/planning/`.
 
 ## 1. What it is
@@ -112,7 +112,7 @@ No checklist files: the review prompt asks for what would really hurt the team. 
 1. **Method and runner.** Done.
 2. **Eval.** Done; run after each method change.
 3. **Files.** Done: `.team/plan.md`, decision files, rulebook lines, team tasks, previewed before writing. Agents use `team_save_plan`; the runner takes `--save-to <folder> [--dry-run]`. Saving again changes nothing; a changed decision gets a new file and the old one says "replaced by NNNN".
-4. **Questions and plan page.** Plan it first, the questions, size check, writing and review, the plan page.
+4. **Questions and plan page.** Done: New project offers "Plan it first", Ctrl+K "Plan the next part", the questions, size check, a progress line with Stop, the plan page with the review, and saving after a preview. The writer and reviewer follow the connected AIs.
 5. **Challenge loop.** Push back, defend or change, "How we got here", pick another option.
 6. **Team.** Note replies and votes, a decider.
 7. **Living plan.** Plan section on Team home / Today, "Change the plan", the turn-note check.

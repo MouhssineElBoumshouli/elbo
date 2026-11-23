@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as TeamRouteImport } from './routes/team'
+import { Route as PlanRouteImport } from './routes/plan'
 import { Route as PairRouteImport } from './routes/pair'
 import { Route as GuestRouteImport } from './routes/guest'
 import { Route as ConnectAgentRouteImport } from './routes/connect-agent'
@@ -63,6 +64,11 @@ const WelcomeRoute = WelcomeRouteImport.update({
 const TeamRoute = TeamRouteImport.update({
   id: '/team',
   path: '/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanRoute = PlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PairRoute = PairRouteImport.update({
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/connect-agent': typeof ConnectAgentRoute
   '/guest': typeof GuestRoute
   '/pair': typeof PairRoute
+  '/plan': typeof PlanRoute
   '/team': typeof TeamRoute
   '/welcome': typeof WelcomeRoute
   '/new': typeof ChatNewRoute
@@ -338,6 +345,7 @@ export interface FileRoutesByTo {
   '/connect-agent': typeof ConnectAgentRoute
   '/guest': typeof GuestRoute
   '/pair': typeof PairRoute
+  '/plan': typeof PlanRoute
   '/team': typeof TeamRoute
   '/welcome': typeof WelcomeRoute
   '/new': typeof ChatNewRoute
@@ -386,6 +394,7 @@ export interface FileRoutesById {
   '/connect-agent': typeof ConnectAgentRoute
   '/guest': typeof GuestRoute
   '/pair': typeof PairRoute
+  '/plan': typeof PlanRoute
   '/team': typeof TeamRoute
   '/welcome': typeof WelcomeRoute
   '/_chat/new': typeof ChatNewRoute
@@ -435,6 +444,7 @@ export interface FileRouteTypes {
     | '/connect-agent'
     | '/guest'
     | '/pair'
+    | '/plan'
     | '/team'
     | '/welcome'
     | '/new'
@@ -480,6 +490,7 @@ export interface FileRouteTypes {
     | '/connect-agent'
     | '/guest'
     | '/pair'
+    | '/plan'
     | '/team'
     | '/welcome'
     | '/new'
@@ -527,6 +538,7 @@ export interface FileRouteTypes {
     | '/connect-agent'
     | '/guest'
     | '/pair'
+    | '/plan'
     | '/team'
     | '/welcome'
     | '/_chat/new'
@@ -575,6 +587,7 @@ export interface RootRouteChildren {
   ConnectAgentRoute: typeof ConnectAgentRoute
   GuestRoute: typeof GuestRoute
   PairRoute: typeof PairRoute
+  PlanRoute: typeof PlanRoute
   TeamRoute: typeof TeamRoute
   WelcomeRoute: typeof WelcomeRoute
   ProjectsProjectKeyRoute: typeof ProjectsProjectKeyRoute
@@ -595,6 +608,13 @@ declare module '@tanstack/react-router' {
       path: '/team'
       fullPath: '/team'
       preLoaderRoute: typeof TeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plan': {
+      id: '/plan'
+      path: '/plan'
+      fullPath: '/plan'
+      preLoaderRoute: typeof PlanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pair': {
@@ -996,6 +1016,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConnectAgentRoute: ConnectAgentRoute,
   GuestRoute: GuestRoute,
   PairRoute: PairRoute,
+  PlanRoute: PlanRoute,
   TeamRoute: TeamRoute,
   WelcomeRoute: WelcomeRoute,
   ProjectsProjectKeyRoute: ProjectsProjectKeyRoute,

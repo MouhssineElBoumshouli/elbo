@@ -95,8 +95,10 @@ export function limitCardWords(
   kind: Exclude<FailureKind["kind"], "other">,
   provider: ServerProvider | undefined,
   reset: string | null,
+  /** Names the AI when the account's provider is not known. */
+  driver: string = provider?.driver ?? "",
 ): { readonly title: string; readonly description: string } {
-  const ai = aiName(provider?.driver ?? "");
+  const ai = aiName(driver);
   const known = provider ? knownAccount(provider) : null;
   const account = known ? ` ${known}` : "";
   if (kind === "subscription") {

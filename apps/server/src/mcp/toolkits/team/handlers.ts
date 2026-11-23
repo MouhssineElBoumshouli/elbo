@@ -125,7 +125,7 @@ const make = Effect.gen(function* () {
   const choices = yield* TeamChoices.TeamChoices;
   const teamNotes = yield* TeamNotes.TeamNotes;
   const teamSetup = yield* TeamSetup.TeamSetup; // team-layer: Check my setup
-  const savePlan = savePlanFor(yield* TeamPlanSave, path); // team-layer: planning slice 3
+  const savePlan = savePlanFor(yield* TeamPlanSave, path, fs); // team-layer: planning slice 3
 
   /** A folder as the OS compares it: links resolved, and on Windows case and slashes ignored (W8). */
   const folderKeyOf = (folder: string) =>

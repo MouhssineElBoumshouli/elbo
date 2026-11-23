@@ -86,6 +86,12 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.teamMergeFix]: AuthOrchestrationOperateScope, // team-layer
   [WS_METHODS.teamSetupFacts]: AuthOrchestrationReadScope, // team-layer
   [WS_METHODS.teamSetupChoose]: AuthProvidersManageScope, // team-layer
+  // team-layer: a plan runs AI turns and writes the project's .team files and tasks.
+  [WS_METHODS.teamPlanStart]: AuthOrchestrationOperateScope,
+  [WS_METHODS.subscribeTeamPlan]: AuthOrchestrationReadScope,
+  [WS_METHODS.teamPlanStop]: AuthOrchestrationOperateScope,
+  [WS_METHODS.teamPlanPreviewSave]: AuthOrchestrationReadScope,
+  [WS_METHODS.teamPlanSave]: AuthOrchestrationOperateScope,
 } as const;
 export type ClientGuardedRpcTag = keyof typeof CLIENT_GUARDED_RPC_SCOPES;
 

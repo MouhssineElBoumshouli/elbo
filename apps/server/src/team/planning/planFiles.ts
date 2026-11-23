@@ -12,6 +12,12 @@ const encodePlan = Schema.encodeEffect(Schema.fromJsonString(PlanResult));
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 export const decodePlan = Schema.decodeEffect(Schema.fromJsonString(PlanResult));
 
+/** A plan.json the runner wrote, for the agent's tool and the runner's --save-to. */
+export const readPlanFile = Effect.fn("planning.readPlanFile")(function* (file: string) {
+  const fs = yield* FileSystem.FileSystem;
+  return yield* fs.readFileString(file).pipe(Effect.flatMap(decodePlan));
+});
+
 export interface ProviderUsage {
   /** e.g. "codex gpt-6-astra (writer)". */
   readonly who: string;

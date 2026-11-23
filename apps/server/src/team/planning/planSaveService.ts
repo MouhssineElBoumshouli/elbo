@@ -19,7 +19,7 @@ import * as Schema from "effect/Schema";
 import { currentCommit } from "../../mcp/toolkits/team/memory.ts";
 import * as GitVcsDriver from "../../vcs/GitVcsDriver.ts";
 import { TeamService } from "../TeamService.ts";
-import { decodePlan } from "./planFiles.ts";
+import type { PlanResult } from "./planSchemas.ts";
 import { renderPlan } from "./planRender.ts";
 import { describePlanSave, PLAN_FILE, type PlanSavePreview, previewPlanSave } from "./planSave.ts";
 
@@ -37,8 +37,7 @@ export interface PlanSaveTarget {
   readonly teamRoot: string;
   readonly teamId: TeamId;
   readonly member: TeamMember;
-  /** The `plan.json` the planning runner wrote. */
-  readonly planFile: string;
+  readonly plan: PlanResult;
 }
 
 export interface PlanSaveOutcome {
@@ -72,12 +71,7 @@ const make = Effect.gen(function* () {
     fs.readFileString(file).pipe(Effect.orElseSucceed(() => null));
 
   const preview = Effect.fn("TeamPlanSave.preview")(function* (target: PlanSaveTarget) {
-    const plan = yield* fs
-      .readFileString(target.planFile)
-      .pipe(
-        Effect.flatMap(decodePlan),
-        Effect.mapError(failed(`Could not read ${target.planFile}`)),
-      );
+    const { plan } = target;
     const team = path.join(target.teamRoot, TEAM_DIRECTORY_NAME);
     const decisionsFolder = path.join(team, TEAM_DECISIONS_DIRECTORY_NAME);
     const names = yield* fs.readDirectory(decisionsFolder).pipe(Effect.orElseSucceed(() => []));

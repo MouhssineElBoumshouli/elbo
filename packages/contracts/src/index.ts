@@ -84,3 +84,4 @@ export * from "./teamCards.ts"; // team-layer: cards kept per chat (V2_PORT_PLAN
 export * from "./teamNotes.ts"; // team-layer: notes (UI_PLAN.md slice 4)
 export * from "./teamMerging.ts"; // team-layer: merging help (MERGE_HELP_PLAN.md slice 1)
 export * from "./teamSetup.ts"; // team-layer: Check my setup (WINDOWS_RELEASE_PLAN.md 4a)
+export * from "./teamPlanning.ts"; // team-layer: planning (PLANNING_FEATURE_PLAN.md)

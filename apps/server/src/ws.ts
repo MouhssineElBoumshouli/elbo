@@ -289,6 +289,7 @@ import * as TeamQuestions from "./team/TeamQuestions.ts"; // team-layer
 import * as TeamNotes from "./team/TeamNotes.ts"; // team-layer
 import * as TeamMergeFix from "./team/TeamMergeFix.ts"; // team-layer
 import * as TeamSetup from "./team/setup/TeamSetup.ts"; // team-layer
+import * as TeamPlanning from "./team/planning/TeamPlanning.ts"; // team-layer
 import * as TeamReleases from "./team/TeamReleases.ts"; // team-layer
 
 const CONFIG_DISCOVERY_TIMEOUT = Duration.seconds(5);
@@ -1597,6 +1598,7 @@ export const layerWsRpc = (
       const teamNotes = yield* TeamNotes.TeamNotes; // team-layer: notes
       const teamMergeFix = yield* TeamMergeFix.TeamMergeFix; // team-layer: "Fix it"
       const teamSetup = yield* TeamSetup.TeamSetup; // team-layer: Check my setup
+      const teamPlanning = yield* TeamPlanning.TeamPlanning; // team-layer: planning
       // Webhook URLs start agents; expose them only to operate-scoped sessions while keeping tasks readable.
       const withVisibleWebhookUrls = (result: ScheduledTaskListResult): ScheduledTaskListResult =>
         currentSession.scopes.includes(AuthOrchestrationOperateScope)
@@ -3563,6 +3565,11 @@ export const layerWsRpc = (
         [WS_METHODS.teamMergeFix]: (input) => teamMergeFix.act(input), // team-layer
         [WS_METHODS.teamSetupFacts]: (input) => teamSetup.facts(input), // team-layer
         [WS_METHODS.teamSetupChoose]: (input) => teamSetup.choose(input), // team-layer
+        [WS_METHODS.teamPlanStart]: (input) => teamPlanning.start(input), // team-layer
+        [WS_METHODS.subscribeTeamPlan]: (input) => teamPlanning.subscribe(input), // team-layer
+        [WS_METHODS.teamPlanStop]: (input) => teamPlanning.stop(input), // team-layer
+        [WS_METHODS.teamPlanPreviewSave]: (input) => teamPlanning.previewSave(input), // team-layer
+        [WS_METHODS.teamPlanSave]: (input) => teamPlanning.save(input), // team-layer
         [WS_METHODS.subscribeResourceTelemetry]: (_input) =>
           Stream.unwrap(
             Effect.map(resourceTelemetry.subscribe, ({ latest, changes }) =>

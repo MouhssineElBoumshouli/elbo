@@ -27,6 +27,8 @@ export interface StepRequest<S extends Schema.Top> {
   readonly step: string;
   readonly prompt: string;
   readonly schema: S;
+  /** For a fix turn: how many points the writer fixes, for the progress line. */
+  readonly points?: number | undefined;
 }
 
 /** One model turn. The runner backs it with a provider; tests back it with fixed outputs. */
@@ -83,6 +85,7 @@ export const runMethod = Effect.fn("planning.runMethod")(function* <E, F>(input:
     }
     const reply = yield* input.write({
       step: `fix:${round}`,
+      points: problems.length,
       prompt: fixPrompt({ brief, size, written, problems, words: wordCount(markdown) }),
       schema: FixReply,
     });

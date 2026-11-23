@@ -18,6 +18,7 @@ import { teamStateLayer } from "../src/cli/team.ts";
 import * as ServerConfig from "../src/config.ts";
 import * as ServerEnvironment from "../src/environment/ServerEnvironment.ts";
 import { openProjectTeam } from "../src/mcp/toolkits/team/resolve.ts";
+import { readPlanFile } from "../src/team/planning/planFiles.ts";
 import * as TeamPlanSave from "../src/team/planning/planSaveService.ts";
 import * as GitTeamService from "../src/team/state/GitTeamService.ts";
 import { TeamService } from "../src/team/TeamService.ts";
@@ -72,7 +73,7 @@ export const saveToProject = Effect.fn("teamPlan.saveToProject")(function* (inpu
       teamRoot: opened.context.teamRoot,
       teamId: opened.context.teamFile.teamId,
       member: opened.context.member,
-      planFile: input.planFile,
+      plan: yield* readPlanFile(input.planFile),
     };
     const outcome = yield* input.dryRun ? planSave.preview(target) : planSave.save(target);
     return `${input.dryRun ? "Preview (nothing written)" : "Saved"} in ${folder}${opened.context.solo ? " (solo team)" : ""}:\n${outcome.text}`;

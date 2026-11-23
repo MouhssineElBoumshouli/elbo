@@ -1,7 +1,7 @@
-import * as Schema from "effect/Schema";
+import { suggestTeamPlanSize, TeamPlanSize } from "@t3tools/contracts";
 
-export const PlanSize = Schema.Literals(["small", "medium", "large"]);
-export type PlanSize = typeof PlanSize.Type;
+export const PlanSize = TeamPlanSize;
+export type PlanSize = TeamPlanSize;
 
 /** Hard limits per plan size, counted on the plan the team reads. */
 export const PLAN_LIMITS: Record<PlanSize, { readonly decisions: number; readonly words: number }> =
@@ -14,11 +14,7 @@ export const PLAN_LIMITS: Record<PlanSize, { readonly decisions: number; readonl
 /** At or under this many days, the schedule goes in time blocks and storage stays simple. */
 export const SHORT_DEADLINE_DAYS = 7;
 
-export function suggestSize(people: number, hours: number, days: number): PlanSize {
-  if (people <= 1 && hours <= 20) return "small";
-  if (people >= 3 && days >= 70) return "large";
-  return "medium";
-}
+export const suggestSize = suggestTeamPlanSize;
 
 export const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 

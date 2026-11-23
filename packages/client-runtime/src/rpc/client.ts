@@ -74,6 +74,7 @@ export type EnvironmentSubscriptionRpcTag =
   | typeof WS_METHODS.subscribeWorktreeSetup
   | typeof WS_METHODS.subscribeProjectClones
   | typeof WS_METHODS.subscribeTeamFeed // team-layer
+  | typeof WS_METHODS.subscribeTeamPlan // team-layer
   | typeof WS_METHODS.terminalAttach
   | typeof WS_METHODS.terminalObserve;
 

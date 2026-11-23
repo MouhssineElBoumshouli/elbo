@@ -1715,6 +1715,25 @@ function OpenCommandPaletteDialog(props: {
     });
   }
 
+  // team-layer: planning (PLANNING_FEATURE_PLAN.md slice 4), for the project you are in.
+  const planTarget = teamHomeTarget({
+    thread: activeThread,
+    draft: activeDraftThread,
+    fallback: defaultProjectRef,
+  });
+  if (planTarget.environmentId !== undefined && planTarget.projectId !== undefined) {
+    actionItems.push({
+      kind: "action",
+      value: "action:plan-next-part",
+      searchTerms: ["plan", "next part", "project plan", "questions", "brief", "decisions"],
+      title: "Plan the next part",
+      icon: <ListChecksIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        await navigate({ to: "/plan", search: planTarget });
+      },
+    });
+  }
+
   // team-layer: the Team home page, "Today" when solo (team/UI_PLAN.md slice 4).
   actionItems.push({
     kind: "action",

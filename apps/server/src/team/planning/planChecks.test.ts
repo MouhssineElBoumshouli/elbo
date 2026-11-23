@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 
-import { decision, problem, words } from "./planFixtures.testkit.ts";
+import { decision, problem, teamBrief, words } from "./planFixtures.testkit.ts";
+import { writerPrompt } from "./planPrompts.ts";
 import { overWordLimit, suggestSize } from "./planLimits.ts";
 import { withoutApiKeys } from "./planProvider.ts";
 import { applyPushBack } from "./planPushBack.ts";
@@ -85,6 +86,14 @@ describe("review loop rules", () => {
     assert.strictEqual(suggestSize(4, 400, 100), "large");
     assert.isFalse(overWordLimit(words(550), "small"));
     assert.isTrue(overWordLimit(words(551), "small"));
+  });
+});
+
+describe("writer prompt", () => {
+  it("asks for a rule only where an AI writing code could break the decision", () => {
+    const prompt = writerPrompt(teamBrief, "medium");
+    assert.include(prompt, "only when an AI writing the code could break this decision");
+    assert.include(prompt, "Most decisions have none");
   });
 });
 
