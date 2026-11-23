@@ -20,7 +20,7 @@ import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
-import type * as FileSystem from "effect/FileSystem";
+import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
@@ -33,6 +33,12 @@ import { openProjectTeam } from "../../mcp/toolkits/team/resolve.ts";
 import * as ProjectService from "../../project/ProjectService.ts";
 import * as ProviderRegistry from "../../provider/ProviderRegistry.ts";
 import { TeamService } from "../TeamService.ts";
+import {
+  AGENTS_FILE,
+  CLAUDE_FILE,
+  ownInstructionLines,
+  projectRulesForBrief,
+} from "./planAgentFiles.ts";
 import { agreed, type DecisionAsk, openDecisions, withDecision } from "./planChallenge.ts";
 import { pickPlanSeats, planView, savePreviewView, stepOf } from "./planRun.ts";
 import { KEPT_RUNS, makePlanRuns, type Run } from "./planRuns.ts";
@@ -145,8 +151,20 @@ const make = Effect.gen(function* () {
     );
   });
 
+  /** The project's own AGENTS.md / CLAUDE.md lines: the plan is written to follow them. */
+  const projectRulesOf = Effect.fn("TeamPlanning.projectRulesOf")(function* (root: string) {
+    const fs = yield* FileSystem.FileSystem;
+    const read = (file: string) =>
+      fs.readFileString(path.join(root, file)).pipe(Effect.orElseSucceed(() => null));
+    return projectRulesForBrief(
+      ownInstructionLines([yield* read(AGENTS_FILE), yield* read(CLAUDE_FILE)]),
+    );
+  }, Effect.provide(fileContext));
+
   const start = Effect.fn("TeamPlanning.start")(function* (input: TeamPlanStartInput) {
-    yield* projectOf(input.projectId);
+    const project = yield* projectOf(input.projectId);
+    const projectRules = yield* projectRulesOf(project.workspaceRoot);
+    const brief = projectRules.length > 0 ? { ...input.brief, projectRules } : input.brief;
     const seats = pickPlanSeats(yield* providers.getProviders);
     if (seats === null) {
       return yield* fail("Connect Codex or Claude first: open Setup and sign in to one of them.");
@@ -154,7 +172,7 @@ const make = Effect.gen(function* () {
     const runId = yield* random.uuidV4();
     const run: Run = {
       runId,
-      brief: input.brief,
+      brief,
       size: input.size,
       writer: seats.writer,
       reviewer: seats.reviewer,

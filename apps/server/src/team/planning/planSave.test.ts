@@ -325,7 +325,7 @@ describe("previewPlanSave", () => {
       inputFor(empty, planWith([stack, api]), { agents: own, claude: null }),
     );
     assert.deepStrictEqual(preview.rules.held, [
-      { rule: "Use Flask for the API.", line: "Never use Flask." },
+      { number: "0003", rule: "Use Flask for the API.", line: "Never use Flask." },
     ]);
     assert.deepStrictEqual(preview.rules.added, [
       "Use Django for the server. (plan decision 0002)",

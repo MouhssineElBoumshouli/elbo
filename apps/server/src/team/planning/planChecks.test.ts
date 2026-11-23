@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 
-import { decision, problem, teamBrief, words } from "./planFixtures.testkit.ts";
-import { answerPrompt, writerPrompt } from "./planPrompts.ts";
+import { decision, problem, teamBrief, words, written } from "./planFixtures.testkit.ts";
+import { answerPrompt, reviewPrompt, writerPrompt } from "./planPrompts.ts";
 import { overWordLimit, suggestSize } from "./planLimits.ts";
 import { withoutApiKeys } from "./planProvider.ts";
 import { checkProblems, logAnswers, numberDecisions, pickReviewer, toFix } from "./planReview.ts";
@@ -51,6 +51,26 @@ describe("review loop rules", () => {
     assert.include(found[1]?.problem, "The other experts agreed.");
   });
 
+  it("keeps rules few and short: at most 2, 4 or 6 by size, one requirement under 20 words", () => {
+    const ruled = (rule: string) => ({ ...decision("Choice"), rule });
+    const four = [
+      "Use Django.",
+      "Use SQLite via the ORM.",
+      "Hash passwords.",
+      "Keep data in the EU.",
+    ];
+    assert.deepStrictEqual(checkProblems(words(10), "medium", four.map(ruled)), []);
+    const tooMany = checkProblems(words(10), "small", four.map(ruled));
+    assert.include(tooMany[0]?.problem, "4 code rules; a small plan has at most 2");
+    const long = checkProblems(words(10), "large", [
+      ruled(
+        "Accept verified JPEG and PNG up to 5 MB and 20 million pixels, save them once at 1000 pixels, and enforce five photos per recipe.",
+      ),
+    ]);
+    assert.include(long[0]?.problem, "Rules longer than 20 words");
+    assert.strictEqual(long[0]?.severity, "should");
+  });
+
   it("logs a problem the writer did not answer as such", () => {
     const entries = logAnswers(2, toFix([problem("R1", "blocker"), problem("R2", "should")]), [
       { id: "R1", outcome: "fixed", reason: "Done." },
@@ -93,6 +113,30 @@ describe("writer prompt", () => {
     const prompt = writerPrompt(teamBrief, "medium");
     assert.include(prompt, "only when an AI writing the code could break this decision");
     assert.include(prompt, "Most decisions have none");
+  });
+
+  it("puts the project's own rules in the brief, and the reviewer flags a plan against them", () => {
+    const brief = {
+      ...teamBrief,
+      projectRules: ["Never use SQLite; the school gives us PostgreSQL."],
+    };
+    const writer = writerPrompt(brief, "medium");
+    assert.include(writer, "This project's own rules (from its AGENTS.md / CLAUDE.md)");
+    assert.include(writer, "- Never use SQLite; the school gives us PostgreSQL.");
+    assert.include(writer, "never pick an option they rule out");
+    assert.notInclude(writerPrompt(teamBrief, "medium"), "This project's own rules");
+    const review = reviewPrompt({
+      brief,
+      markdown: "Use SQLite.",
+      written: written("Use SQLite."),
+      round: 1,
+      log: [],
+    });
+    assert.include(review, "Never use SQLite");
+    assert.include(
+      review,
+      "goes against one of the project's own rules listed in the brief (at least a should)",
+    );
   });
 
   it("asks for rules an agent can check, in the plan and in an answer", () => {

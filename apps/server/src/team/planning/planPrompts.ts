@@ -6,11 +6,12 @@ import type { Decision, LogEntry, PlanTask, WrittenPlan } from "./planSchemas.ts
 const RULES = `- Write it like you'd explain it to a classmate: short sentences, everyday words. For example: "We keep everything in one small database file, because nobody on the team has run a database server before." Explain a technical word the first time you use it.
 - Fit everything to this team: name people and their skills, the hours, the budget and the outside rules.
 - Never accept a bad idea because the brief asks for it. If an idea is unsafe, too big for the time, cannot work on the budget, or breaks an outside rule, say so plainly and give a better option.
-- Do not invent facts about the team. If something important is missing, say what you assumed.`;
+- Do not invent facts about the team. If something important is missing, say what you assumed.
+- When the brief lists this project's own rules, follow them: never pick an option they rule out.`;
 
 /** Agents follow a rule they can check (https://code.claude.com/docs/en/memory). */
 const RULE_SHAPE =
-  'Make it specific enough to check in the code: name the exact thing, like "Store passwords only as Django password hashes." or "Use plain HTML, CSS and JavaScript; add no front-end framework.", never a goal like "Keep it secure." or "Write clean code."';
+  'A rule is only for something an AI could break anywhere in the code: the stack and libraries, security, data handling, or which folders belong to whom. Feature details go in tasks, not rules. One requirement per rule, under 20 words, specific enough to check in the code: name the exact thing, like "Store passwords only as Django password hashes." or "Use plain HTML, CSS and JavaScript; add no front-end framework.", never a goal like "Keep it secure." or "Write clean code."';
 
 const brief = (input: PlanBrief) => `## The brief\n${briefText(input)}`;
 
@@ -26,7 +27,7 @@ const shape = (input: PlanBrief, size: PlanSize) => {
   return `## What to return
 - title: the project's name in a few words.
 - plan: the plan in Markdown, the way you'd answer "make me a project plan for this" in a chat: a short opening, then short sections with plain titles. It must have: the steps with who does what and when (${schedule(input)}); for each must-have, how the team knows it is done; what to cut first if time runs out; and your push-back on any bad idea in the brief. Under ${limits.words} words. No list or table of decisions: the app adds the decisions at the end.
-- decisions: at most ${limits.decisions} real choices that matter to this team: what you picked, every option you looked at (the picked one included), and why in a sentence or two. rule: one short line, only when an AI writing the code could break this decision without noticing. ${RULE_SHAPE} Most decisions have none: leave it "" for hosting, schedules, testing, who does what, and anything people do rather than code.
+- decisions: at most ${limits.decisions} real choices that matter to this team: what you picked, every option you looked at (the picked one included), and why in a sentence or two. rule: one short line, only when an AI writing the code could break this decision without noticing; at most ${limits.rules} decisions get one. ${RULE_SHAPE} Most decisions have none: leave it "" for hosting, schedules, testing, who does what, and anything people do rather than code.
 - tasks: every task in the plan. owner is exactly one of: ${people(input)}. hours is your estimate, area the part of the work in a few words, folders the code folders it changes (for example "app/attendance/"), when its slot in the schedule. folders is [] for work that is not code: planning, testing, design, talks with people, hosting set-up. The hours must fit the team's time with room to spare.
 - doneChecks, pushBacks and cutFirst: the same as in the plan text, as data.`;
 };
@@ -75,7 +76,7 @@ Check only whether those are settled and whether a fix broke something. Reuse an
 `;
   return `Review a project plan another AI wrote for a person or a student team. Review only: do not rewrite the plan.
 
-Read the brief, then the plan and its task list. Find what would really hurt the team: an unsafe idea the plan accepts, a schedule or hours that cannot fit, a must-have with no path to done, a choice the team cannot build with their skills, budget or outside rules, a bad idea in the brief the plan does not push back on.
+Read the brief, then the plan and its task list. Find what would really hurt the team: an unsafe idea the plan accepts, a schedule or hours that cannot fit, a must-have with no path to done, a choice the team cannot build with their skills, budget or outside rules, a bad idea in the brief the plan does not push back on, a choice that goes against one of the project's own rules listed in the brief (at least a should).
 Hold the plan to its size. Do not ask for more features, sections or detail; a plan that grows is worse. Prefer a fix that cuts.
 
 Severity:

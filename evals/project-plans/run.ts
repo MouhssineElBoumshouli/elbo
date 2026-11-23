@@ -10,6 +10,10 @@ import * as Schema from "effect/Schema";
 
 import * as ServerConfig from "../../apps/server/src/config.ts";
 import * as ProcessRunner from "../../apps/server/src/processRunner.ts";
+import {
+  ownInstructionLines,
+  projectRulesForBrief,
+} from "../../apps/server/src/team/planning/planAgentFiles.ts";
 import { decodeBrief } from "../../apps/server/src/team/planning/planBrief.ts";
 import { writePlanFiles } from "../../apps/server/src/team/planning/planFiles.ts";
 import { runMethod } from "../../apps/server/src/team/planning/planMethod.ts";
@@ -38,6 +42,8 @@ const { values } = NodeUtil.parseArgs({
     case: { type: "string" },
     // Skips the plain chat, for a rerun that compares the flow with an earlier round.
     "no-baseline": { type: "boolean", default: false },
+    // An AGENTS.md the project already has; the plan must follow its lines.
+    "agents-md": { type: "string" },
   },
 });
 const isProvider = (value: string | undefined) => value === "codex" || value === "claude";
@@ -84,9 +90,17 @@ await Effect.runPromise(
 
     for (const planCase of cases) {
       const caseDir = path.join(outDir, planCase.id);
-      const brief = yield* decodeBrief(
+      const caseBrief = yield* decodeBrief(
         yield* fs.readFileString(path.join(import.meta.dirname, "cases", planCase.briefFile)),
       );
+      const brief = values["agents-md"]
+        ? {
+            ...caseBrief,
+            projectRules: projectRulesForBrief(
+              ownInstructionLines([yield* fs.readFileString(values["agents-md"])]),
+            ),
+          }
+        : caseBrief;
       yield* Effect.logInfo(`${planCase.id}: write and review`);
       const write = yield* makeProviderAsk({
         provider: writer,

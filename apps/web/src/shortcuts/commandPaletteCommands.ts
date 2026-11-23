@@ -59,6 +59,27 @@ export function installCommandPaletteCommands(
     },
   );
 
+  const shortcutContext = () => {
+    const threadRef = readRouteThreadRef();
+    return {
+      terminalOpen: threadRef
+        ? selectThreadTerminalUiState(
+            useTerminalUiStateStore.getState().terminalUiStateByThreadKey,
+            threadRef,
+          ).terminalOpen
+        : false,
+      previewOpen: threadRef
+        ? selectActiveRightPanel(useRightPanelStore.getState().byThreadKey, threadRef) === "preview"
+        : false,
+      usagePageOpen: router.state.location.pathname === "/usage",
+    };
+  };
+  const overlayCommands = {
+    "commandPalette.toggle": toggleOverlay("commandPalette.toggle"),
+    "filePicker.toggle": toggleOverlay("filePicker.toggle"),
+    "projectSearch.toggle": toggleOverlay("projectSearch.toggle"),
+  };
+
   const disposeCommands = registerCommands(
     {
       "appearance.cycle": (event) => {
@@ -92,34 +113,33 @@ export function installCommandPaletteCommands(
         dispatchCommandPalette({ _tag: "SetOpen", open: false });
         void router.navigate({ to: "/usage" });
       },
-      "commandPalette.toggle": toggleOverlay("commandPalette.toggle"),
-      "filePicker.toggle": toggleOverlay("filePicker.toggle"),
-      "projectSearch.toggle": toggleOverlay("projectSearch.toggle"),
+      ...overlayCommands,
     },
     {
       ...options,
       when: isCommandPaletteMounted,
-      context: () => {
-        const threadRef = readRouteThreadRef();
-        return {
-          terminalOpen: threadRef
-            ? selectThreadTerminalUiState(
-                useTerminalUiStateStore.getState().terminalUiStateByThreadKey,
-                threadRef,
-              ).terminalOpen
-            : false,
-          previewOpen: threadRef
-            ? selectActiveRightPanel(useRightPanelStore.getState().byThreadKey, threadRef) ===
-              "preview"
-            : false,
-          usagePageOpen: router.state.location.pathname === "/usage",
-        };
-      },
+      context: shortcutContext,
     },
   );
+
+  // team-layer: a popup that is closing (the model picker after Escape) keeps focus and stops
+  // the key's propagation, so Ctrl+K never opened the palette and the query went to the chat
+  // box. Inside popups the palette keys also listen in the capture phase; in the page itself
+  // they don't, so widgets such as the terminal keep their own Cmd+K.
+  const disposePopupCommands = registerCommands(overlayCommands, {
+    ...options,
+    capture: true,
+    when: (event) => isCommandPaletteMounted() && isInsidePopup(event.target),
+    context: shortcutContext,
+  });
 
   return () => {
     disposeEscape();
     disposeCommands();
+    disposePopupCommands();
   };
+}
+
+function isInsidePopup(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("[data-base-ui-portal]") !== null;
 }

@@ -89,7 +89,8 @@ export function PlanSaveDialog(props: {
                   {preview.held.map((entry) => (
                     <li key={`held:${entry.rule}`}>
                       Not written: {entry.rule} It says the opposite of your line "{entry.line}" in
-                      AGENTS.md or CLAUDE.md; change one of them, then save again.
+                      AGENTS.md or CLAUDE.md. Push back on decision {entry.number}, or change that
+                      line, then save again.
                     </li>
                   ))}
                 </ul>

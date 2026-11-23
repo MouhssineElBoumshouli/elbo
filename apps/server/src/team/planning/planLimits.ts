@@ -4,12 +4,17 @@ export const PlanSize = TeamPlanSize;
 export type PlanSize = TeamPlanSize;
 
 /** Hard limits per plan size, counted on the plan the team reads. */
-export const PLAN_LIMITS: Record<PlanSize, { readonly decisions: number; readonly words: number }> =
-  {
-    small: { decisions: 2, words: 500 },
-    medium: { decisions: 6, words: 1_500 },
-    large: { decisions: 10, words: 3_000 },
-  };
+export const PLAN_LIMITS: Record<
+  PlanSize,
+  { readonly decisions: number; readonly words: number; readonly rules: number }
+> = {
+  small: { decisions: 2, words: 500, rules: 2 },
+  medium: { decisions: 6, words: 1_500, rules: 4 },
+  large: { decisions: 10, words: 3_000, rules: 6 },
+};
+
+/** One requirement in a short line; longer ones are feature details that belong in tasks. */
+export const RULE_MAX_WORDS = 20;
 
 /** At or under this many days, the schedule goes in time blocks and storage stays simple. */
 export const SHORT_DEADLINE_DAYS = 7;

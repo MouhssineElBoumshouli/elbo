@@ -35,6 +35,11 @@ export function briefText(brief: PlanBrief): string {
     `AI in it: ${answer(brief.ai)}`,
     `Feel: ${answer(brief.feel)}`,
     ...(brief.notes.trim().length > 0 ? [`Anything else: ${brief.notes.trim()}`] : []),
+    ...((brief.projectRules?.length ?? 0) > 0
+      ? [
+          `This project's own rules (from its AGENTS.md / CLAUDE.md); the plan must follow them:\n${list(brief.projectRules ?? [])}`,
+        ]
+      : []),
   ].join("\n");
 }
 

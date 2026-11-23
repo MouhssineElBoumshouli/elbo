@@ -75,7 +75,11 @@ export interface PlanSavePreview {
     readonly added: ReadonlyArray<string>;
     readonly removed: ReadonlyArray<string>;
     /** Rules not written: each says the opposite of a line the person wrote in AGENTS.md or CLAUDE.md. */
-    readonly held: ReadonlyArray<{ readonly rule: string; readonly line: string }>;
+    readonly held: ReadonlyArray<{
+      readonly number: string;
+      readonly rule: string;
+      readonly line: string;
+    }>;
   };
   readonly tasks: ReadonlyArray<TaskChange>;
   /** Decisions from an earlier plan that this one doesn't have; they stay active. */
@@ -170,7 +174,7 @@ export function previewPlanSave(input: PlanSaveInput): PlanSavePreview {
     input.agentFiles?.agents ?? null,
     input.agentFiles?.claude ?? null,
   ]);
-  const held: Array<{ readonly rule: string; readonly line: string }> = [];
+  const held: Array<{ readonly number: string; readonly rule: string; readonly line: string }> = [];
   const rules = [
     ...ownedBefore.filter((item) => keptNumbers.has(RULE_MARK.exec(item)?.[1] ?? "")),
     ...decisions.active.flatMap(({ number, decision }) => {
@@ -178,7 +182,7 @@ export function previewPlanSave(input: PlanSaveInput): PlanSavePreview {
       if (!rule) return [];
       const line = ruleConflict(rule, ownLines);
       if (line !== null) {
-        held.push({ rule, line });
+        held.push({ number, rule, line });
         return [];
       }
       return [`${rule} (plan decision ${number})`];
@@ -268,7 +272,8 @@ export function describePlanSave(preview: PlanSavePreview): string {
   );
   const kept = preview.kept.map((entry) => `- ${entry.number} ${entry.title}`);
   const held = preview.rules.held.map(
-    (entry) => `- not written: ${entry.rule} (says the opposite of "${entry.line}")`,
+    (entry) =>
+      `- not written: ${entry.rule} (says the opposite of "${entry.line}"; push back on decision ${entry.number})`,
   );
   return [
     "Files:",

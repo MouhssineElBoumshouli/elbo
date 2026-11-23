@@ -74,6 +74,21 @@ export function ownInstructionLines(files: ReadonlyArray<string | null>): Readon
   });
 }
 
+/** The person's own lines for the planning brief, in order, cut at about `maxChars`. */
+export function projectRulesForBrief(
+  ownLines: ReadonlyArray<string>,
+  maxChars = 1_200,
+): ReadonlyArray<string> {
+  const kept: string[] = [];
+  let used = 0;
+  for (const line of ownLines) {
+    if (used + line.length > maxChars) break;
+    kept.push(line);
+    used += line.length;
+  }
+  return kept;
+}
+
 const NEGATIVE =
   /\b(?:never|don't|do not|doesn't|no|not|avoid|without|stop|forbidden|must not)\b/iu;
 const IGNORED = new Set(

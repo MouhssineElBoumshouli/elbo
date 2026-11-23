@@ -31,6 +31,8 @@ export const TeamPlanBrief = Schema.Struct({
   ai: Schema.String,
   feel: Schema.String,
   notes: Schema.String,
+  /** The project's own AGENTS.md / CLAUDE.md lines; the server adds them, and the plan follows them. */
+  projectRules: Schema.optionalKey(Schema.Array(Schema.String)),
 });
 export type TeamPlanBrief = typeof TeamPlanBrief.Type;
 
@@ -212,7 +214,9 @@ export const TeamPlanSavePreview = Schema.Struct({
   }),
   tasks: Schema.Array(TeamPlanSaveTask),
   /** Plan rules not written: each says the opposite of a line the person wrote. */
-  held: Schema.Array(Schema.Struct({ rule: Schema.String, line: Schema.String })),
+  held: Schema.Array(
+    Schema.Struct({ number: Schema.String, rule: Schema.String, line: Schema.String }),
+  ),
   /** Decisions from an earlier plan that this one doesn't have; they stay active. */
   kept: Schema.Array(Schema.Struct({ number: Schema.String, title: Schema.String })),
   saved: Schema.Boolean,

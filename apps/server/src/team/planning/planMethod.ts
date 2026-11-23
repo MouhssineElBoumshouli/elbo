@@ -78,7 +78,10 @@ export const runMethod = Effect.fn("planning.runMethod")(function* <E, F>(input:
       words: wordCount(markdown),
       problems: review.problems,
     });
-    const problems = [...toFix(review.problems), ...checkProblems(markdown, size)];
+    const problems = [
+      ...toFix(review.problems),
+      ...checkProblems(markdown, size, written.decisions),
+    ];
     if (problems.length === 0) {
       stopReason = `Stopped after round ${round}: only nits left.`;
       break;

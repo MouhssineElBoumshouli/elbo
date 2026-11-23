@@ -1,4 +1,10 @@
-import { overWordLimit, PLAN_LIMITS, type PlanSize, wordCount } from "./planLimits.ts";
+import {
+  overWordLimit,
+  PLAN_LIMITS,
+  type PlanSize,
+  RULE_MAX_WORDS,
+  wordCount,
+} from "./planLimits.ts";
 import type {
   Decision,
   DecisionRecord,
@@ -30,7 +36,41 @@ export function pickReviewer(
 }
 
 /** Problems the code finds in the plan the team reads, sent with the reviewer's. */
-export function checkProblems(markdown: string, size: PlanSize): ReadonlyArray<ToFix> {
+/** Rules past the size's limit, and rules that hold more than one short requirement. */
+function ruleProblems(
+  decisions: ReadonlyArray<Decision>,
+  size: PlanSize,
+): ReadonlyArray<Omit<ToFix, "id" | "severity" | "from">> {
+  const rules = decisions.map((decision) => decision.rule.trim()).filter(Boolean);
+  const limit = PLAN_LIMITS[size].rules;
+  const long = rules.filter((rule) => wordCount(rule) > RULE_MAX_WORDS);
+  return [
+    ...(rules.length > limit
+      ? [
+          {
+            problem: `The plan has ${rules.length} code rules; a ${size} plan has at most ${limit}.`,
+            why: "Agents follow a few rules well and many badly.",
+            fix: `Keep the ${limit} that an AI could break anywhere in the code (stack and libraries, security, data handling, folder ownership); set the rest to "" and put feature details in tasks.`,
+          },
+        ]
+      : []),
+    ...(long.length > 0
+      ? [
+          {
+            problem: `Rules longer than ${RULE_MAX_WORDS} words: ${long.map((rule) => `"${rule}"`).join("; ")}.`,
+            why: "A rule holds one requirement an agent can check.",
+            fix: "Keep one requirement in each, under 20 words; move the details to tasks.",
+          },
+        ]
+      : []),
+  ];
+}
+
+export function checkProblems(
+  markdown: string,
+  size: PlanSize,
+  decisions: ReadonlyArray<Decision> = [],
+): ReadonlyArray<ToFix> {
   const words = wordCount(markdown);
   const limit = PLAN_LIMITS[size].words;
   const talk = methodTalk(markdown);
@@ -53,6 +93,7 @@ export function checkProblems(markdown: string, size: PlanSize): ReadonlyArray<T
           },
         ]
       : []),
+    ...ruleProblems(decisions, size),
   ].map((found, index) => ({ ...found, id: `C${index + 1}`, severity: "should", from: "check" }));
 }
 

@@ -2,6 +2,44 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-23: Elbo 1.0 Part 1, fixes
+
+- **What changed:**
+  1. **Ctrl+K typing in the chat box.**
+     - Why: after Escape, the model picker keeps focus in its search box for a few hundred ms while it closes, and stops each key's propagation. A Ctrl+K pressed then never opened the palette, and the query typed next went to the chat box, where Enter sent it (that made the stray "New chat in" chat).
+     - Fix: inside popups the palette keys also listen in the capture phase (`shortcuts/commandPaletteCommands.ts`, marked team-layer). In the page itself they don't, so the terminal keeps its own Cmd+K.
+     - The other stray chat ("team-demo29") was not a bug: Enter on the top match, "New chat in team-demo29", opened a new chat as it says, and the test kept typing into it.
+  2. **Existing rules first.**
+     - The brief gains `projectRules`, the project's own AGENTS.md / CLAUDE.md lines cut to about 1,200 characters (`projectRulesForBrief`). The server adds them at plan start, and the eval's `--agents-md` does the same.
+     - Every writer, reviewer and answer turn sees them. The writer must follow them; the reviewer flags a contradiction as at least a should.
+     - The save-time check stays as a backstop, and its message now says "Push back on decision NNNN".
+  3. **Fewer, better rules.**
+     - The prompt keeps rules to what an AI could break anywhere: stack and libraries, security, data handling, folder ownership. Feature details go in tasks; one requirement per rule, under 20 words.
+     - The code checks add a should past 2 / 4 / 6 rules (small / medium / large) or a rule over 20 words (`planReview.ts`, `PLAN_LIMITS.rules`).
+- **Files:**
+  - Palette: `apps/web/src/shortcuts/commandPaletteCommands.ts` and its browser test.
+  - Planning: `apps/server/src/team/planning/{planAgentFiles,planBrief,planLimits,planReview,planMethod,planPrompts,planSave,TeamPlanning}.ts` and their tests.
+  - Contracts and web: `packages/contracts/src/teamPlanning.ts`, `PlanSaveDialog.tsx`.
+  - Evals: `evals/project-plans/run.ts`.
+- **Checked:**
+  - **Palette:**
+    - The new browser test (a closing popup that swallows keys, then Ctrl+K and fast typing: the palette opens, the chat box stays empty, nothing is sent) fails on the old code and passes now.
+    - Live, after Escape on the model picker with 0 and 50 ms gaps: before the fix the palette never opened; after it, it opened every time with the query in it.
+  - **Tests:** rule limits and length, project rules in the writer and review prompts, cutting them, and the held rule naming its decision. 48 planning tests pass.
+  - **`check:changed`:** all pass after unexporting `ruleProblems`.
+  - **Attendance rerun with an AGENTS.md saying "Never use SQLite…"** (Codex writing; Codex reviewing in a fresh session, since Claude was at its usage limit until 22:10):
+    - The plan picked the school's PostgreSQL; SQLite is named only as not picked.
+    - 4 rules (the medium limit), each one requirement:
+      - "Use Django templates and plain JavaScript; add no frontend framework." (10 words)
+      - "Use PostgreSQL for every database configuration, including tests; never use SQLite." (11 words)
+      - "Store passwords only as Django password hashes." (7 words)
+      - "Authorize every attendance request server-side using student identity, class enrollment, or teacher assignment." (13 words)
+    - Score 9/10, 1,580 words, 2 turns, 49k in / 4.8k out.
+- **Next:** Part 2, planning slice 6 (team):
+  - share a plan with status "proposed", a Note thread per decision, replies and votes, the decider, a push-back by any teammate on their own AI, "Needs you", and the ways back;
+  - test with two dev servers on a local team.
+    Then Parts 3 to 5 (FINISH_LINE.md).
+
 ## 2026-11-23: Elbo 1.0 Part 0, the finish line
 
 - **What changed:** `team/FINISH_LINE.md` (the seven things that make 1.0 done, and the scope rule) and `team/LATER.md` (what is not in 1.0, one line each, including what earlier rounds left open).

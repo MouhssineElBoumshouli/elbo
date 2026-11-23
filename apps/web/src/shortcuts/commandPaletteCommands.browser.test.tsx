@@ -2,7 +2,7 @@ import { compileResolvedKeybindingsConfig } from "@t3tools/shared/keybindings";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { page, userEvent } from "vite-plus/test/browser";
 
-import { render } from "../../test/render";
+import { fakeTimers, render } from "../../test/render";
 import { openCommandPalette } from "../commandPaletteBus";
 import {
   dispatchCommandPalette,
@@ -53,6 +53,53 @@ describe("command palette shortcuts", () => {
 
     await screen.rerender(<div />);
     expect(useCommandPaletteStore.getState().open).toBe(false);
+  });
+
+  it("open from a closing popup, so fast typing never reaches the chat box", async () => {
+    setup();
+    using _platform = vi.spyOn(navigator, "platform", "get").mockReturnValue("Linux x86_64");
+    const send = vi.fn();
+    // Like the model picker after Escape: it keeps focus while it closes and stops each key's
+    // propagation, then hands focus back to the chat box, unless the palette has opened by then
+    // (the open palette makes the page inert).
+    const closingPopupKeyDown = (event: React.KeyboardEvent) => {
+      event.stopPropagation();
+      if (event.key !== "Escape") return;
+      setTimeout(() => {
+        if (!useCommandPaletteStore.getState().open) {
+          document.querySelector<HTMLTextAreaElement>("[aria-label='Message']")?.focus();
+        }
+      }, 150);
+    };
+    await using screen = await render(
+      <>
+        <MountedPalette />
+        <textarea
+          aria-label="Message"
+          onKeyDown={(event) => {
+            if (event.key === "Enter") send(event.currentTarget.value);
+          }}
+        />
+        <div data-base-ui-portal="">
+          <input aria-label="Search models" onKeyDown={closingPopupKeyDown} />
+        </div>
+      </>,
+      { router: "/" },
+    );
+    using commands = new DisposableStack();
+    commands.defer(
+      installCommandPaletteCommands(screen.router!, { keybindings: () => keybindings }),
+    );
+    await userEvent.click(page.getByRole("textbox", { name: "Search models" }));
+    using _timers = fakeTimers();
+
+    await userEvent.keyboard("{Escape}{Control>}k{/Control}");
+    vi.advanceTimersByTime(150);
+    await userEvent.keyboard("new chat{Enter}");
+
+    expect(useCommandPaletteStore.getState().open).toBe(true);
+    await expect.element(page.getByRole("textbox", { name: "Message" })).toHaveValue("");
+    expect(send).not.toHaveBeenCalled();
   });
 
   it("keep a child search open on a composing Escape", async () => {

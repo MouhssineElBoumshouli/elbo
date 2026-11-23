@@ -5,6 +5,7 @@ import {
   mergeClaudeFile,
   ownInstructionLines,
   planAgentsSection,
+  projectRulesForBrief,
   ruleConflict,
 } from "./planAgentFiles.ts";
 
@@ -50,6 +51,13 @@ describe("CLAUDE.md import", () => {
     assert.isTrue(added.endsWith(own));
     assert.isNull(mergeClaudeFile(added));
     assert.isNull(mergeClaudeFile("Intro.\n@./AGENTS.md\n"));
+  });
+});
+
+describe("project rules for the brief", () => {
+  it("keeps the person's lines in order, cut to a size", () => {
+    const lines = ["Run `npm test` before committing.", "Never use SQLite.", "x".repeat(80)];
+    assert.deepStrictEqual(projectRulesForBrief(lines, 60), lines.slice(0, 2));
   });
 });
 
