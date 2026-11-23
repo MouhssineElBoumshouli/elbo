@@ -2,6 +2,49 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-23: Planning slice 4, the questions and the plan page
+
+- **What changed** (`a59bf73cb9`):
+  - **Start:** New project now opens `/plan` with "What are you making?", "Plan it first" and "Start building" (the old new-chat path). Ctrl+K has "Plan the next part" for the project you are in.
+  - **Questions:** one screen, 11 questions with tap choices and a quiet "Not sure, suggest something" on each.
+    - In a team project you pick each person from the Elbo members (or "Not in Elbo yet"), so task owners match logins. A solo project fills in "You".
+    - The answers become the brief (`planAnswers.logic.ts`, pure, tested).
+  - **Size check:** "This looks like a medium project: 3 people, 6 weeks." with Small / Medium / Large.
+  - **Writing and review:**
+    - The server's `TeamPlanning` service (`apps/server/src/team/planning/TeamPlanning.ts`) runs the writer + review method on the provider registry's instances. Each instance's `textGeneration.run` comes from the person's own settings, and `askFromRunner` is shared with the scripts.
+    - Codex writes and Claude reviews (Opus, high). With one AI it does both, and the page says so (`pickPlanSeats`, tested).
+    - Each run's state streams over a new WS subscription. Stop interrupts the turns. The run id is in the URL, so a reload finds the run again.
+  - **Plan page:** the plan's own layout with the decisions list, "Claude reviewed it: 9/10" with what was fixed or declined, and small remarks counted. A failed run uses the limit card's words (`limitCardWords`, now with a driver fallback).
+  - **Save:** "Save the plan" shows the slice 3 preview (files, code rules, tasks) and writes only after you confirm, then shows where it went. `TeamPlanSave` now takes a plan object; the MCP tool and the runner read the file first (`readPlanFile`).
+  - **Rules from decisions:** the writer prompt now gives a rule only when an AI writing code could break the decision; "most decisions have none". There's a test. Attendance rerun: **4 of 6** decisions got a rule (was 6 of 6). Hosting and release scope now get none.
+  - **Contracts:** `teamPlanning.ts` (brief, size, run state, plan view, save preview, error). The server's brief and size come from there. 5 WS methods with permissions: start, stop and save need operate; watch and preview need read.
+  - **Dev only:** `ELBO_PLAN_FIXTURE=<plan.json>` replays a saved plan in three short steps instead of AI turns.
+- **Files:**
+  - `packages/contracts/src/{teamPlanning,rpc,clientRpcPermissions,index}.ts`
+  - `packages/client-runtime/src/{state/teamPlanning,rpc/client}.ts`
+  - `apps/server/src/team/planning/{TeamPlanning,planRun,planRun.test,planProvider,planBrief,planLimits,planMethod,planPrompts,planSaveService,planFiles}.ts`
+  - `apps/server/src/{ws,observability/RpcInstrumentation}.ts` and `team/teamServerLayer.ts`, the MCP `savePlan.ts`
+  - `apps/web/src/components/team/planning/*`, `routes/plan.tsx`, `state/teamPlanning.ts`, `hooks/useNewProject.ts`, `CommandPalette.tsx`, `routeTree.gen.ts`
+  - `team/PLANNING_FEATURE_PLAN.md`
+- **Checked:**
+  - New tests: answers → brief, size sentence, progress text, error words (4); seats, steps and plan view (5); the rule prompt (1). The old planning tests still pass.
+  - `check:changed`: typecheck of 41 packages, 14 test files, lint, knip (after two unexports), React compiler.
+  - **Headless browser on `~/code/team-demo26`** (fresh repo, solo), against the fixture:
+    - Ctrl+K → Plan the next part, the questions, the size check, progress writing → reviewing → "fixing 2 points", the plan page, and the save preview. The folder was empty until the confirm; after it, 8 files plus 18 tasks.
+    - Dark mode, and a reload re-attaching to the run.
+    - Stop: "Stopped. Nothing was saved."
+    - Back from size keeps the answers; "Change the answers" goes back to the questions.
+  - **New project:** lands on Plan it first / Start building, and Start building opens a new chat.
+  - **One real plan** (no fixture): a 2-day to-do brief, Codex writing and Claude Opus reviewing, came back 9/10 with 2 remarks and no fix turn. Saving it added 2 decisions, 2 code rules and 6 tasks.
+  - 6 pictures: `test-screenshots` `2026-11-23-planning-slice4/` (`fcf2c1d51b`).
+- **Released:** Beta `1.0.0-nightly.20261123.10` from `a59bf73cb9` (Team release run 45220069434). The installer `.exe`, blockmap and `nightly.yml` are on the Releases page.
+- **Not done / unsure:**
+  - **Laptop restart:** it happened mid-slice. The code was intact and uncommitted. `team-demo25` was left half set up and `team-demo26` replaced it. The scratch fixture was lost and rebuilt from the eval run.
+  - **New project folder:** New project always creates its folder in the app's data folder (`<home>/projects`); that's not a setting. So the planning test used a local folder plus Ctrl+K, and New project was checked with a throwaway project.
+  - **Not seen live:** a provider failure on the plan page (it's covered by the error-words test), and the team question with real members (only a solo project was tried).
+  - **Runs are kept in memory:** a server restart loses an unsaved plan, and the page then says so.
+  - **Old decisions stay active:** a save leaves decisions the new plan no longer has active (slice 3 behaviour). Saving the weekend plan over the attendance fixture kept 0001–0006 active.
+
 ## 2026-11-23: Planning slice 3, saving the plan into the project (plus a cost trim)
 
 - **Cost trim** (`ad95ecbca5`):
