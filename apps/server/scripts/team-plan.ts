@@ -10,6 +10,12 @@
  *
  * The review defaults to the reviewer's strongest model at high effort (REVIEW_DEFAULTS).
  *
+ * Save a plan written before into a project (.team/plan.md, decisions, rulebook lines, tasks),
+ * or with --dry-run only list what would be written. The team state is a dev home's:
+ *
+ *   node apps/server/scripts/team-plan.ts --out plan-out --save-to ~/code/team-demo6 [--dry-run]
+ *     [--home-dir ~/.t3-dev]
+ *
  * Push back on a decision of a plan written before (the writer answers):
  *
  *   node apps/server/scripts/team-plan.ts --brief brief.json --out plan-out
@@ -19,6 +25,7 @@ import * as NodeUtil from "node:util";
 
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
@@ -39,6 +46,7 @@ import {
 } from "../src/team/planning/planProvider.ts";
 import { pushBack } from "../src/team/planning/planPushBack.ts";
 import { pickReviewer } from "../src/team/planning/planReview.ts";
+import { DEV_HOME, saveToProject } from "./teamPlanSave.ts";
 
 const { values } = NodeUtil.parseArgs({
   options: {
@@ -54,6 +62,9 @@ const { values } = NodeUtil.parseArgs({
     "push-back": { type: "string" },
     message: { type: "string" },
     by: { type: "string", default: "the team" },
+    "save-to": { type: "string" },
+    "dry-run": { type: "boolean", default: false },
+    "home-dir": { type: "string" },
   },
 });
 
@@ -69,6 +80,16 @@ const decodeSize = Schema.decodeUnknownEffect(PlanSize);
 const decodeProvider = Schema.decodeUnknownEffect(Schema.Literals(["codex", "claude"]));
 
 const program = Effect.gen(function* () {
+  if (values["save-to"] && values.out && !values.brief) {
+    const path = yield* Path.Path;
+    const text = yield* saveToProject({
+      planFile: path.join(path.resolve(values.out), "plan.json"),
+      projectFolder: values["save-to"],
+      homeDir: values["home-dir"] ?? DEV_HOME,
+      dryRun: values["dry-run"],
+    });
+    return yield* Console.log(text);
+  }
   if (!values.brief || !values.out) {
     return yield* new PlanRunError({ detail: "Pass --brief <file> and --out <dir>." });
   }

@@ -209,10 +209,14 @@ const decisionPaths = (values: ReadonlyArray<string>) => [
  * asks for `title`, `author`, `date`, `files` (`[a, b]` or a `- ` list) and
  * `commit`.
  */
-export const parseDecision = (source: string, raw: string): MemoryEntry => {
+/**
+ * A decision file's front matter: `key: value` fields, lists (`[a, b]` or `- ` items) and the
+ * body after it. Keys are lowercase; values are unquoted. No front matter leaves both maps empty.
+ */
+export const readFrontMatter = (raw: string) => {
   const fields = new Map<string, string>();
   const lists = new Map<string, Array<string>>();
-  let body = raw.replace(/^﻿/u, "");
+  let body = raw.replace(/^\ufeff/u, "");
   const frontMatter = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/u.exec(body);
   if (frontMatter !== null) {
     body = body.slice(frontMatter[0].length);
@@ -234,6 +238,11 @@ export const parseDecision = (source: string, raw: string): MemoryEntry => {
       } else fields.set(key, unquote(value));
     }
   }
+  return { fields, lists, body };
+};
+
+export const parseDecision = (source: string, raw: string): MemoryEntry => {
+  const { fields, lists, body } = readFrontMatter(raw);
   const heading = /^#\s+(.+)$/mu.exec(body)?.[1]?.trim();
   const fileTitle = (source.split("/").at(-1) ?? source)
     .replace(/\.md$/iu, "")

@@ -87,6 +87,52 @@ export const fromService = (operation: string) => (error: TeamServiceError) =>
     ? new TeamToolFailedError({ operation, cause: error })
     : new TeamToolError({ detail: error.message });
 
+/**
+ * The team a project folder is in, as this server's member: the shared team its `.team/team.json`
+ * names, else its solo team. For a chat, `workingFolder` is the chat's worktree or project root.
+ */
+export const openProjectTeam = (input: {
+  readonly workingFolder: string;
+  readonly projectRoot: string;
+  readonly projectName: string;
+  readonly thread: TeamThreadRef;
+}) =>
+  Effect.gen(function* () {
+    const teams = yield* TeamService.TeamService;
+    const found = yield* findTeamFileIn(input.workingFolder).pipe(
+      Effect.mapError(
+        (error) => new TeamToolError({ detail: `${error.filePath}: ${error.detail}` }),
+      ),
+    );
+    if (Option.isNone(found)) {
+      const solo = yield* teams
+        .openSolo({ projectRoot: input.projectRoot, name: input.projectName })
+        .pipe(Effect.mapError(fromService("lookup")));
+      if (solo.status !== "member") return notInTeam(NOT_IN_TEAM);
+      return inTeamWith({
+        teamFile: { teamId: solo.team.teamId, name: solo.team.name },
+        solo: yield* teams.isSolo(solo.team.teamId),
+        member: solo.member,
+        thread: input.thread,
+        teamRoot: input.workingFolder,
+        workingFolder: input.workingFolder,
+      });
+    }
+    const { teamFile, teamRoot } = found.value;
+    const membership = yield* teams
+      .openTeam({ teamFile, checkout: teamRoot })
+      .pipe(Effect.mapError(fromService("lookup")));
+    if (membership.status !== "member") return notInTeam(notInTeamReason(teamFile, membership));
+    return inTeamWith({
+      teamFile,
+      solo: false,
+      member: membership.member,
+      thread: input.thread,
+      teamRoot,
+      workingFolder: input.workingFolder,
+    });
+  });
+
 export const makeTeamResolver = Effect.gen(function* () {
   const teams = yield* TeamService.TeamService;
   const orchestrator = yield* Orchestrator.OrchestratorV2;
@@ -95,14 +141,6 @@ export const makeTeamResolver = Effect.gen(function* () {
 
   const lookupFailed = (operation: string) => (cause: unknown) =>
     new TeamToolFailedError({ operation, cause });
-
-  const findTeamFile = (workingFolder: string) =>
-    findTeamFileIn(workingFolder).pipe(
-      Effect.mapError(
-        (error) => new TeamToolError({ detail: `${error.filePath}: ${error.detail}` }),
-      ),
-      Effect.provide(fileContext),
-    );
 
   const resolve = (scope: { readonly environmentId: EnvironmentId; readonly threadId: ThreadId }) =>
     Effect.gen(function* () {
@@ -118,37 +156,12 @@ export const makeTeamResolver = Effect.gen(function* () {
       if (Option.isNone(project)) {
         return yield* new TeamToolError({ detail: "This thread's project was not found." });
       }
-      const workingFolder = thread.worktreePath ?? project.value.workspaceRoot;
-      const threadRef = { environmentId: scope.environmentId, threadId: scope.threadId };
-      const found = yield* findTeamFile(workingFolder);
-      if (Option.isNone(found)) {
-        const solo = yield* teams
-          .openSolo({ projectRoot: project.value.workspaceRoot, name: project.value.title })
-          .pipe(Effect.mapError(fromService("lookup")));
-        if (solo.status !== "member") return notInTeam(NOT_IN_TEAM);
-        return inTeamWith({
-          teamFile: { teamId: solo.team.teamId, name: solo.team.name },
-          solo: yield* teams.isSolo(solo.team.teamId),
-          member: solo.member,
-          thread: threadRef,
-          teamRoot: workingFolder,
-          workingFolder,
-        });
-      }
-      const { teamFile, teamRoot } = found.value;
-
-      const membership = yield* teams
-        .openTeam({ teamFile, checkout: teamRoot })
-        .pipe(Effect.mapError(fromService("lookup")));
-      if (membership.status !== "member") return notInTeam(notInTeamReason(teamFile, membership));
-      return inTeamWith({
-        teamFile,
-        solo: false,
-        member: membership.member,
-        thread: threadRef,
-        teamRoot,
-        workingFolder,
-      });
+      return yield* openProjectTeam({
+        workingFolder: thread.worktreePath ?? project.value.workspaceRoot,
+        projectRoot: project.value.workspaceRoot,
+        projectName: project.value.title,
+        thread: { environmentId: scope.environmentId, threadId: scope.threadId },
+      }).pipe(Effect.provideService(TeamService.TeamService, teams), Effect.provide(fileContext));
     });
 
   return { resolve };

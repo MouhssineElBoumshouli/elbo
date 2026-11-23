@@ -99,6 +99,9 @@ export const TEAM_RULEBOOK_DO_NOT_TOUCH_EXAMPLE = "Files or folders that need a 
 export const TEAM_RULEBOOK_SHARED_FILES_EXAMPLE =
   "Files everyone adds to, like a routes list; no overlap warnings for these.";
 
+/** The template's "Code rules" example line; a saved plan's rules replace it. */
+export const TEAM_RULEBOOK_CODE_RULES_EXAMPLE = "The rules a new teammate would get wrong.";
+
 export const TEAM_RULEBOOK_TEMPLATE = `# Project rulebook
 
 Keep this file under ${TEAM_RULEBOOK_MAX_WORDS.toLocaleString("en-US")} words. Every agent on the team reads all of it before its first change, so cut anything that is not a rule.
@@ -114,7 +117,7 @@ One or two sentences.
 
 ## Code rules
 
-- The rules a new teammate would get wrong.
+- ${TEAM_RULEBOOK_CODE_RULES_EXAMPLE}
 
 ## Do not touch
 

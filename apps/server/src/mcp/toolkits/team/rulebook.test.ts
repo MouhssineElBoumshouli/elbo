@@ -6,6 +6,7 @@ import {
   isSharedPath,
   readDoNotTouchSection,
   readSharedFilesSection,
+  replaceCodeRules,
   TEAM_DO_NOT_TOUCH_LIMITS,
 } from "./rulebook.ts";
 
@@ -150,5 +151,28 @@ describe("readCheckSection", () => {
     assert.isUndefined(readCheckSection("## Shared files\n- `a.ts`\n"));
     assert.isUndefined(readCheckSection("## Check\n\n## Next\n`pnpm test`\n"));
     assert.isUndefined(readCheckSection(TEAM_RULEBOOK_TEMPLATE));
+  });
+});
+
+describe("replaceCodeRules", () => {
+  const ours = (item: string) => item.endsWith("(plan)");
+
+  it("swaps only its own lines and keeps the team's", () => {
+    const before = rulebook("## Do not touch\n\n- `infra/`");
+    const once = replaceCodeRules(before, ours, ["Use Django. (plan)"]);
+    const twice = replaceCodeRules(once, ours, ["Use Flask. (plan)"]);
+    assert.include(twice, "- Keep auth code in `src/auth/`.\n- Use Flask. (plan)");
+    assert.notInclude(twice, "Use Django.");
+    assert.include(twice, "## Do not touch");
+    assert.strictEqual(replaceCodeRules(twice, ours, ["Use Flask. (plan)"]), twice);
+  });
+
+  it("replaces the template's example, and adds the section when it is missing", () => {
+    const filled = replaceCodeRules(TEAM_RULEBOOK_TEMPLATE, ours, ["Use Django. (plan)"]);
+    assert.include(filled, "## Code rules\n\n- Use Django. (plan)\n\n## Do not touch");
+    assert.include(
+      replaceCodeRules("# Rules\n", ours, ["Use Django. (plan)"]),
+      "\n\n## Code rules\n\n- Use Django. (plan)\n",
+    );
   });
 });

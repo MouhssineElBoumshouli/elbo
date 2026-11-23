@@ -25,6 +25,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 
 import {
+  TEAM_RULEBOOK_CODE_RULES_EXAMPLE,
   TEAM_RULEBOOK_DO_NOT_TOUCH_EXAMPLE,
   TEAM_RULEBOOK_SHARED_FILES_EXAMPLE,
 } from "../../../team/TeamProjectFiles.ts";
@@ -40,6 +41,7 @@ const HEADING = /^(#{1,6})\s+(.*?)(?:\s+#+)?\s*$/u;
 const DO_NOT_TOUCH_TITLE = /^(?:do not|don't|don’t) touch\b/iu;
 const SHARED_FILES_TITLE = /^shared files\b/iu;
 const CHECK_TITLE = /^check\b/iu;
+const CODE_RULES_TITLE = /^code rules\b/iu;
 const CHECK_COMMAND_CHARACTERS = 300;
 const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+(.*)$/u;
 const FENCE = /^\s*(?:```|~~~)/u;
@@ -156,6 +158,65 @@ const cutCommand = (command: string) => {
   const trimmed = command.trim();
   return trimmed.length === 0 || trimmed.length > CHECK_COMMAND_CHARACTERS ? undefined : trimmed;
 };
+
+/** The "Code rules" items, the template's example left out. */
+export const readCodeRulesSection = (markdown: string): ReadonlyArray<string> =>
+  readSectionItems(markdown, CODE_RULES_TITLE).filter(
+    (item) => item !== TEAM_RULEBOOK_CODE_RULES_EXAMPLE,
+  );
+
+/**
+ * The rulebook with the "Code rules" items `owns` claims replaced by `items`, added after the
+ * section's other items; the template's example goes once there are real rules. A missing section
+ * is added at the end. Wrapped items are not split: each item is one line.
+ */
+export function replaceCodeRules(
+  markdown: string,
+  owns: (item: string) => boolean,
+  items: ReadonlyArray<string>,
+): string {
+  const lines = markdown.split(/\r?\n/u);
+  let start = -1;
+  let end = lines.length;
+  let level = 0;
+  let inFence = false;
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]!;
+    if (FENCE.test(line)) inFence = !inFence;
+    if (inFence) continue;
+    const heading = HEADING.exec(line);
+    if (heading === null) continue;
+    if (start >= 0 && heading[1]!.length <= level) {
+      end = index;
+      break;
+    }
+    if (start < 0 && CODE_RULES_TITLE.test(heading[2]!)) {
+      start = index;
+      level = heading[1]!.length;
+    }
+  }
+  const added = items.map((item) => `- ${item}`);
+  if (start < 0) {
+    if (added.length === 0) return markdown;
+    return `${markdown.replace(/\s*$/u, "")}\n\n## Code rules\n\n${added.join("\n")}\n`;
+  }
+  const dropped = (line: string) => {
+    const item = LIST_ITEM.exec(line)?.[1]?.trim();
+    if (item === undefined) return false;
+    return owns(item) || (added.length > 0 && item === TEAM_RULEBOOK_CODE_RULES_EXAMPLE);
+  };
+  const body = lines.slice(start + 1, end).filter((line) => !dropped(line));
+  const lastItem = body.findLastIndex((line) => LIST_ITEM.test(line));
+  let next = body;
+  if (lastItem >= 0) {
+    next = [...body.slice(0, lastItem + 1), ...added, ...body.slice(lastItem + 1)];
+  } else if (added.length > 0) {
+    // No items left: the rules go under the heading, then any text the section had.
+    const text = body.join("\n").trim();
+    next = ["", ...added, ...(text.length > 0 ? ["", ...text.split("\n")] : []), ""];
+  }
+  return [...lines.slice(0, start + 1), ...next, ...lines.slice(end)].join("\n");
+}
 
 /** Whether `path` is a shared file, or inside a shared folder. */
 export const isSharedPath = (path: string, shared: ReadonlyArray<string>) => {

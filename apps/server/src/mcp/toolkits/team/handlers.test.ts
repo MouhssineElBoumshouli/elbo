@@ -40,6 +40,7 @@ import * as TeamCards from "../../../team/TeamCards.ts";
 import * as TeamChoices from "../../../team/TeamChoices.ts";
 import * as TeamNotes from "../../../team/TeamNotes.ts";
 import * as TeamSetup from "../../../team/setup/TeamSetup.ts"; // team-layer
+import { TeamPlanSave } from "../../../team/planning/planSaveService.ts"; // team-layer
 import * as TeamOrchestrator from "../../../team/teamOrchestrator.testkit.ts";
 import * as TeamService from "../../../team/TeamService.ts";
 import * as GitVcsDriver from "../../../vcs/GitVcsDriver.ts";
@@ -195,6 +196,7 @@ const makeHarness = Effect.fn("makeTeamToolkitHarness")(
         TeamChoices.layer,
         TeamNotes.layer,
         Layer.mock(TeamSetup.TeamSetup)({}), // team-layer
+        Layer.mock(TeamPlanSave)({}), // team-layer
       ).pipe(Layer.provideMerge(dependencies)),
     );
     const teamCards = yield* TeamCards.TeamCards.pipe(Effect.provide(context));

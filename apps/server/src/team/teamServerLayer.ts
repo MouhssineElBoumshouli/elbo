@@ -31,6 +31,7 @@ import { TeamStaleViewLive } from "./TeamStaleView.ts";
 import { TeamWaitLive } from "./TeamWait.ts";
 import * as TeamWarmup from "./TeamWarmup.ts";
 import * as TeamSetup from "./setup/TeamSetup.ts";
+import * as TeamPlanSave from "./planning/planSaveService.ts";
 
 export const layer = Layer.mergeAll(
   TeamBriefingLive,
@@ -52,5 +53,6 @@ export const layer = Layer.mergeAll(
   Layer.provideMerge(TeamNotes.layer),
   Layer.provideMerge(TeamChoices.layer),
   Layer.provideMerge(TeamCards.layer),
+  Layer.provideMerge(TeamPlanSave.layer),
   Layer.provideMerge(GitTeamService.layer),
 );

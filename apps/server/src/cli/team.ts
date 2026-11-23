@@ -76,7 +76,7 @@ const resolveTeamCliConfig = (command: string, baseDir: Option.Option<string>) =
   });
 
 /** The home's identity and Git, as its server sees them. */
-const teamStateLayer = (config: ServerConfig.ServerConfig["Service"]) =>
+export const teamStateLayer = (config: ServerConfig.ServerConfig["Service"]) =>
   Layer.mergeAll(ServerEnvironment.layerIdentity, GitVcsDriver.layer, TeamHost.layer).pipe(
     Layer.provide(VcsProcess.layer),
     Layer.provide(ServerConfig.layer(config)),
