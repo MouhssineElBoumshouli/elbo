@@ -1,4 +1,4 @@
-// team-layer: the size check, the writing-and-review line, and the finished plan (slice 4).
+// team-layer: the size check, the writing-and-review line, and the finished plan (slices 4, 5).
 import type {
   ServerProvider,
   TeamPlanBrief,
@@ -6,6 +6,7 @@ import type {
   TeamPlanSize,
 } from "@t3tools/contracts";
 import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 import ChatMarkdown from "../../ChatMarkdown";
 import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
@@ -88,8 +89,11 @@ export function PlanError(props: {
   );
 }
 
-/** The plan in its plain layout, then the review's scores and what it changed. */
-export function PlanResult(props: { readonly state: TeamPlanRunState }) {
+/** The plan in its plain layout, its decisions, then the review's scores and what it changed. */
+export function PlanResult(props: {
+  readonly state: TeamPlanRunState;
+  readonly decisions: ReactNode;
+}) {
   const view = props.state.view;
   if (view === null) return null;
   const fixed = view.changes.filter((change) => change.outcome === "fixed");
@@ -97,8 +101,9 @@ export function PlanResult(props: { readonly state: TeamPlanRunState }) {
   return (
     <div className="flex flex-col gap-4">
       <article className="rounded-xl border border-border/70 bg-card px-5 py-4">
-        <ChatMarkdown text={view.markdown} cwd={undefined} />
+        <ChatMarkdown text={view.body} cwd={undefined} />
       </article>
+      {props.decisions}
       <section
         className="flex flex-col gap-2 rounded-xl border border-border/70 p-4"
         aria-label="Review"
@@ -131,7 +136,9 @@ export function PlanResult(props: { readonly state: TeamPlanRunState }) {
         ) : null}
         {view.nits > 0 ? (
           <p className="text-xs text-muted-foreground">
-            {view.nits === 1 ? "1 small remark" : `${view.nits} small remarks`} left as they are.
+            {view.nits === 1
+              ? "1 small remark left as it is."
+              : `${view.nits} small remarks left as they are.`}
           </p>
         ) : null}
       </section>

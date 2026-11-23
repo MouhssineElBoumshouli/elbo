@@ -1,6 +1,6 @@
 # Planning feature: design
 
-Status: method, eval, saving and the first screens built (slices 1 to 4). Rewritten 2026-11-23 for "one writer and a review from a different AI", which replaced the expert panel after two blind rounds where a plain chat beat it 7 of 7 at about 15 times the tokens.
+Status: method, eval, saving, the first screens and the challenge loop built (slices 1 to 5). Rewritten 2026-11-23 for "one writer and a review from a different AI", which replaced the expert panel after two blind rounds where a plain chat beat it 7 of 7 at about 15 times the tokens.
 Worked example: [PLANNING_EXAMPLE_ATTENDANCE.md](PLANNING_EXAMPLE_ATTENDANCE.md). Mockups: `test-screenshots`, `2026-11-22-planning-mockups/` (drawn for the panel; the screens still apply, minus the panel rows). Code: `apps/server/src/team/planning/`.
 
 ## 1. What it is
@@ -52,7 +52,7 @@ Code enforces the limits: decisions past the limit become one-line "smaller choi
 3. **Size check.** "This looks like a medium project: 3 people, 6 weeks." Change it with one tap.
 4. **Writing and review** (a short progress line, no panel): "Codex is writing the plan", "Claude is reviewing it", "Codex is fixing 2 points". You can stop at any time.
 5. **The plan.** One page in the writer's plain layout, the decisions as a short list at the end, and the review's score with what changed.
-6. **Deciding.** On a decision: **Agree**, **Pick another option**, or **Push back**. A push-back gets the writer's answer, defend or change, kept under "How we got here".
+6. **Deciding.** On a decision: **Agree**, **Pick another option**, or **Push back**. A push-back gets the writer's answer, defend or change, kept under "How we got here". A pick also gets one writer turn, so the plan follows it; against the advice, the decision says so and keeps a risk line. The plan saves only when no decision is left open.
 7. **Accept.** "Save the plan" shows what will be written (files and tasks) before writing (section 7).
 8. **Afterwards.** The plan lives on **Team home** (team) or **Today** (solo): a progress line, the plan, and "Change the plan". The plan is also a normal file in the repo.
 
@@ -65,7 +65,7 @@ Elbo does not train or host models. The plan runs on your own Claude and Codex l
 3. **Review.** One turn on the reviewer, read-only, with the brief, the plan and its task list.
 4. **Fix.** The writer fixes blockers and shoulds or declines one with a reason; code adds its own shoulds (over the word limit, lines about the planning instead of the project). Nits are kept, not acted on.
 5. **Again only if needed.** A new review runs only after a fixed blocker, and checks only the open points and what changed. At most 3 rounds; it stops when only nits are left.
-6. **Your turn.** Push-backs go to the writer with the brief, the decision and your message.
+6. **Your turn.** A push-back or a pick is one writer turn with the brief, the decision, your message, and only the plan parts and tasks that mention the decision (its rare words: "SQLite" counts, "class" in an attendance plan does not). Only those parts can change (`planChallenge.ts`).
 
 The steps are pure code with the model turn injected, so the rules are tested without a provider (`planMethod.ts`, `planReview.ts`).
 
@@ -87,9 +87,10 @@ No checklist files: the review prompt asks for what would really hurt the team. 
 
 ## 7. How it plugs into what Elbo has
 
-- **Decisions → rulebook and shared memory.** Each accepted decision becomes a file in `.team/decisions/` (the rulebook's format) with `options`, `decided_by` and `status` (`active`, or `replaced by NNNN`). Decisions agents must follow (stack, "no secrets in the repo") also become short lines in `.team/rulebook.md` under "Code rules".
+- **Decisions → rulebook and shared memory.** Each accepted decision becomes a file in `.team/decisions/` (the rulebook's format) with `options`, `decided_by` and `status` (`active`, or `replaced by NNNN`), and its "How we got here". Decisions agents must follow (stack, "no secrets in the repo") also become short lines in `.team/rulebook.md` under "Code rules".
+- **Earlier decisions.** "Plan the next part" keeps earlier decisions and their code rules active; only a decision the new plan changes is replaced. The save preview lists the earlier ones that stay. Replacing the whole plan (slice 7) marks the ones it drops as replaced.
 - **The plan file.** `.team/plan.md`, reviewed through normal commits and pull requests.
-- **Tasks → team tasks.** Each plan task becomes a team task with its owner and area as `paths`, in the plan's order.
+- **Tasks → team tasks.** Each plan task becomes a team task with its owner, in the plan's order. Only the code folders it changes become `paths`; planning, testing and talks get none, so they never raise an overlap warning.
 - **Work split by area → fewer clashes.** Each person gets whole areas where possible, so claims rarely overlap.
 - **Teammates comment and vote through Notes.** Each decision opens a Note thread; Notes gain replies and a vote per member. Votes are input; the decider decides.
 - **Living plan.** "Where we are" comes from task status, never from the AI. **Change the plan** takes a sentence ("Sara left the team"), rewrites only what changes and shows it before saving. When an agent's work contradicts an active decision, the turn note says so once.
@@ -113,7 +114,7 @@ No checklist files: the review prompt asks for what would really hurt the team. 
 2. **Eval.** Done; run after each method change.
 3. **Files.** Done: `.team/plan.md`, decision files, rulebook lines, team tasks, previewed before writing. Agents use `team_save_plan`; the runner takes `--save-to <folder> [--dry-run]`. Saving again changes nothing; a changed decision gets a new file and the old one says "replaced by NNNN".
 4. **Questions and plan page.** Done: New project offers "Plan it first", Ctrl+K "Plan the next part", the questions, size check, a progress line with Stop, the plan page with the review, and saving after a preview. The writer and reviewer follow the connected AIs.
-5. **Challenge loop.** Push back, defend or change, "How we got here", pick another option.
+5. **Challenge loop.** Done: Agree, Pick another option and Push back on each decision, defend or change with only the affected parts rewritten, "How we got here" in the decision files, "chosen against advice" with its risk, and saving only once every decision is settled.
 6. **Team.** Note replies and votes, a decider.
 7. **Living plan.** Plan section on Team home / Today, "Change the plan", the turn-note check.
 

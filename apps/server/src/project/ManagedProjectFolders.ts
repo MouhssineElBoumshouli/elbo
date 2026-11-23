@@ -27,6 +27,8 @@ import * as GitWorkflow from "../git/GitWorkflowService.ts";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as ProjectService from "./ProjectService.ts";
 import { TEAM_IDENTITY } from "@t3tools/shared/teamIdentity"; // team-layer
+import * as HostProcess from "@t3tools/shared/HostProcess"; // team-layer
+import { chosenProjectsParent } from "../team/newProjectFolder.ts"; // team-layer
 
 export class ScratchUnavailableError extends Schema.TaggedError<ScratchUnavailableError>()(
   "ScratchUnavailableError",
@@ -122,7 +124,10 @@ export class ManagedProjectFolders extends Context.Service<
     }) => Effect.Effect<Option.Option<string>, ScratchFolderError>;
     readonly namedProjectsRoot: string;
     /** Removes failed/cancelled creations' folders only while no project owns them. */
-    readonly createNamedProject: (input: { readonly name: string }) => Effect.Effect<
+    readonly createNamedProject: (input: {
+      readonly name: string;
+      readonly parentFolder?: string; // team-layer: the folder the person chose
+    }) => Effect.Effect<
       {
         readonly projectId: ProjectId;
         readonly workspaceRoot: string;
@@ -395,32 +400,24 @@ const make = Effect.gen(function* () {
 
   const claimNamedFolder = Effect.fn("ManagedProjectFolders.claimNamedFolder")(function* (
     name: string,
+    root: string, // team-layer: the chosen parent folder
   ) {
     yield* fileSystem
-      .makeDirectory(namedProjectsRoot, { recursive: true })
-      .pipe(
-        Effect.mapError(
-          (cause) => new NamedProjectFolderError({ folder: namedProjectsRoot, cause }),
-        ),
-      );
+      .makeDirectory(root, { recursive: true })
+      .pipe(Effect.mapError((cause) => new NamedProjectFolderError({ folder: root, cause })));
     const folderName = newProjectFolderName(name);
     const claimed = yield* claimFreeFolder(
       (attempt) =>
         Effect.succeed(
           attempt > MAX_NAMED_FOLDER_ATTEMPTS
             ? Option.none()
-            : Option.some(
-                path.join(
-                  namedProjectsRoot,
-                  attempt === 1 ? folderName : `${folderName}-${attempt}`,
-                ),
-              ),
+            : Option.some(path.join(root, attempt === 1 ? folderName : `${folderName}-${attempt}`)),
         ),
       (folder, cause) => new NamedProjectFolderError({ folder, cause }),
     );
     if (Option.isSome(claimed)) return claimed.value;
     return yield* new NamedProjectFolderError({
-      folder: path.join(namedProjectsRoot, folderName),
+      folder: path.join(root, folderName),
       cause: `Every folder name for "${folderName}" is taken.`,
     });
   });
@@ -472,7 +469,18 @@ const make = Effect.gen(function* () {
   const createNamedProject: ManagedProjectFolders["Service"]["createNamedProject"] = Effect.fn(
     "ManagedProjectFolders.createNamedProject",
   )(function* (input) {
-    const workspaceRoot = yield* claimNamedFolder(input.name);
+    // team-layer: a chosen folder ("~" for home), else the data folder as upstream.
+    const root =
+      input.parentFolder === undefined
+        ? namedProjectsRoot
+        : chosenProjectsParent(input.parentFolder, yield* HostProcess.HomeDirectory, path);
+    if (root === null) {
+      return yield* new NamedProjectFolderError({
+        folder: input.parentFolder ?? "",
+        cause: "Choose a full folder path, like ~/Elbo projects.",
+      });
+    }
+    const workspaceRoot = yield* claimNamedFolder(input.name, root);
     const removeFolder = fileSystem.remove(workspaceRoot, { recursive: true }).pipe(Effect.ignore);
     const prepared = yield* Effect.all([
       scaffoldRepository(workspaceRoot, input.name).pipe(

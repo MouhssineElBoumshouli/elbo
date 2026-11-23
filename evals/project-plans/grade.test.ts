@@ -58,7 +58,14 @@ describe("pushedBack", () => {
 
 describe("plan structure", () => {
   it("names tasks without exactly one owner from the brief or without an area", () => {
-    const task = { title: "List page", owner: "Ana", hours: 4, area: "app/", when: "Week 1" };
+    const task = {
+      title: "List page",
+      owner: "Ana",
+      hours: 4,
+      area: "app/",
+      folders: ["app/"],
+      when: "Week 1",
+    };
     const tasks = [
       task,
       { ...task, title: "Pitch", owner: "all" },

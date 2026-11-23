@@ -114,7 +114,11 @@ describe("a run's steps and result", () => {
       stopReason: "Stopped after round 1: no blocker was fixed, so no new review.",
       wordsBeforeShorten: 0,
     });
-    assert.include(view.markdown, "## Decisions");
+    assert.notInclude(view.body, "## Decisions");
+    assert.deepStrictEqual(
+      view.decisions.map((item) => [item.number, item.title, item.status]),
+      [["0001", "Front end", "open"]],
+    );
     assert.deepStrictEqual(view.scores, [8]);
     assert.deepStrictEqual(
       view.changes.map((change) => [change.point, change.outcome]),

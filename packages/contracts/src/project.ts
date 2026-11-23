@@ -532,6 +532,8 @@ export type ProjectEnsureScratchResult = typeof ProjectEnsureScratchResult.Type;
 
 export const ProjectCreateNewInput = Schema.Struct({
   name: TrimmedNonEmptyString.check(Schema.isMaxLength(200)),
+  // team-layer: the folder the new project goes in ("~" for home); the server's data folder when absent.
+  parentFolder: Schema.optionalKey(TrimmedNonEmptyString.check(Schema.isMaxLength(1000))),
 });
 export type ProjectCreateNewInput = typeof ProjectCreateNewInput.Type;
 

@@ -84,12 +84,49 @@ export const TeamPlanChange = Schema.Struct({
 });
 export type TeamPlanChange = typeof TeamPlanChange.Type;
 
+/** "open" until the person agrees, gets an answer to a push-back, or picks against the advice. */
+export const TeamPlanDecisionStatus = Schema.Literals([
+  "open",
+  "agreed",
+  "answered",
+  "against-advice",
+]);
+export type TeamPlanDecisionStatus = typeof TeamPlanDecisionStatus.Type;
+
+/** One line of "How we got here". */
+export const TeamPlanDecisionStep = Schema.Struct({
+  kind: Schema.Literals(["pushed-back", "defended", "changed", "picked"]),
+  by: Schema.String,
+  text: Schema.String,
+  /** The plan parts and tasks the answer rewrote, by name. */
+  updated: Schema.Array(Schema.String),
+});
+export type TeamPlanDecisionStep = typeof TeamPlanDecisionStep.Type;
+
+export const TeamPlanDecision = Schema.Struct({
+  number: Schema.String,
+  title: Schema.String,
+  picked: Schema.String,
+  options: Schema.Array(Schema.String),
+  why: Schema.String,
+  rule: Schema.String,
+  /** False for a "smaller choice" past the size's decision limit. */
+  main: Schema.Boolean,
+  status: TeamPlanDecisionStatus,
+  /** The writer's pick when the person chose against it; "" otherwise. */
+  advice: Schema.String,
+  risk: Schema.String,
+  history: Schema.Array(TeamPlanDecisionStep),
+});
+export type TeamPlanDecision = typeof TeamPlanDecision.Type;
+
 /** A finished plan as the plan page shows it. */
 export const TeamPlanView = Schema.Struct({
   title: Schema.String,
   size: TeamPlanSize,
-  /** The plan the team reads, with its decisions as a short list at the end. */
-  markdown: Schema.String,
+  /** The writer's plan text; the page shows the decisions after it. */
+  body: Schema.String,
+  decisions: Schema.Array(TeamPlanDecision),
   words: Schema.Number,
   scores: Schema.Array(Schema.Number),
   changes: Schema.Array(TeamPlanChange),
@@ -121,6 +158,12 @@ export const TeamPlanRunState = Schema.Struct({
   sameProvider: Schema.Boolean,
   view: Schema.NullOr(TeamPlanView),
   error: Schema.NullOr(TeamPlanRunError),
+  /** The decision the writer is answering now, after a push-back or a pick. */
+  answering: Schema.NullOr(
+    Schema.Struct({ number: Schema.String, kind: Schema.Literals(["push-back", "pick"]) }),
+  ),
+  /** Goes up on every change, so a client keeps the newest of two copies. */
+  version: Schema.Number,
 });
 export type TeamPlanRunState = typeof TeamPlanRunState.Type;
 
@@ -148,9 +191,25 @@ export const TeamPlanSavePreview = Schema.Struct({
     removed: Schema.Array(Schema.String),
   }),
   tasks: Schema.Array(TeamPlanSaveTask),
+  /** Decisions from an earlier plan that this one doesn't have; they stay active. */
+  kept: Schema.Array(Schema.Struct({ number: Schema.String, title: Schema.String })),
   saved: Schema.Boolean,
 });
 export type TeamPlanSavePreview = typeof TeamPlanSavePreview.Type;
+
+export const TeamPlanDecideInput = Schema.Struct({
+  runId: Schema.String,
+  number: Schema.String,
+  ask: Schema.Union([
+    Schema.Struct({ kind: Schema.Literal("agree") }),
+    Schema.Struct({ kind: Schema.Literal("pick"), option: Schema.String }),
+    Schema.Struct({
+      kind: Schema.Literal("push-back"),
+      message: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(2000)),
+    }),
+  ]),
+});
+export type TeamPlanDecideInput = typeof TeamPlanDecideInput.Type;
 
 export class TeamPlanningError extends Schema.TaggedError<TeamPlanningError>()(
   "TeamPlanningError",

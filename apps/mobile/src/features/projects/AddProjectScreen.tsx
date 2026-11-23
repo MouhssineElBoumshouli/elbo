@@ -1180,7 +1180,11 @@ export function AddProjectNewScreen(props: { readonly environmentId?: string | s
     setIsSubmitting(true);
     const result = await createNew({
       environmentId: environment.environmentId,
-      input: { name: trimmedName },
+      input: {
+        name: trimmedName,
+        // team-layer: the folder the preview shows, not the server's data folder.
+        ...(environment.newProjectsRoot ? { parentFolder: environment.newProjectsRoot } : {}),
+      },
     });
     if (AsyncResult.isFailure(result)) {
       submittingRef.current = false;

@@ -26,13 +26,36 @@ const planWith = (decisions: PlanResult["plan"]["decisions"]): PlanResult => {
   const plan = written("## Steps\n\nWeek 1: list page.", {
     decisions,
     tasks: [
-      { title: "Build the list page", owner: "Sara", hours: 4, area: "app/web/", when: "Week 1" },
-      { title: "Write the pitch", owner: "Yassine", hours: 2, area: "Pitch", when: "Week 2" },
+      {
+        title: "Build the list page",
+        owner: "Sara",
+        hours: 4,
+        area: "List page",
+        folders: ["app/web/"],
+        when: "Week 1",
+      },
+      {
+        title: "Write the pitch",
+        owner: "Yassine",
+        hours: 2,
+        area: "Pitch",
+        folders: [],
+        when: "Week 2",
+      },
       {
         title: "Deploy",
         owner: "Sara",
         hours: 3,
-        area: "deployment/, app/, Hosting",
+        area: "Hosting",
+        folders: ["deployment/", "app/", "./"],
+        when: "Week 3",
+      },
+      {
+        title: "Test on the school Wi-Fi",
+        owner: "Sara",
+        hours: 1,
+        area: "planning/acceptance",
+        folders: ["school Wi-Fi"],
         when: "Week 3",
       },
     ],
@@ -147,7 +170,13 @@ describe("previewPlanSave", () => {
         task.note,
       ]),
       [
-        ["create", "Build the list page", "sara", ["app/web"], "From the plan · Week 1 · 4 h"],
+        [
+          "create",
+          "Build the list page",
+          "sara",
+          ["app/web"],
+          "From the plan · Week 1 · 4 h · List page",
+        ],
         [
           "create",
           "Write the pitch",
@@ -162,8 +191,83 @@ describe("previewPlanSave", () => {
           ["deployment", "app"],
           "From the plan · Week 3 · 3 h · Hosting",
         ],
+        // Not code work: no paths, so it can never raise an overlap warning.
+        [
+          "create",
+          "Test on the school Wi-Fi",
+          "sara",
+          [],
+          "From the plan · Week 3 · 1 h · planning/acceptance",
+        ],
       ],
     );
+  });
+
+  it("leaves the rulebook out when the plan has no code rules", () => {
+    const preview = previewPlanSave(inputFor(empty, planWith([storage])));
+    assert.deepStrictEqual(
+      preview.files.map((file) => file.path),
+      [".team/plan.md", ".team/decisions/0002-storage.md"],
+    );
+    assert.deepStrictEqual(preview.rules, { added: [], removed: [] });
+  });
+
+  it("keeps earlier decisions and their rules active when the next part is planned", () => {
+    const saved = apply(empty, previewPlanSave(inputFor(empty, planWith([stack, storage]))));
+    const next = previewPlanSave(inputFor(saved, planWith([decision("Front end")])));
+    assert.deepStrictEqual(
+      next.files.map((file) => [file.path, file.status]),
+      [
+        [".team/plan.md", "changed"],
+        [".team/decisions/0004-front-end.md", "new"],
+      ],
+    );
+    assert.deepStrictEqual(next.kept, [
+      { number: "0002", title: "Server" },
+      { number: "0003", title: "Storage" },
+    ]);
+    assert.deepStrictEqual(next.rules, { added: [], removed: [] });
+  });
+
+  it("writes how we got here, in place when only the history grew", () => {
+    const plan = planWith([stack, storage]);
+    const saved = apply(empty, previewPlanSave(inputFor(empty, plan)));
+    const defended = {
+      ...plan.decisions[0]!,
+      status: "answered" as const,
+      history: [
+        { kind: "pushed-back" as const, by: "Sara", text: "Why not Flask?", updated: [] },
+        {
+          kind: "defended" as const,
+          by: "Codex",
+          text: "Django's admin saves a week.",
+          updated: [],
+        },
+      ],
+    };
+    const again = previewPlanSave(
+      inputFor(saved, { ...plan, decisions: [defended, plan.decisions[1]!] }),
+    );
+    const server = again.files.find((file) => file.path === ".team/decisions/0002-server.md")!;
+    assert.strictEqual(server.detail, "adds how we got here");
+    assert.include(server.content, "## How we got here");
+    assert.include(server.content, "- **Codex defended:** Django's admin saves a week.");
+    assert.include(server.content, "date: 2026-11-23\nfiles: []\ncommit: def");
+
+    const against = {
+      ...plan.decisions[0]!,
+      decision: { ...stack, picked: "Flask", rule: "" },
+      status: "against-advice" as const,
+      advice: "Django",
+      risk: "Flask needs its own login code.",
+    };
+    const picked = previewPlanSave(
+      inputFor(saved, { ...plan, decisions: [against, plan.decisions[1]!] }),
+    );
+    const flask = picked.files.find((file) => file.path === ".team/decisions/0004-server.md")!;
+    assert.include(flask.content, "decided_by: Sara El Amrani, against the advice");
+    assert.include(flask.content, "Chosen against advice: the plan advised Django.");
+    assert.include(picked.files[0]!.content, "Chosen against advice (the plan advised Django)");
   });
 
   it("changes nothing when the same plan is saved again", () => {
@@ -172,12 +276,12 @@ describe("previewPlanSave", () => {
     const again = previewPlanSave(inputFor(saved, plan));
     assert.deepStrictEqual(
       again.files.map((file) => file.status),
-      ["unchanged", "unchanged", "unchanged", "unchanged"],
+      ["unchanged", "unchanged", "unchanged"],
     );
     assert.deepStrictEqual(again.rules, { added: [], removed: [] });
     assert.deepStrictEqual(
       again.tasks.map((task) => task.action),
-      ["keep", "keep", "keep"],
+      ["keep", "keep", "keep", "keep"],
     );
   });
 

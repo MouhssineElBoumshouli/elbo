@@ -1,3 +1,4 @@
+import { historyLine } from "./planSaveDecisions.ts";
 import type { DecisionRecord, PlanResult, WrittenPlan } from "./planSchemas.ts";
 
 const cell = (text: string) => text.replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ");
@@ -12,9 +13,14 @@ function heading(markdown: string, text: string): string {
   return text;
 }
 
-function decisionLine({ decision }: DecisionRecord): string {
+function decisionLine({ decision, status, advice, risk }: DecisionRecord): string {
   const others = decision.options.filter((option) => option !== decision.picked);
-  return `**${decision.title}:** ${decision.picked}${others.length > 0 ? ` (also looked at: ${others.join(", ")})` : ""}. ${decision.why}`;
+  // The risk stays in the plan when the team chose against the advice.
+  const against =
+    status === "against-advice"
+      ? ` Chosen against advice (the plan advised ${advice}): ${risk}`
+      : "";
+  return `**${decision.title}:** ${decision.picked}${others.length > 0 ? ` (also looked at: ${others.join(", ")})` : ""}. ${decision.why}${against}`;
 }
 
 /** The plan the team reads: the writer's text, then the decisions as a short list. */
@@ -47,7 +53,10 @@ export function renderDecisionLog(result: PlanResult): string {
       `Picked: ${record.decision.picked}. Looked at: ${record.decision.options.join(", ")}.`,
       `Why: ${record.decision.why}`,
       ...(record.decision.rule ? [`Rule for agents: ${record.decision.rule}`] : []),
-      ...record.history.map((line) => `- ${line}`),
+      ...(record.status === "against-advice"
+        ? [`Chosen against advice: the plan advised ${record.advice}. Risk: ${record.risk}`]
+        : []),
+      ...record.history.map(historyLine),
     ].join("\n\n"),
   );
   const rounds = table(

@@ -4,7 +4,6 @@ import { decision, problem, teamBrief, words } from "./planFixtures.testkit.ts";
 import { writerPrompt } from "./planPrompts.ts";
 import { overWordLimit, suggestSize } from "./planLimits.ts";
 import { withoutApiKeys } from "./planProvider.ts";
-import { applyPushBack } from "./planPushBack.ts";
 import { checkProblems, logAnswers, numberDecisions, pickReviewer, toFix } from "./planReview.ts";
 import { methodTalk } from "./planWords.ts";
 import { claudeUsage, codexUsage } from "./providerUsage.ts";
@@ -113,33 +112,6 @@ describe("methodTalk", () => {
       "The architect's draft picked Firebase.",
       "Other experts agreed on polling.",
     ]);
-  });
-});
-
-describe("push-back", () => {
-  const record = { number: "0001", decision: decision("Front end"), main: true, history: [] };
-
-  it("a defended decision stays and the exchange is kept", () => {
-    const kept = applyPushBack(record, "Adam", "I know React.", {
-      verdict: "defend",
-      answer: "Still best.",
-      decision: decision("Front end", "React"),
-    });
-    assert.strictEqual(kept.decision.picked, "Plain pages");
-    assert.deepStrictEqual(kept.history, [
-      `Adam pushed back: "I know React."`,
-      "Kept: Still best.",
-    ]);
-  });
-
-  it("a changed decision takes the new pick", () => {
-    const changed = applyPushBack(record, "Sara", "None of us can learn it in time.", {
-      verdict: "change",
-      answer: "Fair.",
-      decision: decision("Front end", "React"),
-    });
-    assert.strictEqual(changed.decision.picked, "React");
-    assert.strictEqual(changed.history[1], "Changed: Fair.");
   });
 });
 

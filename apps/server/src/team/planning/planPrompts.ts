@@ -1,7 +1,7 @@
 import { briefText, type PlanBrief } from "./planBrief.ts";
 import { PLAN_LIMITS, type PlanSize, SHORT_DEADLINE_DAYS } from "./planLimits.ts";
 import type { ToFix } from "./planReview.ts";
-import type { Decision, LogEntry, WrittenPlan } from "./planSchemas.ts";
+import type { Decision, LogEntry, PlanTask, WrittenPlan } from "./planSchemas.ts";
 
 const RULES = `- Write it like you'd explain it to a classmate: short sentences, everyday words. For example: "We keep everything in one small database file, because nobody on the team has run a database server before." Explain a technical word the first time you use it.
 - Fit everything to this team: name people and their skills, the hours, the budget and the outside rules.
@@ -23,7 +23,7 @@ const shape = (input: PlanBrief, size: PlanSize) => {
 - title: the project's name in a few words.
 - plan: the plan in Markdown, the way you'd answer "make me a project plan for this" in a chat: a short opening, then short sections with plain titles. It must have: the steps with who does what and when (${schedule(input)}); for each must-have, how the team knows it is done; what to cut first if time runs out; and your push-back on any bad idea in the brief. Under ${limits.words} words. No list or table of decisions: the app adds the decisions at the end.
 - decisions: at most ${limits.decisions} real choices that matter to this team: what you picked, every option you looked at (the picked one included), and why in a sentence or two. rule: one short line, only when an AI writing the code could break this decision without noticing (for example "Use Django for the server." or "Never put secrets in the repo."). Most decisions have none: leave it "" for hosting, schedules, testing, who does what, and anything people do rather than code.
-- tasks: every task in the plan. owner is exactly one of: ${people(input)}. hours is your estimate, area the folder or part of the work it touches, when its slot in the schedule. The hours must fit the team's time with room to spare.
+- tasks: every task in the plan. owner is exactly one of: ${people(input)}. hours is your estimate, area the part of the work in a few words, folders the code folders it changes (for example "app/attendance/"), when its slot in the schedule. folders is [] for work that is not code: planning, testing, design, talks with people, hosting set-up. The hours must fit the team's time with room to spare.
 - doneChecks, pushBacks and cutFirst: the same as in the plan text, as data.`;
 };
 
@@ -47,7 +47,10 @@ const ledger = (log: ReadonlyArray<LogEntry>) =>
 
 const taskList = (written: WrittenPlan) =>
   written.tasks
-    .map((task) => `- ${task.when}: ${task.title} (${task.owner}, ${task.hours} h, ${task.area})`)
+    .map(
+      (task) =>
+        `- ${task.when}: ${task.title} (${task.owner}, ${task.hours} h, ${task.area}${task.folders.length > 0 ? `; ${task.folders.join(", ")}` : ""})`,
+    )
     .join("\n");
 
 export function reviewPrompt(input: {
@@ -133,25 +136,54 @@ Return the same JSON fields with the same meaning. Only "plan" gets shorter; kee
 ${JSON.stringify(input.written)}`;
 }
 
-export function pushBackPrompt(input: {
+const numbered = <T>(items: ReadonlyArray<{ readonly index: number; readonly value: T }>) =>
+  items.length === 0
+    ? "(none)"
+    : items.map(({ index, value }) => `[${index}] ${JSON.stringify(value)}`).join("\n");
+
+/**
+ * One writer turn on one decision: a push-back to answer, or another option the person picked.
+ * It carries the decision, only the plan parts and tasks that use it, and the brief.
+ */
+export function answerPrompt(input: {
   readonly brief: PlanBrief;
   readonly decision: Decision;
-  readonly message: string;
+  readonly parts: ReadonlyArray<{ readonly index: number; readonly value: string }>;
+  readonly tasks: ReadonlyArray<{ readonly index: number; readonly value: PlanTask }>;
+  readonly ask:
+    | { readonly kind: "push-back"; readonly message: string }
+    | { readonly kind: "pick"; readonly option: string };
 }): string {
-  return `You wrote a project plan for this team, and they pushed back on one of its decisions. Answer it.
+  const task =
+    input.ask.kind === "push-back"
+      ? `You wrote a project plan for this team, and they pushed back on one of its decisions. Answer it.
 
 ${RULES}
-- verdict "defend": the reason does not change the best choice for this team. Explain why with reasons that fit their situation, not by insisting. Return the decision unchanged.
-- verdict "change": the reason is good. Return the decision with the new pick and an updated "why".
-"answer" is two or three sentences, addressed to the team.
+- verdict "defend": the reason does not change the best choice for this team. Explain why with reasons that fit their situation, not by insisting. Return the decision unchanged, and no parts or tasks.
+- verdict "change": the reason is good. Return the decision with the new pick and an updated "why", and rewrite the parts and tasks below that no longer fit.
+- risk: "".`
+      : `You wrote a project plan for this team. They picked "${input.ask.option}" for one decision instead of your pick. It is their call: keep it.
+
+${RULES}
+- verdict "change". Return the decision with "${input.ask.option}" picked and a "why" that says why the team chose it.
+- Rewrite the parts and tasks below that no longer fit the new pick.
+- risk: one sentence on what could go wrong with their pick for this team, and how to watch for it.`;
+  return `${task}
+- "answer" is two or three sentences, addressed to the team.
+- parts and tasks: only the ones you changed, each with its [index] and the whole new text or task. Keep each part's Markdown style and about its length.
+- rule: one short line only when an AI writing the code could break the decision without noticing; otherwise "".
 
 ${brief(input.brief)}
 
 ## The decision
 ${JSON.stringify(input.decision)}
 
-## The push-back
-${input.message}`;
+## Plan parts that use it
+${numbered(input.parts)}
+
+## Tasks that use it
+${numbered(input.tasks)}
+${input.ask.kind === "push-back" ? `\n## The push-back\n${input.ask.message}` : ""}`;
 }
 
 /** What a plain chat gets for the eval's baseline: the same brief, no method. @public */

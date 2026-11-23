@@ -1,4 +1,5 @@
 import * as Schema from "effect/Schema";
+import { TeamPlanDecisionStatus, TeamPlanDecisionStep } from "@t3tools/contracts";
 
 import { PlanSize } from "./planLimits.ts";
 
@@ -20,6 +21,8 @@ export const PlanTask = Schema.Struct({
   owner: Schema.String,
   hours: Schema.Number,
   area: Schema.String,
+  /** The code folders the task changes; empty for work that is not code (planning, testing, talks). */
+  folders: Schema.Array(Schema.String),
   /** "Week 2", "Saturday", "Hours 0-4": the slot in the plan's schedule. */
   when: Schema.String,
 });
@@ -96,7 +99,14 @@ export const DecisionRecord = Schema.Struct({
   decision: Decision,
   /** False for a "smaller choice" past the size's decision limit. */
   main: Schema.Boolean,
-  history: Schema.Array(Schema.String),
+  /** "open" until the person agrees, gets an answer to a push-back, or picks against the advice. */
+  status: TeamPlanDecisionStatus,
+  /** How we got here: push-backs, answers and picks, oldest first. */
+  history: Schema.Array(TeamPlanDecisionStep),
+  /** The writer's pick when the person chose another option against it; "" otherwise. */
+  advice: Schema.String,
+  /** What could go wrong with the person's pick, kept in the plan; "" unless against the advice. */
+  risk: Schema.String,
 });
 export type DecisionRecord = typeof DecisionRecord.Type;
 
@@ -121,5 +131,10 @@ export const PushBackReply = Schema.Struct({
   verdict: Schema.Literals(["defend", "change"]),
   answer: Schema.String,
   decision: Decision,
+  /** On "change": the plan parts it was sent, rewritten; parts that need no change are left out. */
+  parts: Schema.Array(Schema.Struct({ index: Schema.Number, text: Schema.String })),
+  tasks: Schema.Array(Schema.Struct({ index: Schema.Number, task: PlanTask })),
+  /** On a pick against the advice: one line on what could go wrong with it. */
+  risk: Schema.String,
 });
 export type PushBackReply = typeof PushBackReply.Type;

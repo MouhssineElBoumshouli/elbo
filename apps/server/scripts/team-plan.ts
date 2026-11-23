@@ -44,7 +44,7 @@ import {
   makeProviderAsk,
   signedInProviders,
 } from "../src/team/planning/planProvider.ts";
-import { pushBack } from "../src/team/planning/planPushBack.ts";
+import { answerDecision } from "../src/team/planning/planPushBack.ts";
 import { pickReviewer } from "../src/team/planning/planReview.ts";
 import { DEV_HOME, saveToProject } from "./teamPlanSave.ts";
 
@@ -117,19 +117,16 @@ const program = Effect.gen(function* () {
         detail: `Pass --message, and a decision number from plan.json (${number} not found).`,
       });
     }
-    const answered = yield* pushBack({
+    const answered = yield* answerDecision({
       brief,
-      record,
-      message: values.message,
+      result: earlier,
+      number,
+      ask: { kind: "push-back", message: values.message },
       by: values.by,
-      ask: write.ask,
+      writer: `${writer} ${writerModel}`,
+      askWriter: write.ask,
     });
-    const plan = {
-      ...earlier,
-      decisions: earlier.decisions.map((candidate) =>
-        candidate.number === number ? answered : candidate,
-      ),
-    };
+    const plan = answered.result;
     const summary = yield* writePlanFiles({
       outDir,
       plan,

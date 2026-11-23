@@ -1,11 +1,14 @@
-// team-layer: the planning page (team/PLANNING_FEATURE_PLAN.md section 4, slice 4): "What are you
-// making?", the questions, the size check, writing and review, the plan, and saving it.
+// team-layer: the planning page (team/PLANNING_FEATURE_PLAN.md section 4, slices 4 and 5): "What are
+// you making?", the questions, the size check, writing and review, the plan and its decisions, and
+// saving it.
 import { useAtomValue } from "@effect/atom-react";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type {
   EnvironmentId,
   ProjectId,
+  TeamPlanDecideInput,
+  TeamPlanRunState,
   TeamPlanSavePreview,
   TeamPlanSize,
 } from "@t3tools/contracts";
@@ -34,6 +37,8 @@ import {
   progressText,
   suggestedSize,
 } from "./planAnswers.logic";
+import { PlanDecisions } from "./PlanDecisions";
+import { newestState, saveBlocked } from "./planDecisions.logic";
 import { PlanQuestions } from "./PlanQuestions";
 import { PlanSaveDialog } from "./PlanSaveDialog";
 import { PlanError, PlanProgress, PlanResult, PlanSizeCheck } from "./PlanSteps";
@@ -91,11 +96,16 @@ export function PlanPage(props: {
   const stop = useAtomCommand(teamPlanning.stop, { reportFailure: false });
   const previewSave = useAtomCommand(teamPlanning.previewSave, { reportFailure: false });
   const save = useAtomCommand(teamPlanning.save, { reportFailure: false });
-  const run = useEnvironmentQuery(
+  const decide = useAtomCommand(teamPlanning.decide, { reportFailure: false });
+  const [decided, setDecided] = useState<TeamPlanRunState | null>(null);
+  const [pending, setPending] = useState<TeamPlanRunState["answering"]>(null);
+  const query = useEnvironmentQuery(
     props.runId === undefined
       ? null
       : teamPlanning.run({ environmentId: props.environmentId, input: { runId: props.runId } }),
-  ).data;
+  );
+  const streamed = query.data;
+  const run = props.runId === undefined ? null : newestState(streamed, decided);
   const providers = useAtomValue(serverEnvironment.providersValueAtom(props.environmentId));
 
   const toRun = (runId: string | undefined) =>
@@ -171,7 +181,32 @@ export function PlanPage(props: {
     setPreview(result.value);
   };
 
+  const onDecide = async (number: string, ask: TeamPlanDecideInput["ask"]) => {
+    if (props.runId === undefined) return false;
+    // The run's stream has ended once the plan is done; this shows the turn until it answers.
+    if (ask.kind !== "agree") setPending({ number, kind: ask.kind });
+    const result = await decide({
+      environmentId: props.environmentId,
+      input: { runId: props.runId, number, ask },
+    });
+    setPending(null);
+    if (result._tag === "Failure") {
+      toastManager.add({
+        type: "error",
+        title:
+          ask.kind === "push-back"
+            ? "The push-back got no answer"
+            : "Could not change the decision",
+        description: failureText(result),
+      });
+      return false;
+    }
+    setDecided(result.value);
+    return true;
+  };
+
   const running = run?.status === "running";
+  const blocked = run?.view ? saveBlocked(run.view.decisions) : null;
   const provider = providers?.find((entry) => entry.driver === run?.error?.driver);
 
   return (
@@ -192,7 +227,7 @@ export function PlanPage(props: {
               <h1 className="text-xl font-semibold">
                 {run?.view?.title ??
                   (props.runId !== undefined
-                    ? run?.status === "running" || run === null
+                    ? run?.status === "running" || (run === null && query.error === null)
                       ? "Writing the plan"
                       : "The plan was not finished"
                     : step === "size"
@@ -252,7 +287,14 @@ export function PlanPage(props: {
             ) : null}
 
             {props.runId !== undefined && run === null ? (
-              <p className="text-sm text-muted-foreground">Loading the plan…</p>
+              <div className="flex flex-col items-start gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {query.error ?? "Loading the plan…"}
+                </p>
+                {query.error !== null ? (
+                  <Button onClick={() => void toRun(undefined)}>Back to the questions</Button>
+                ) : null}
+              </div>
             ) : null}
             {run && running ? (
               <PlanProgress state={run} stopping={busy} onStop={() => void stopRun()} />
@@ -261,11 +303,27 @@ export function PlanPage(props: {
             {run?.status === "stopped" ? (
               <p className="text-sm text-muted-foreground">{progressText(run)}</p>
             ) : null}
-            {run?.status === "done" ? <PlanResult state={run} /> : null}
+            {run?.status === "done" && run.view ? (
+              <PlanResult
+                state={run}
+                decisions={
+                  <PlanDecisions
+                    decisions={run.view.decisions}
+                    writer={run.writer.name}
+                    answering={run.answering ?? pending}
+                    busy={busy}
+                    onDecide={onDecide}
+                  />
+                }
+              />
+            ) : null}
             {run && !running ? (
               <div className="flex flex-wrap items-center gap-3">
                 {run.status === "done" ? (
-                  <Button disabled={busy} onClick={() => void openSave()}>
+                  <Button
+                    disabled={busy || blocked !== null || (run.answering ?? pending) !== null}
+                    onClick={() => void openSave()}
+                  >
                     Save the plan
                   </Button>
                 ) : null}
@@ -281,6 +339,9 @@ export function PlanPage(props: {
                 <Button variant="ghost" onClick={() => void handleNewThread(projectRef)}>
                   Start building
                 </Button>
+                {blocked !== null ? (
+                  <span className="w-full text-sm text-warning-foreground">{blocked}</span>
+                ) : null}
               </div>
             ) : null}
           </WorkspacePageContainer>

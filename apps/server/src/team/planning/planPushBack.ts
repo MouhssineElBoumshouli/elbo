@@ -1,44 +1,60 @@
 import * as Effect from "effect/Effect";
 
 import type { PlanBrief } from "./planBrief.ts";
+import {
+  answered,
+  applyAnswer,
+  type DecisionAsk,
+  planParts,
+  touchedBy,
+  withDecision,
+} from "./planChallenge.ts";
 import type { Ask } from "./planMethod.ts";
-import { pushBackPrompt } from "./planPrompts.ts";
-import { type DecisionRecord, PushBackReply } from "./planSchemas.ts";
+import { answerPrompt } from "./planPrompts.ts";
+import { type PlanResult, PushBackReply } from "./planSchemas.ts";
 
-/** The team pushes back on a decision; the writer defends or changes it, and the record keeps both. */
-export const pushBack = Effect.fn("planning.pushBack")(function* <E>(input: {
+/**
+ * One writer turn on one decision: the team pushed back on it or picked another option. The turn
+ * sees the decision, the plan parts and tasks that use it, and the brief; only those can change.
+ */
+export const answerDecision = Effect.fn("planning.answerDecision")(function* <E>(input: {
   readonly brief: PlanBrief;
-  readonly record: DecisionRecord;
-  readonly message: string;
+  readonly result: PlanResult;
+  readonly number: string;
+  readonly ask: DecisionAsk;
   readonly by: string;
-  readonly ask: Ask<E>;
+  readonly writer: string;
+  readonly askWriter: Ask<E>;
 }) {
-  const reply = yield* input.ask({
-    step: `push-back:${input.record.number}`,
-    prompt: pushBackPrompt({
+  const record = input.result.decisions.find((candidate) => candidate.number === input.number);
+  if (record === undefined) return yield* Effect.die(`No decision ${input.number} in this plan.`);
+  const sent = touchedBy(record.decision, input.result.plan);
+  const parts = planParts(input.result.plan.plan);
+  const reply = yield* input.askWriter({
+    step: `${input.ask.kind}:${record.number}`,
+    prompt: answerPrompt({
       brief: input.brief,
-      decision: input.record.decision,
-      message: input.message,
+      decision: record.decision,
+      parts: sent.parts.map((index) => ({ index, value: parts[index] ?? "" })),
+      tasks: sent.tasks.flatMap((index) => {
+        const task = input.result.plan.tasks[index];
+        return task === undefined ? [] : [{ index, value: task }];
+      }),
+      ask: input.ask,
     }),
     schema: PushBackReply,
   });
-  return applyPushBack(input.record, input.by, input.message, reply);
+  const defended = input.ask.kind === "push-back" && reply.verdict === "defend";
+  const applied = defended
+    ? { written: input.result.plan, updated: [] }
+    : applyAnswer(input.result.plan, sent, reply);
+  const next = answered({
+    record,
+    ask: input.ask,
+    reply,
+    by: input.by,
+    writer: input.writer,
+    updated: applied.updated,
+  });
+  return { result: withDecision(input.result, next, applied.written), record: next, sent };
 });
-
-export function applyPushBack(
-  record: DecisionRecord,
-  by: string,
-  message: string,
-  reply: PushBackReply,
-): DecisionRecord {
-  const changed = reply.verdict === "change";
-  return {
-    ...record,
-    decision: changed ? reply.decision : record.decision,
-    history: [
-      ...record.history,
-      `${by} pushed back: "${message}"`,
-      `${changed ? "Changed" : "Kept"}: ${reply.answer}`,
-    ],
-  };
-}

@@ -425,6 +425,7 @@ import {
   TeamSetupFactsInput,
 } from "./teamSetup.ts"; // team-layer
 import {
+  TeamPlanDecideInput,
   TeamPlanningError,
   TeamPlanRunInput,
   TeamPlanRunState,
@@ -666,6 +667,7 @@ export const WS_METHODS = {
   subscribeTeamPlan: "team.subscribePlan",
   teamPlanStop: "team.planStop",
   teamPlanPreviewSave: "team.planPreviewSave",
+  teamPlanDecide: "team.planDecide",
   teamPlanSave: "team.planSave",
 } as const;
 
@@ -2206,6 +2208,11 @@ const WsTeamPlanPreviewSaveRpc = Rpc.make(WS_METHODS.teamPlanPreviewSave, {
   success: TeamPlanSavePreview,
   error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
 });
+const WsTeamPlanDecideRpc = Rpc.make(WS_METHODS.teamPlanDecide, {
+  payload: TeamPlanDecideInput,
+  success: TeamPlanRunState,
+  error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
+});
 const WsTeamPlanSaveRpc = Rpc.make(WS_METHODS.teamPlanSave, {
   payload: TeamPlanRunInput,
   success: TeamPlanSavePreview,
@@ -2435,6 +2442,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsTeamPlanStopRpc, // team-layer
   WsTeamPlanPreviewSaveRpc, // team-layer
   WsTeamPlanSaveRpc, // team-layer
+  WsTeamPlanDecideRpc, // team-layer
   WsOrchestrationV2DispatchCommandRpc,
   WsOrchestrationV2GetWorkflowScriptRpc,
   WsOrchestrationV2GetNativeChildWorkRpc,

@@ -82,6 +82,18 @@ export function PlanSaveDialog(props: {
                 </ul>
               )}
             </section>
+            {preview.kept.length > 0 ? (
+              <section aria-label="Earlier decisions">
+                <h3 className="mb-1 font-medium">Earlier decisions that stay active</h3>
+                <ul className="space-y-0.5 text-muted-foreground">
+                  {preview.kept.map((entry) => (
+                    <li key={entry.number}>
+                      {entry.number} {entry.title}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
             <section aria-label="Tasks">
               <h3 className="mb-1 font-medium">Tasks ({preview.tasks.length})</h3>
               <ul className="space-y-0.5">

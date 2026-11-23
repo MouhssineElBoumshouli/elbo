@@ -1,6 +1,6 @@
 /**
  * Planning a project on the client (fork-only, team/PLANNING_FEATURE_PLAN.md slice 4): start a
- * plan, follow its progress, stop it, and preview then save the finished plan.
+ * plan, follow its progress, stop it, decide on its decisions (slice 5), and preview then save it.
  */
 import { WS_METHODS } from "@t3tools/contracts";
 import type { Atom } from "effect/reactivity";
@@ -35,6 +35,11 @@ export function createTeamPlanningAtoms<R, E>(
     save: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:team:plan-save",
       tag: WS_METHODS.teamPlanSave,
+    }),
+    /** Agree to a decision, pick another option, or push back; returns the run's new state. */
+    decide: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:team:plan-decide",
+      tag: WS_METHODS.teamPlanDecide,
     }),
   };
 }

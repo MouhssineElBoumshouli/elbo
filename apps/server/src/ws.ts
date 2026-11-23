@@ -286,6 +286,7 @@ import { requestUrl } from "./requestUrl.ts";
 import * as TeamFeed from "./team/TeamFeed.ts"; // team-layer
 import * as TeamChoices from "./team/TeamChoices.ts"; // team-layer
 import * as TeamQuestions from "./team/TeamQuestions.ts"; // team-layer
+import { elboProjectsRoot } from "./team/newProjectFolder.ts"; // team-layer
 import * as TeamNotes from "./team/TeamNotes.ts"; // team-layer
 import * as TeamMergeFix from "./team/TeamMergeFix.ts"; // team-layer
 import * as TeamSetup from "./team/setup/TeamSetup.ts"; // team-layer
@@ -1914,7 +1915,12 @@ export const layerWsRpc = (
             onNone: () => ({}),
             onSome: (root) => ({ scratchWorkspaceRoot: root }),
           }),
-          newProjectsRoot: managedFolders.namedProjectsRoot,
+          // team-layer: clients show and send this folder; see team/newProjectFolder.ts.
+          newProjectsRoot: elboProjectsRoot(
+            yield* HostProcess.HomeDirectory,
+            yield* HostProcess.Platform,
+            yield* Path.Path,
+          ),
           ...(lastEventLoopStall === undefined ? {} : { lastEventLoopStall }),
           serverTime: DateTime.formatIso(yield* DateTime.now),
         };
@@ -3569,6 +3575,7 @@ export const layerWsRpc = (
         [WS_METHODS.subscribeTeamPlan]: (input) => teamPlanning.subscribe(input), // team-layer
         [WS_METHODS.teamPlanStop]: (input) => teamPlanning.stop(input), // team-layer
         [WS_METHODS.teamPlanPreviewSave]: (input) => teamPlanning.previewSave(input), // team-layer
+        [WS_METHODS.teamPlanDecide]: (input) => teamPlanning.decide(input), // team-layer
         [WS_METHODS.teamPlanSave]: (input) => teamPlanning.save(input), // team-layer
         [WS_METHODS.subscribeResourceTelemetry]: (_input) =>
           Stream.unwrap(

@@ -95,6 +95,9 @@ export function numberDecisions(
     number: String(index + 1).padStart(4, "0"),
     decision,
     main: index < PLAN_LIMITS[size].decisions,
+    status: "open",
     history: [],
+    advice: "",
+    risk: "",
   }));
 }

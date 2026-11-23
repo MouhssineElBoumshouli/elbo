@@ -85,6 +85,8 @@ const running = (overrides: Partial<TeamPlanRunState>): TeamPlanRunState => ({
   sameProvider: false,
   view: null,
   error: null,
+  answering: null,
+  version: 0,
   ...overrides,
 });
 

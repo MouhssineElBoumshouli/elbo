@@ -46,7 +46,14 @@ export function written(text: string, overrides: Partial<WrittenPlan> = {}): Wri
     plan: text,
     decisions: [decision("Front end")],
     tasks: [
-      { title: "Build the list page", owner: "Sara", hours: 4, area: "app/", when: "Week 1" },
+      {
+        title: "Build the list page",
+        owner: "Sara",
+        hours: 4,
+        area: "List page",
+        folders: ["app/"],
+        when: "Week 1",
+      },
     ],
     doneChecks: [{ mustHave: "add a task", done: "A task appears after Enter." }],
     pushBacks: [],

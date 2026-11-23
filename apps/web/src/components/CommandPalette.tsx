@@ -51,6 +51,7 @@ import {
   AuthFilesystemReadScope,
   type DesktopWslState,
   type EnvironmentId,
+  type ProjectId, // team-layer
   type FilesystemBrowseResult,
   SourceControlProviderKind,
   PRIMARY_LOCAL_ENVIRONMENT_ID,
@@ -118,6 +119,7 @@ import {
 import { useClientSettings } from "../hooks/useSettings";
 import { useStableCallback } from "../hooks/useStableCallback";
 import { readLocalApi } from "../localApi";
+import { newProjectTarget, pickedProjectsFolder } from "./team/newProjectTarget.logic"; // team-layer
 import { configuredHostedAppUrl } from "../hostedPairing";
 import { desktopLocalBackendId } from "../connection/desktopLocal";
 import { filesystemEnvironment, useFilesystemReadAccess } from "../state/filesystem";
@@ -424,6 +426,13 @@ function OpenCommandPaletteDialog(props: {
   const words = useTeamWords(); // team-layer
   const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
+  // team-layer: on the plan page, "Plan the next part" stays on that page's project.
+  const planPage = useLocation({
+    select: (location) =>
+      location.pathname === "/plan"
+        ? (location.search as { environmentId?: EnvironmentId; projectId?: ProjectId })
+        : undefined,
+  });
   const { openChildSearch, setOpen } = props;
   // Keyed by palette session: the intent and restored search only seed this
   // mount, and closing must not change what the closing palette shows.
@@ -554,6 +563,7 @@ function OpenCommandPaletteDialog(props: {
   const [newProjectPublishKind, setNewProjectPublishKind] =
     useState<SourceControlProviderKind | null>(null);
   const [isCreatingNewProject, setIsCreatingNewProject] = useState(false);
+  const [newProjectFolder, setNewProjectFolder] = useState<string | null>(null); // team-layer
   // State lags a render behind, so a repeated Enter could start a second create.
   const newProjectSubmittingRef = useRef(false);
   const createNewProject = useNewProject();
@@ -1049,6 +1059,7 @@ function OpenCommandPaletteDialog(props: {
     setAddProjectEnvironmentId(environmentId);
     setAddProjectCloneFlow(null);
     setNewProjectFlow({ environmentId, sourcesEnvironmentId });
+    setNewProjectFolder(null); // team-layer
     setNewProjectPublishes(false);
     setNewProjectPublishKind(null);
     pushPaletteView({
@@ -1719,6 +1730,7 @@ function OpenCommandPaletteDialog(props: {
   const planTarget = teamHomeTarget({
     thread: activeThread,
     draft: activeDraftThread,
+    ...(planPage ? { page: planPage } : {}),
     fallback: defaultProjectRef,
   });
   if (planTarget.environmentId !== undefined && planTarget.projectId !== undefined) {
@@ -2101,7 +2113,8 @@ function OpenCommandPaletteDialog(props: {
     newProjectPublishTargets,
     newProjectPublishKind,
   );
-  const newProjectName = query.trim();
+  const newProjectChoice = newProjectTarget(query, newProjectFolder); // team-layer
+  const newProjectName = newProjectChoice.name;
   const canSubmitNewProject =
     newProjectFlow !== null &&
     newProjectName.length > 0 &&
@@ -2118,6 +2131,8 @@ function OpenCommandPaletteDialog(props: {
       createNewProject({
         environmentId: newProjectFlow.environmentId,
         name: newProjectName,
+        // team-layer: always the folder the summary shows.
+        parentFolder: newProjectChoice.parentFolder ?? newProjectsRoot ?? undefined,
         publishTo: newProjectPublishes ? newProjectPublishTarget : null,
       }),
     );
@@ -2394,8 +2409,9 @@ function OpenCommandPaletteDialog(props: {
   );
 
   const newProjectsRoot = newProjectFlow ? newProjectsRootFor(newProjectFlow.environmentId) : null;
+  const newProjectParent = newProjectChoice.parentFolder ?? newProjectsRoot; // team-layer
   const newProjectPathPreview =
-    newProjectsRoot === null ? null : getNewProjectPathPreview(newProjectsRoot, newProjectName);
+    newProjectParent === null ? null : getNewProjectPathPreview(newProjectParent, newProjectName);
   const newProjectPublishToggleValue = "new-project:publish";
   const showExistingProjectSources = (environmentId: EnvironmentId) => {
     const sourcesEnvironmentId = newProjectFlow?.sourcesEnvironmentId ?? null;
@@ -3018,7 +3034,23 @@ function OpenCommandPaletteDialog(props: {
           ? "Select"
           : undefined;
 
-  const footerTrailing = canOpenProjectFromFileManager ? (
+  // team-layer: on desktop, New project can pick its folder; every client can type a full path.
+  const canPickNewProjectFolder =
+    newProjectFlow !== null &&
+    newProjectFlow.environmentId === primaryEnvironmentId &&
+    typeof window !== "undefined" &&
+    window.desktopBridge !== undefined;
+  const pickNewProjectFolder = async () => {
+    const picked = await readLocalApi()
+      ?.dialogs.pickFolder(newProjectParent ? { initialPath: newProjectParent } : undefined)
+      .catch(() => null);
+    if (picked) setNewProjectFolder(pickedProjectsFolder(picked));
+  };
+  const footerTrailing = canPickNewProjectFolder ? (
+    <CommandFooterAction onClick={() => void pickNewProjectFolder()}>
+      Choose folder…
+    </CommandFooterAction>
+  ) : canOpenProjectFromFileManager ? (
     <CommandFooterAction
       disabled={isPickingProjectFolder}
       onClick={() => {
@@ -3097,7 +3129,7 @@ function OpenCommandPaletteDialog(props: {
         <NewProjectSummary
           name={newProjectName}
           pathPreview={newProjectPathPreview}
-          projectsRoot={newProjectsRoot}
+          projectsRoot={newProjectParent}
           environmentLabel={newProjectEnvironmentLabel}
         />
       ) : null}

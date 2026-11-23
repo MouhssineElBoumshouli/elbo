@@ -139,9 +139,10 @@ export function NewProjectSummary(props: {
             {props.name.length > 0 ? props.name : "New project"}
           </span>
           <span className="truncate text-muted-foreground/85 text-xs">
+            {/* team-layer: says a typed path chooses the folder */}
             {props.name.length > 0
               ? `Creates ${props.pathPreview}`
-              : `Goes in ${props.projectsRoot}`}
+              : `Goes in ${props.projectsRoot}. Type a full path for another folder.`}
             {props.environmentLabel === null ? null : ` on ${props.environmentLabel}`}
           </span>
         </span>

@@ -5,6 +5,8 @@ import {
   type ProviderInstanceId,
   type ServerProvider,
   type TeamPlanAgent,
+  type TeamPlanRunState,
+  type TeamPlanSavePreview,
   type TeamPlanStep,
   type TeamPlanView,
 } from "@t3tools/contracts";
@@ -13,6 +15,7 @@ import { wordCount } from "./planLimits.ts";
 import { DEFAULT_MODELS, REVIEW_DEFAULTS } from "./planProvider.ts";
 import { renderPlan } from "./planRender.ts";
 import type { PlanProvider } from "./planReview.ts";
+import type { PlanSavePreview } from "./planSave.ts";
 import type { PlanResult } from "./planSchemas.ts";
 
 const DRIVERS: Record<string, PlanProvider> = { codex: "codex", claudeAgent: "claude" };
@@ -86,12 +89,20 @@ export function stepOf(step: string): { readonly step: TeamPlanStep; readonly ro
 }
 
 export function planView(result: PlanResult): TeamPlanView {
-  const markdown = renderPlan(result.plan, result.decisions);
   return {
     title: result.plan.title,
     size: result.size,
-    markdown,
-    words: wordCount(markdown),
+    body: result.plan.plan.trim(),
+    decisions: result.decisions.map((record) => ({
+      number: record.number,
+      ...record.decision,
+      main: record.main,
+      status: record.status,
+      advice: record.advice,
+      risk: record.risk,
+      history: record.history,
+    })),
+    words: wordCount(renderPlan(result.plan, result.decisions)),
     scores: result.rounds.map((round) => round.score),
     changes: result.log.map((entry) => ({
       round: entry.round,
@@ -105,3 +116,32 @@ export function planView(result: PlanResult): TeamPlanView {
       .length,
   };
 }
+
+/** A state change; the version goes up so a client keeps the newest copy. */
+export const changed =
+  (change: (state: TeamPlanRunState) => Partial<TeamPlanRunState>) =>
+  (state: TeamPlanRunState): TeamPlanRunState => ({
+    ...state,
+    ...change(state),
+    version: state.version + 1,
+  });
+
+/** The save preview without file contents: the page shows paths, rules and tasks. */
+export const savePreviewView = (
+  folder: string,
+  saved: boolean,
+  preview: PlanSavePreview,
+): TeamPlanSavePreview => ({
+  folder,
+  saved,
+  files: preview.files.map(({ path, status, detail }) => ({ path, status, detail })),
+  rules: preview.rules,
+  tasks: preview.tasks.map(({ action, title, owner, paths, note }) => ({
+    action,
+    title,
+    owner,
+    paths,
+    note,
+  })),
+  kept: preview.kept,
+});

@@ -70,11 +70,15 @@ export function useNewProject() {
   return async (input: {
     readonly environmentId: EnvironmentId;
     readonly name: string;
+    readonly parentFolder?: string | undefined; // team-layer
     readonly publishTo: NewProjectPublishTarget | null;
   }): Promise<boolean> => {
     const result = await createNew({
       environmentId: input.environmentId,
-      input: { name: input.name },
+      input: {
+        name: input.name,
+        ...(input.parentFolder ? { parentFolder: input.parentFolder } : {}), // team-layer
+      },
     });
     if (result._tag === "Failure") {
       if (!isAtomCommandInterrupted(result)) {
