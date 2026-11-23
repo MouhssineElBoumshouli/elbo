@@ -1,4 +1,4 @@
-import { PLAN_LIMITS, type PlanSize, wordCount } from "./planLimits.ts";
+import { overWordLimit, PLAN_LIMITS, type PlanSize, wordCount } from "./planLimits.ts";
 import type {
   Decision,
   DecisionRecord,
@@ -35,7 +35,7 @@ export function checkProblems(markdown: string, size: PlanSize): ReadonlyArray<T
   const limit = PLAN_LIMITS[size].words;
   const talk = methodTalk(markdown);
   return [
-    ...(words > limit
+    ...(overWordLimit(markdown, size)
       ? [
           {
             problem: `The plan is ${words} words; the limit for a ${size} plan is ${limit}.`,

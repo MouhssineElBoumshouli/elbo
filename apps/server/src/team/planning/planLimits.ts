@@ -22,5 +22,8 @@ export function suggestSize(people: number, hours: number, days: number): PlanSi
 
 export const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
+/** Up to 10% over the limit is not worth a turn: a plan only counts as too long past this. */
+const wordCeiling = (size: PlanSize) => Math.floor(PLAN_LIMITS[size].words * 1.1);
+
 export const overWordLimit = (markdown: string, size: PlanSize) =>
-  wordCount(markdown) > PLAN_LIMITS[size].words;
+  wordCount(markdown) > wordCeiling(size);

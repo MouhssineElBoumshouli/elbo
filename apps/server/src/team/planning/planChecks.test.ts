@@ -37,8 +37,9 @@ describe("review loop rules", () => {
   });
 
   it("finds an over-long plan and lines about the method", () => {
-    assert.deepStrictEqual(checkProblems(words(500), "small"), []);
-    const found = checkProblems(`${words(501)}\nThe other experts agreed.`, "small");
+    // A small plan's limit is 500; up to 10% over is not a problem.
+    assert.deepStrictEqual(checkProblems(words(550), "small"), []);
+    const found = checkProblems(`${words(551)}\nThe other experts agreed.`, "small");
     assert.deepStrictEqual(
       found.map((entry) => [entry.id, entry.severity, entry.from]),
       [
@@ -46,7 +47,7 @@ describe("review loop rules", () => {
         ["C2", "should", "check"],
       ],
     );
-    assert.include(found[0]?.problem, "505 words");
+    assert.include(found[0]?.problem, "555 words");
     assert.include(found[1]?.problem, "The other experts agreed.");
   });
 
@@ -82,8 +83,8 @@ describe("review loop rules", () => {
     assert.strictEqual(suggestSize(1, 10, 2), "small");
     assert.strictEqual(suggestSize(3, 144, 42), "medium");
     assert.strictEqual(suggestSize(4, 400, 100), "large");
-    assert.isFalse(overWordLimit(words(500), "small"));
-    assert.isTrue(overWordLimit(words(501), "small"));
+    assert.isFalse(overWordLimit(words(550), "small"));
+    assert.isTrue(overWordLimit(words(551), "small"));
   });
 });
 

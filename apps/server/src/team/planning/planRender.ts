@@ -46,6 +46,7 @@ export function renderDecisionLog(result: PlanResult): string {
       `### ${record.number} ${record.decision.title}`,
       `Picked: ${record.decision.picked}. Looked at: ${record.decision.options.join(", ")}.`,
       `Why: ${record.decision.why}`,
+      ...(record.decision.rule ? [`Rule for agents: ${record.decision.rule}`] : []),
       ...record.history.map((line) => `- ${line}`),
     ].join("\n\n"),
   );

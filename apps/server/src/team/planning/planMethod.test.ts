@@ -124,6 +124,11 @@ describe("runMethod", () => {
       assert.strictEqual(result.size, "small");
       assert.deepStrictEqual(writer.steps, ["write", "fix:1", "shorten"]);
       assert.include(writer.prompts["fix:1"], "limit for a small plan is 500");
+      assert.match(
+        writer.prompts["fix:1"] ?? "",
+        /The plan is 6\d\d words now; after your fixes it must be under 500/,
+      );
+      assert.notInclude(writer.prompts.shorten, "## The brief");
       assert.deepStrictEqual(
         result.log.map((entry) => [entry.id, entry.from]),
         [["C1", "check"]],

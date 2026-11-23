@@ -22,7 +22,7 @@ const shape = (input: PlanBrief, size: PlanSize) => {
   return `## What to return
 - title: the project's name in a few words.
 - plan: the plan in Markdown, the way you'd answer "make me a project plan for this" in a chat: a short opening, then short sections with plain titles. It must have: the steps with who does what and when (${schedule(input)}); for each must-have, how the team knows it is done; what to cut first if time runs out; and your push-back on any bad idea in the brief. Under ${limits.words} words. No list or table of decisions: the app adds the decisions at the end.
-- decisions: at most ${limits.decisions} real choices that matter to this team: what you picked, every option you looked at (the picked one included), and why in a sentence or two.
+- decisions: at most ${limits.decisions} real choices that matter to this team: what you picked, every option you looked at (the picked one included), and why in a sentence or two. rule: one short line the agents writing the code must follow because of this decision (for example "Use Django for the server." or "Never put secrets in the repo."), or "" when it is not a rule for the code.
 - tasks: every task in the plan. owner is exactly one of: ${people(input)}. hours is your estimate, area the folder or part of the work it touches, when its slot in the schedule. The hours must fit the team's time with room to spare.
 - doneChecks, pushBacks and cutFirst: the same as in the plan text, as data.`;
 };
@@ -92,6 +92,7 @@ export function fixPrompt(input: {
   readonly size: PlanSize;
   readonly written: WrittenPlan;
   readonly problems: ReadonlyArray<ToFix>;
+  readonly words: number;
 }): string {
   const problems = input.problems
     .map(
@@ -103,7 +104,7 @@ export function fixPrompt(input: {
 
 ${RULES}
 - Fix only the problems listed. You may decline one when it is wrong for this team or only adds scope; say why in one sentence.
-- Do not make the plan longer: when a fix needs room, cut something less important.
+- Do not make the plan longer: when a fix needs room, cut something less important. The plan is ${input.words} words now; after your fixes it must be under ${PLAN_LIMITS[input.size].words}.
 - Keep the plan text and the data in step.
 
 ## The problems
@@ -118,20 +119,18 @@ ${shape(input.brief, input.size)}
 - answers: one per problem id: outcome "fixed" or "declined", and the reason in one sentence.`;
 }
 
+/** Only the plan, not the brief: shortening needs nothing else. */
 export function shortenPrompt(input: {
-  readonly brief: PlanBrief;
   readonly size: PlanSize;
   readonly written: WrittenPlan;
   readonly words: number;
 }): string {
   return `The project plan below is ${input.words} words and must be under ${PLAN_LIMITS[input.size].words}. Return the same plan, shorter: shorter sentences, fewer details, small steps joined. Keep every push-back, done check, cut-first item and decision. Never cut a sentence off in the middle.
 
-${brief(input.brief)}
+Return the same JSON fields with the same meaning. Only "plan" gets shorter; keep the other fields as they are unless the shorter text joins two tasks.
 
 ## The plan
-${JSON.stringify(input.written)}
-
-${shape(input.brief, input.size)}`;
+${JSON.stringify(input.written)}`;
 }
 
 export function pushBackPrompt(input: {

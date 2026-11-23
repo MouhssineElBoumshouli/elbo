@@ -83,7 +83,7 @@ export const runMethod = Effect.fn("planning.runMethod")(function* <E, F>(input:
     }
     const reply = yield* input.write({
       step: `fix:${round}`,
-      prompt: fixPrompt({ brief, size, written, problems }),
+      prompt: fixPrompt({ brief, size, written, problems, words: wordCount(markdown) }),
       schema: FixReply,
     });
     written = reply.plan;
@@ -99,7 +99,7 @@ export const runMethod = Effect.fn("planning.runMethod")(function* <E, F>(input:
   const shortened = overWordLimit(before, size)
     ? yield* input.write({
         step: "shorten",
-        prompt: shortenPrompt({ brief, size, written, words: wordCount(before) }),
+        prompt: shortenPrompt({ size, written, words: wordCount(before) }),
         schema: WrittenPlan,
       })
     : undefined;

@@ -37,6 +37,7 @@ export const decision = (title: string, picked = "Plain pages"): Decision => ({
   picked,
   options: ["Plain pages", "React"],
   why: "The team knows HTML.",
+  rule: "",
 });
 
 export function written(text: string, overrides: Partial<WrittenPlan> = {}): WrittenPlan {

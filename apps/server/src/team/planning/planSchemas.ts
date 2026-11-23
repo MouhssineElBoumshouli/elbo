@@ -10,6 +10,8 @@ export const Decision = Schema.Struct({
   /** Every option looked at, the picked one included. */
   options: Schema.Array(Schema.String),
   why: Schema.String,
+  /** One line agents writing the code must follow because of it ("Use Django for the server."), or "". */
+  rule: Schema.String,
 });
 export type Decision = typeof Decision.Type;
 
