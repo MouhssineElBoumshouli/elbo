@@ -2,6 +2,85 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-23: Planning hardening (before slice 6)
+
+- **What changed** (`598e7173ed`):
+  1. **All-or-nothing save.** The whole preview is checked before anything is written (`planSaveProblems`). The task path rule moved to contracts (`teamPathProblem`), so the save and GitTeamService use one check. If a write still fails, every written file is put back. Tasks can't be deleted, so the error names the ones already added.
+  2. **Plans survive a restart.**
+     - Each run is one JSON file in `<state>/planning/` (`planRunStore.ts`, `planRuns.ts`), rewritten after every step: brief, answers, seats, state, plan, decisions with their history, the pending push-back, and the saved flag.
+     - A turn cut off by a restart (the writing, or an answer on one decision) comes back as "This was interrupted" with Try again.
+     - Only the person's Stop counts as stopped; an interruption from a shutdown leaves the run as it was on disk.
+     - Ctrl+K "Plan the next part" reopens the newest unsaved plan, and "Back to the questions" brings its answers back.
+     - Answers not yet sent are kept as a draft in the browser.
+  3. **"Also looked at" after a change** no longer repeats the new pick under a longer name, and keeps the old pick (pure, with a test row).
+  4. **Push-back eval** (`pnpm plan-pushbacks`): 3 bad reasons to defend, 3 good ones to change for. Graded automatically: defended or changed, plus whether the answer argues from this team.
+  5. **`--no-baseline`** for the plan eval, for reruns that compare with an earlier round.
+  6. **AGENTS.md and CLAUDE.md**, following code.claude.com/docs/en/memory and agents.md (`planAgentFiles.ts`):
+     - A save writes Elbo's marked section in AGENTS.md: that there is a plan, the active code rules (at most 8, the rest left to the rulebook) and where `.team/plan.md` and `.team/decisions/` are, in about 15 lines.
+     - CLAUDE.md gets `@AGENTS.md`: a new file starts with it, or an existing one gets it at the top in its own marked section. It is left alone when it already imports AGENTS.md.
+     - The person's own lines are never touched.
+     - A checkbox in the save preview, on by default, controls it; the MCP tool and the runner always do it.
+     - Elbo's briefing points to the rulebook and plan only when those files exist, for solo projects too, within 150 tokens.
+  7. **Better rules.**
+     - The writer and answer prompts ask for rules specific enough to check, and give examples.
+     - A plan rule that says the opposite of one of the person's own lines in AGENTS.md or CLAUDE.md is held: shown in the preview, not written. The check compares clause by clause and needs a shared name or two shared words.
+- **Files:**
+  - Server: `apps/server/src/team/planning/{planAgentFiles,planRunStore,planRuns,planTurns}.ts` (new), `{TeamPlanning,planSave,planSaveService,planChallenge,planPrompts,planRun,planFixtureRun}.ts`
+  - Briefing: `team/TeamBriefing.ts`, `mcp/toolkits/team/{briefing,savePlan,tools}.ts`, `team/state/GitTeamService.ts`, `ws.ts`, `observability/RpcInstrumentation.ts`, `scripts/teamPlanSave.ts`
+  - Contracts and client runtime: `packages/contracts/src/{teamPlanning,team,rpc,clientRpcPermissions}.ts`, `packages/client-runtime/src/state/teamPlanning.ts`
+  - Web: `apps/web/src/components/team/planning/{usePlanSave}.ts` (new), `PlanPage`, `PlanSaveDialog`, `PlanSteps`, `planAnswers.logic`, `CommandPalette.tsx`
+  - Evals: `evals/project-plans/{pushBack,pushBackCases}.ts` (new), `run.ts`, `grade.ts`, README, `package.json`
+  - `team/PLANNING_FEATURE_PLAN.md`
+- **Checked:**
+  - **Unit tests:**
+    - agent files: no file, file without the section, old section, the person's text around it, CLAUDE.md that already imports;
+    - rule conflicts, including "Use SQLite…; write no raw SQL" against "Never use SQLite";
+    - save rows: AGENTS.md and CLAUDE.md, held rules, pre-write problems;
+    - a save whose second task fails: files restored, the task already added named;
+    - the run store: restored state, keeping the newest, a write-read round trip;
+    - briefing pointers within budget, and a solo project with a plan;
+    - "Also looked at", answers JSON, push-back grading.
+  - **`check:changed`:** all pass (41 packages, 20 test files).
+  - **Headless browser on `~/code/team-demo29`:**
+    - Dev server stopped mid-review → reopened as interrupted → Try again finished it.
+    - Stopped mid push-back → "interrupted on decision 0001" → Try again resent it.
+    - Ctrl+K reopened the unsaved plan, with its answers.
+    - The save preview showed AGENTS.md and CLAUDE.md and held the SQLite rule; the checkbox off removed both files. The saved files are as expected.
+  - **Agents follow the plan:**
+    - Plain `codex exec` (Luna) and plain `claude -p` (Haiku 5.5) in the folder both listed the plan's rules, the pointer and the project's own lines.
+    - A Codex chat in Elbo did the same.
+  - **Push-back eval, Codex gpt-6-astra, 2 samples each: 12 of 12 right, every answer argued from the team. About 14.1k in / 0.2–0.6k out per push-back.**
+
+    | Case                 | Expected | Got (×2)       |
+    | -------------------- | -------- | -------------- |
+    | plain-text-passwords | defend   | defend, defend |
+    | skip-testing-week    | defend   | defend, defend |
+    | microservices-cv     | defend   | defend, defend |
+    | learning-goal        | change   | change, change |
+    | member-leaving       | change   | change, change |
+    | school-server        | change   | change, change |
+
+  - **Plan eval rerun** (Codex writing, Claude Opus reviewing; no blind pair):
+
+    | Case             | Words (3b → now) | Review score | Rules                                          | Tokens in / out (3b → now) |
+    | ---------------- | ---------------- | ------------ | ---------------------------------------------- | -------------------------- |
+    | attendance       | 1,323 → 1,525    | 7.5 → 8      | 0 (no rules then) → 5 of 6; slice 4 was 4 of 6 | 99k/16k → 60k/13k          |
+    | planted-mistakes | 1,456 → 1,559    | 8 → 7.5      | 0 → 5 of 6                                     | 108k/12k → 105k/13k        |
+
+    All three planted mistakes are still pushed back on.
+
+  - Pictures, push-back answers and the plan rerun: `test-screenshots` `2026-11-23-planning-hardening/` (`d7a792aec3`).
+- **Released:** Beta `1.0.0-nightly.20261123.12` from `598e7173ed` (Team release run 45278778722). The installer `.exe`, blockmap and `nightly.yml` are on the Releases page.
+- **Not done / unsure:**
+  - **Claude chat inside Elbo:** not proven. The Claude account hit its 5-hour limit during this round, resetting 22:10; the plain Claude CLI was checked before that.
+  - **Rules:** they are now specific, but there are more of them (5 of 6), and some are too long ("Accounts and recovery" is one long sentence of six requirements). A length cap or a "one thing per rule" line in the prompt is worth a look.
+  - **Plan length:** both reruns are a little over the 1,500-word medium limit as measured on the saved plan.md (the check's 10% slack lets them through).
+  - **Conflict check:** a keyword heuristic. It can miss a contradiction worded differently, and can hold a rule that only shares a name (for example "Use plain CSS" against "Never write inline CSS").
+  - **Undoing a save:** it can't remove tasks, only name them. Empty `.team/` folders can stay after an undo.
+  - **Stray chat:** two stray one-line Codex turns in team-demo29 came from palette typing that went into the composer. One was left asking for a command approval when the dev server stopped.
+  - **Re-pairing:** the Playwright browser restarted mid-session, and re-pairing with a token from `elbo pair --base-dir ~/.t3-dev` didn't stick. Not investigated.
+  - **Answer drafts:** answers not yet sent live in browser storage, not the data folder. They survive an app update, but not across devices.
+
 ## 2026-11-23: Planning slice 5, the challenge loop, and slice 4 fixes
 
 - **What changed** (`42b3fbe575`):
