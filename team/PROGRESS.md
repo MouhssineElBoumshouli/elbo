@@ -2,6 +2,31 @@
 
 Newest entries first. See team/WORKING_RULES.md for what each entry needs.
 
+## 2026-11-23: Planning round 3 finished: Opus reviewer, all 4 cases, one layout, design doc rewritten
+
+- **What changed:**
+  - **Reviewer defaults** (`bcc8104688`): the review now uses the reviewer's strongest model at high effort (`REVIEW_DEFAULTS` in `planProvider.ts`: Claude Opus 5.5; Codex `gpt-6-astra`). Both runners take `--review-model` and `--review-effort`; `--reviewer-model` is gone.
+  - **One layout:** `evals/project-plans/layout.ts` writes both sides of each blind pair in one `##` heading style. It catches Markdown headings of any level, bold-only lines, and short plain title lines. `baseline.md` keeps the plain chat's own text, and the report's key check compares against the normalized text.
+  - **Design doc:** `team/PLANNING_FEATURE_PLAN.md` is rewritten to describe writer + review throughout, shorter (204 → 127 lines). The panel, its checklists, the cross-review and the "second opinion" are gone. The token table is now measured, and decision 3 is now "review by a different AI, strongest model, high effort".
+- **Eval** (`test-screenshots` `2026-11-23-plan-eval-3b/` at `6a173455e2`, with `blind/` and `answers/` kept apart):
+  - All 4 cases finished. The first try stopped on "Selected model is at capacity" from OpenAI, which is not a usage limit; the retry was clean.
+  - Words: attendance 1,323, weekend-todo 493, hackathon 1,463, planted-mistakes 1,456, all within the limits. Two needed a shorten turn.
+  - Review scores (one round each, no blockers): 7.5, 8.5, 8.5, 8.
+  - What the reviews caught: no Django learning time (twice), no week-1 project setup, an unnamed preview server, email login needing a custom user model, and an unrealistic hosting bar. All were fixed.
+  - Planted mistakes: both sides caught all three.
+  - Tokens, writer + review: 99k, 94k, 23k and 108k input, against round 2's panel at 235k, 101k, 191k and 260k. An Opus review costs 6–9k in and 1.5–4k out.
+- **Files:**
+  - `apps/server/src/team/planning/planProvider.ts`, `apps/server/scripts/team-plan.ts`
+  - `evals/project-plans/{run,report,layout,layout.test}.ts` and `README.md`
+  - `team/PLANNING_FEATURE_PLAN.md`
+- **Checked:**
+  - Layout tests (2) pass.
+  - Lint and typecheck pass for server and evals; fmt, lint and knip pass on commit.
+  - The A/B pairs were checked by script: both sides have only `##` headings.
+- **Unsure:**
+  - On hackathon and planted-mistakes, the new plan is about 1.7× the plain chat's length, so length may still give the sides away.
+  - The shorten turn ran for overruns of 19 and 69 words. A small margin, or trusting the fix turn's own count, would save a turn.
+
 ## 2026-11-22: "Limit reached" card, a second account from Check my setup
 
 - **What changed** (`62eaa2ea10`):
