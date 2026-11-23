@@ -45,6 +45,8 @@ beforeEach(() => {
     NodePath.join(checkout, ".team", "team.json"),
     JSON.stringify({ teamId: TEAM_FILE.teamId, name: TEAM_FILE.name }),
   );
+  // Team setup writes the rulebook; the briefing points only to files that exist.
+  NodeFS.writeFileSync(NodePath.join(checkout, ".team", "rulebook.md"), "# Rulebook\n");
   useTeamOrigin(checkout, makeTeamOrigin(root));
 });
 afterEach(() => {
@@ -133,6 +135,7 @@ const EXPECTED = renderTeamBriefing({
   teamName: TEAM_FILE.name,
   memberName: LOGIN,
   rulebookPath: ".team/rulebook.md",
+  planPath: null,
 });
 
 describe("TeamWarmup", () => {

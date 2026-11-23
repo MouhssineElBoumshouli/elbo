@@ -2,6 +2,7 @@ import { ProjectId, type TeamPlanRunState } from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  answersFromJson,
   briefFromAnswers,
   emptyAnswers,
   type PlanAnswers,
@@ -87,6 +88,8 @@ const running = (overrides: Partial<TeamPlanRunState>): TeamPlanRunState => ({
   error: null,
   answering: null,
   version: 0,
+  interrupted: null,
+  answers: "{}",
   ...overrides,
 });
 
@@ -145,5 +148,16 @@ describe("progress and errors", () => {
         undefined,
       ),
     ).toEqual({ title: "Claude could not finish the plan", description: "Timed out." });
+  });
+});
+
+describe("answers kept as JSON", () => {
+  it("reads them back, keeping the fallback for anything missing or of the wrong shape", () => {
+    const fallback = emptyAnswers([{ name: "You", memberId: null, skills: "", hours: "" }]);
+    const saved = { ...fallback, what: "A to-do list", users: ["Just me"] };
+    expect(answersFromJson(JSON.stringify(saved), fallback)).toEqual(saved);
+    expect(answersFromJson('{"what": 3, "users": "Just me"}', fallback)).toEqual(fallback);
+    expect(answersFromJson("{not json", fallback)).toBe(fallback);
+    expect(answersFromJson(null, fallback)).toBe(fallback);
   });
 });

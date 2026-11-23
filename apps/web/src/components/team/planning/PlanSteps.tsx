@@ -145,3 +145,24 @@ export function PlanResult(props: {
     </div>
   );
 }
+
+/** A turn a restart cut off, with the way to start it again. */
+export function PlanInterrupted(props: {
+  readonly text: string;
+  readonly busy: boolean;
+  readonly onRetry: () => void;
+}) {
+  return (
+    <Alert variant="warning">
+      <CircleAlertIcon />
+      <AlertTitle>{props.text}</AlertTitle>
+      <AlertDescription>
+        <div>
+          <Button size="sm" disabled={props.busy} onClick={props.onRetry}>
+            Try again
+          </Button>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+}

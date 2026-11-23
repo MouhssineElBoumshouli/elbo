@@ -10,7 +10,12 @@ import {
 import { decision, written } from "./planFixtures.testkit.ts";
 import { renderPlan } from "./planRender.ts";
 import { numberDecisions } from "./planReview.ts";
-import { type PlanSaveInput, type PlanSavePreview, previewPlanSave } from "./planSave.ts";
+import {
+  type PlanSaveInput,
+  type PlanSavePreview,
+  planSaveProblems,
+  previewPlanSave,
+} from "./planSave.ts";
 import type { PlanResult } from "./planSchemas.ts";
 
 const teamId = TeamId.make("team-1");
@@ -101,7 +106,11 @@ We use tabs.
 
 const empty: Project = { files: { ".team/decisions/0001-use-tabs.md": humanDecision }, tasks: [] };
 
-function inputFor(project: Project, plan: PlanResult): PlanSaveInput {
+function inputFor(
+  project: Project,
+  plan: PlanResult,
+  agentFiles: PlanSaveInput["agentFiles"] = null,
+): PlanSaveInput {
   return {
     plan,
     planText: renderPlan(plan.plan, plan.decisions),
@@ -115,6 +124,7 @@ function inputFor(project: Project, plan: PlanResult): PlanSaveInput {
     author: "Sara El Amrani",
     date: "2026-11-23",
     commit: "def",
+    agentFiles,
   };
 }
 
@@ -209,7 +219,7 @@ describe("previewPlanSave", () => {
       preview.files.map((file) => file.path),
       [".team/plan.md", ".team/decisions/0002-storage.md"],
     );
-    assert.deepStrictEqual(preview.rules, { added: [], removed: [] });
+    assert.deepStrictEqual(preview.rules, { added: [], removed: [], held: [] });
   });
 
   it("keeps earlier decisions and their rules active when the next part is planned", () => {
@@ -226,7 +236,7 @@ describe("previewPlanSave", () => {
       { number: "0002", title: "Server" },
       { number: "0003", title: "Storage" },
     ]);
-    assert.deepStrictEqual(next.rules, { added: [], removed: [] });
+    assert.deepStrictEqual(next.rules, { added: [], removed: [], held: [] });
   });
 
   it("writes how we got here, in place when only the history grew", () => {
@@ -278,7 +288,7 @@ describe("previewPlanSave", () => {
       again.files.map((file) => file.status),
       ["unchanged", "unchanged", "unchanged"],
     );
-    assert.deepStrictEqual(again.rules, { added: [], removed: [] });
+    assert.deepStrictEqual(again.rules, { added: [], removed: [], held: [] });
     assert.deepStrictEqual(
       again.tasks.map((task) => task.action),
       ["keep", "keep", "keep", "keep"],
@@ -303,7 +313,42 @@ describe("previewPlanSave", () => {
     assert.deepStrictEqual(changed.rules, {
       added: ["Use Flask for the server. (plan decision 0004)"],
       removed: ["Use Django for the server. (plan decision 0002)"],
+      held: [],
     });
     assert.include(saved.files[".team/decisions/0001-use-tabs.md"]!, "We use tabs.");
+  });
+
+  it("tells AI tools, and holds a rule that says the opposite of the person's own line", () => {
+    const api = { ...decision("API"), picked: "Flask", rule: "Use Flask for the API." };
+    const own = "# Shop\n\n- Never use Flask.\n";
+    const preview = previewPlanSave(
+      inputFor(empty, planWith([stack, api]), { agents: own, claude: null }),
+    );
+    assert.deepStrictEqual(preview.rules.held, [
+      { rule: "Use Flask for the API.", line: "Never use Flask." },
+    ]);
+    assert.deepStrictEqual(preview.rules.added, [
+      "Use Django for the server. (plan decision 0002)",
+    ]);
+    const agents = preview.files.find((file) => file.path === "AGENTS.md")!;
+    assert.strictEqual(agents.status, "changed");
+    assert.isTrue(agents.content.startsWith(own));
+    assert.include(agents.content, "- Use Django for the server. (plan decision 0002)");
+    assert.notInclude(agents.content, "Use Flask for the API.");
+    const claude = preview.files.find((file) => file.path === "CLAUDE.md")!;
+    assert.deepStrictEqual([claude.status, claude.content], ["new", "@AGENTS.md\n"]);
+  });
+
+  it("finds what would stop a save halfway before anything is written", () => {
+    const preview = previewPlanSave(inputFor(empty, planWith([stack])));
+    assert.deepStrictEqual(planSaveProblems(preview), []);
+    const odd = {
+      ...preview,
+      tasks: [{ ...preview.tasks[0]!, paths: ["./", "../secrets"] }],
+    };
+    assert.deepStrictEqual(planSaveProblems(odd), [
+      'Task "Build the list page": "./" names the whole repo. Name the files or folders instead.',
+      'Task "Build the list page": "../secrets" leaves the repo. Use repo-relative paths.',
+    ]);
   });
 });

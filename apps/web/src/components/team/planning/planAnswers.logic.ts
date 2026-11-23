@@ -209,3 +209,26 @@ export function planErrorWords(
     description: message.length > 0 ? message : "Try again in a moment.",
   };
 }
+
+/**
+ * Answers kept as JSON (with a run, or as a draft) read back over `fallback`: a field that is
+ * missing or the wrong shape, say from an older version, keeps the fallback's value.
+ */
+export function answersFromJson(text: string | null, fallback: PlanAnswers): PlanAnswers {
+  let parsed: unknown;
+  try {
+    parsed = text === null ? null : JSON.parse(text);
+  } catch {
+    return fallback;
+  }
+  if (typeof parsed !== "object" || parsed === null) return fallback;
+  const saved = parsed as Record<string, unknown>;
+  const read = <K extends keyof PlanAnswers>(key: K): PlanAnswers[K] =>
+    Array.isArray(fallback[key]) === Array.isArray(saved[key]) &&
+    typeof saved[key] === typeof fallback[key]
+      ? (saved[key] as PlanAnswers[K])
+      : fallback[key];
+  return Object.fromEntries(
+    (Object.keys(fallback) as Array<keyof PlanAnswers>).map((key) => [key, read(key)]),
+  ) as unknown as PlanAnswers;
+}

@@ -26,8 +26,22 @@ export const TEAM_BRIEFING_MAX_NAME_LENGTH = 60;
 export interface TeamBriefingInput {
   readonly teamName: string;
   readonly memberName: string;
-  /** The rulebook, relative to the agent's working folder. */
-  readonly rulebookPath: string;
+  /** The rulebook, relative to the agent's working folder; null when the project has none. */
+  readonly rulebookPath: string | null;
+  /** The saved plan (.team/plan.md), relative to the working folder; null when there is none. */
+  readonly planPath: string | null;
+}
+
+/** Where the project's rules and plan are, in one short line; empty when it has neither. */
+function projectPointers(input: Pick<TeamBriefingInput, "rulebookPath" | "planPath">) {
+  if (input.rulebookPath !== null && input.planPath !== null) {
+    return [`Read ${input.rulebookPath} first, and plan.md beside it before big changes.`];
+  }
+  if (input.planPath !== null) return [`Read ${input.planPath} before big changes.`];
+  if (input.rulebookPath !== null) {
+    return [`Project rules are in ${input.rulebookPath}; read it before your first change.`];
+  }
+  return [];
 }
 
 /** One line, no tag or quote characters, cut to a fixed length. */
@@ -50,7 +64,7 @@ export function renderTeamBriefing(input: TeamBriefingInput): string {
     "Follow team_plan's answer; it may wait for the user.",
     // "only": Codex gets this every turn and read "when you finish or stop" as every turn end.
     "Write a team_handoff only after editing files or if the user stops work partway; keep claims unless the user drops it.",
-    `Project rules are in ${input.rulebookPath}; read it before your first change.`,
+    ...projectPointers(input),
     "Code is the truth; team notes can be out of date.",
     "</team_context>",
   ].join("\n");
@@ -58,15 +72,19 @@ export function renderTeamBriefing(input: TeamBriefingInput): string {
 
 /**
  * The briefing of a project with no team (team/state/SoloTeam.ts): the same
- * tools, between the person's own chats, kept on this computer. No rulebook.
+ * tools, between the person's own chats, kept on this computer, and the
+ * project's rules and plan when it has them.
  */
-export function renderSoloBriefing(): string {
+export function renderSoloBriefing(
+  input: Pick<TeamBriefingInput, "rulebookPath" | "planPath">,
+): string {
   return [
     "<project_memory>",
     "Other chats of this user may be changing this project too. T3 keeps notes between chats, on this computer only.",
     "Before any edit, even a small one, call team_status, then team_plan the files you will change.",
     "Follow team_plan's answer; it may wait for the user.",
     "Write a team_handoff only after editing files or if the user stops work partway; keep claims unless the user drops it.",
+    ...projectPointers(input),
     "To find earlier work, use team_memory_search. Code is the truth; notes can be out of date.",
     "</project_memory>",
   ].join("\n");

@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import { planCases } from "./cases.ts";
-import { badTasks, pushedBack } from "./grade.ts";
+import { badTasks, fitsTeam, pushBackVerdict, pushedBack } from "./grade.ts";
 
 const planted = planCases.find((c) => c.id === "planted-mistakes")?.planted ?? [];
 const mistake = (id: string) => {
@@ -77,5 +77,22 @@ describe("plan structure", () => {
       "Login (Ana and Ben · app/)",
       "Tests (Ana · no area)",
     ]);
+  });
+});
+
+describe("push-back grading", () => {
+  it("reads a kept pick as defended and a new one as changed", () => {
+    assert.strictEqual(pushBackVerdict("Django", "django "), "defend");
+    assert.strictEqual(pushBackVerdict("Django", "Node.js with Express"), "change");
+  });
+
+  it("accepts an answer that argues from the team, not one that argues in general", () => {
+    const facts = {
+      people: ["Sara", "Adam"],
+      details: ["free only", "Student data must stay in the EU"],
+    };
+    assert.isTrue(fitsTeam("Sara knows Python, so Django is faster for you.", facts));
+    assert.isTrue(fitsTeam("Student data has to stay with the school.", facts));
+    assert.isFalse(fitsTeam("Microservices are complex and rarely worth it.", facts));
   });
 });

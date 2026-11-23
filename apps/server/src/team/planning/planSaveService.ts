@@ -21,7 +21,14 @@ import * as GitVcsDriver from "../../vcs/GitVcsDriver.ts";
 import { TeamService } from "../TeamService.ts";
 import type { PlanResult } from "./planSchemas.ts";
 import { renderPlan } from "./planRender.ts";
-import { describePlanSave, PLAN_FILE, type PlanSavePreview, previewPlanSave } from "./planSave.ts";
+import { AGENTS_FILE, CLAUDE_FILE } from "./planAgentFiles.ts";
+import {
+  describePlanSave,
+  PLAN_FILE,
+  type PlanSavePreview,
+  planSaveProblems,
+  previewPlanSave,
+} from "./planSave.ts";
 
 export class TeamPlanSaveError extends Schema.TaggedError<TeamPlanSaveError>()(
   "TeamPlanSaveError",
@@ -38,6 +45,8 @@ export interface PlanSaveTarget {
   readonly teamId: TeamId;
   readonly member: TeamMember;
   readonly plan: PlanResult;
+  /** Also write Elbo's section in AGENTS.md and the import in CLAUDE.md. */
+  readonly tellAgents: boolean;
 }
 
 export interface PlanSaveOutcome {
@@ -51,7 +60,11 @@ export class TeamPlanSave extends Context.Service<
   {
     /** What a save would write; writes nothing. */
     readonly preview: (target: PlanSaveTarget) => Effect.Effect<PlanSaveOutcome, TeamPlanSaveError>;
-    /** Writes the plan, its decisions and rulebook lines, and its tasks; saving again changes nothing. */
+    /**
+     * Writes the plan, its decisions, rule lines and tasks, all or nothing: everything is checked
+     * first, and a write that still fails puts the files back and names any tasks already added
+     * (tasks can't be deleted). Saving again changes nothing.
+     */
     readonly save: (target: PlanSaveTarget) => Effect.Effect<PlanSaveOutcome, TeamPlanSaveError>;
   }
 >()("t3/team/planning/planSaveService/TeamPlanSave") {}
@@ -60,6 +73,13 @@ const failed = (what: string) => (cause: unknown) =>
   new TeamPlanSaveError({
     detail: `${what}: ${cause instanceof Error ? cause.message : String(cause)}`,
   });
+
+interface Written {
+  readonly full: string;
+  readonly file: string;
+  /** null: the file did not exist, so undoing removes it. */
+  readonly before: string | null;
+}
 
 const make = Effect.gen(function* () {
   const teams = yield* TeamService;
@@ -99,21 +119,61 @@ const make = Effect.gen(function* () {
       author: target.member.displayName,
       date: DateTime.formatIsoDateUtc(yield* DateTime.now),
       commit: (yield* currentCommit(git, target.teamRoot)) ?? "",
+      agentFiles: target.tellAgents
+        ? {
+            agents: yield* readOptional(path.join(target.teamRoot, AGENTS_FILE)),
+            claude: yield* readOptional(path.join(target.teamRoot, CLAUDE_FILE)),
+          }
+        : null,
     });
     return { preview: result, text: describePlanSave(result) };
   });
 
+  /** Puts every written file back as it was; returns the ones that could not be. */
+  const undoFiles = (written: ReadonlyArray<Written>) =>
+    Effect.forEach(written.toReversed(), ({ full, file, before }) =>
+      (before === null ? fs.remove(full) : fs.writeFileString(full, before)).pipe(
+        Effect.as<ReadonlyArray<string>>([]),
+        Effect.orElseSucceed(() => [file]),
+      ),
+    ).pipe(Effect.map((left) => left.flat()));
+
   const save = Effect.fn("TeamPlanSave.save")(function* (target: PlanSaveTarget) {
     const outcome = yield* preview(target);
+    // Everything is checked first, so a bad path never leaves a half-saved plan.
+    const problems = planSaveProblems(outcome.preview);
+    if (problems.length > 0) {
+      return yield* new TeamPlanSaveError({
+        detail: `Nothing was saved. ${problems.join(" ")}`,
+      });
+    }
+    const written: Array<Written> = [];
+    const added: string[] = [];
+    const stopped = (what: string) => (cause: unknown) =>
+      Effect.gen(function* () {
+        const left = yield* undoFiles(written);
+        const files =
+          left.length === 0
+            ? "Every file was put back as it was."
+            : `These files could not be put back: ${left.join(", ")}.`;
+        const tasks =
+          added.length === 0
+            ? ""
+            : ` These tasks were already added: ${added.map((title) => `"${title}"`).join(", ")}.`;
+        return yield* new TeamPlanSaveError({
+          detail: `${failed(what)(cause).detail} ${files}${tasks}`,
+        });
+      });
+
     for (const file of outcome.preview.files) {
       if (file.status === "unchanged") continue;
       const full = path.join(target.teamRoot, file.path);
-      yield* fs
-        .makeDirectory(path.dirname(full), { recursive: true })
-        .pipe(
-          Effect.andThen(fs.writeFileString(full, file.content)),
-          Effect.mapError(failed(`Could not write ${file.path}`)),
-        );
+      const before = yield* readOptional(full);
+      yield* fs.makeDirectory(path.dirname(full), { recursive: true }).pipe(
+        Effect.andThen(fs.writeFileString(full, file.content)),
+        Effect.tap(() => Effect.sync(() => written.push({ full, file: file.path, before }))),
+        Effect.catch(stopped(`Could not write ${file.path}`)),
+      );
     }
     for (const task of outcome.preview.tasks) {
       if (task.action === "create") {
@@ -126,7 +186,10 @@ const make = Effect.gen(function* () {
             note: task.note,
             ...(task.ownerMemberId === null ? {} : { ownerMemberId: task.ownerMemberId }),
           })
-          .pipe(Effect.mapError(failed(`Could not add the task "${task.title}"`)));
+          .pipe(
+            Effect.tap(() => Effect.sync(() => added.push(task.title))),
+            Effect.catch(stopped(`Could not add the task "${task.title}"`)),
+          );
       } else if (task.action === "update" && task.taskId !== null) {
         yield* teams
           .updateTask({
@@ -136,7 +199,10 @@ const make = Effect.gen(function* () {
             note: task.note,
             ownerMemberId: task.ownerMemberId,
           })
-          .pipe(Effect.mapError(failed(`Could not update the task "${task.title}"`)));
+          .pipe(
+            Effect.tap(() => Effect.sync(() => added.push(`${task.title} (updated)`))),
+            Effect.catch(stopped(`Could not update the task "${task.title}"`)),
+          );
       }
     }
     return outcome;

@@ -6,10 +6,19 @@ import {
   normalizeTeamPath,
   TEAM_DIRECTORY_NAME,
   TEAM_RULEBOOK_FILE_NAME,
+  teamPathProblem,
 } from "@t3tools/contracts";
 
 import { readCodeRulesSection, replaceCodeRules } from "../../mcp/toolkits/team/rulebook.ts";
 import { TEAM_RULEBOOK_TEMPLATE } from "../TeamProjectFiles.ts";
+import {
+  AGENTS_FILE,
+  CLAUDE_FILE,
+  mergeAgentsFile,
+  mergeClaudeFile,
+  ownInstructionLines,
+  ruleConflict,
+} from "./planAgentFiles.ts";
 import {
   DECISIONS,
   type ExistingDecision,
@@ -37,6 +46,8 @@ export interface PlanSaveInput {
   readonly author: string;
   readonly date: string;
   readonly commit: string;
+  /** AGENTS.md and CLAUDE.md as they are, when the save tells AI tools about the plan; else null. */
+  readonly agentFiles: { readonly agents: string | null; readonly claude: string | null } | null;
 }
 
 export interface FileChange {
@@ -63,6 +74,8 @@ export interface PlanSavePreview {
   readonly rules: {
     readonly added: ReadonlyArray<string>;
     readonly removed: ReadonlyArray<string>;
+    /** Rules not written: each says the opposite of a line the person wrote in AGENTS.md or CLAUDE.md. */
+    readonly held: ReadonlyArray<{ readonly rule: string; readonly line: string }>;
   };
   readonly tasks: ReadonlyArray<TaskChange>;
   /** Decisions from an earlier plan that this one doesn't have; they stay active. */
@@ -153,11 +166,23 @@ export function previewPlanSave(input: PlanSaveInput): PlanSavePreview {
   const rulebookBefore = input.rulebook ?? TEAM_RULEBOOK_TEMPLATE;
   const ownedBefore = readCodeRulesSection(rulebookBefore).filter((item) => RULE_MARK.test(item));
   const keptNumbers = new Set(decisions.kept.map((entry) => entry.number));
+  const ownLines = ownInstructionLines([
+    input.agentFiles?.agents ?? null,
+    input.agentFiles?.claude ?? null,
+  ]);
+  const held: Array<{ readonly rule: string; readonly line: string }> = [];
   const rules = [
     ...ownedBefore.filter((item) => keptNumbers.has(RULE_MARK.exec(item)?.[1] ?? "")),
-    ...decisions.active.flatMap(({ number, decision }) =>
-      decision.rule.trim() ? [`${decision.rule.trim()} (plan decision ${number})`] : [],
-    ),
+    ...decisions.active.flatMap(({ number, decision }) => {
+      const rule = decision.rule.trim();
+      if (!rule) return [];
+      const line = ruleConflict(rule, ownLines);
+      if (line !== null) {
+        held.push({ rule, line });
+        return [];
+      }
+      return [`${rule} (plan decision ${number})`];
+    }),
   ];
   const added = rules.filter((item) => !ownedBefore.includes(item));
   const removed = ownedBefore.filter((item) => !rules.includes(item));
@@ -178,11 +203,46 @@ export function previewPlanSave(input: PlanSaveInput): PlanSavePreview {
             ),
           ]
         : []),
+      ...agentFileChanges(input.agentFiles, rules),
     ],
-    rules: { added, removed },
+    rules: { added, removed, held },
     tasks: planTasks(input),
     kept: decisions.kept,
   };
+}
+
+function agentFileChanges(
+  files: PlanSaveInput["agentFiles"],
+  rules: ReadonlyArray<string>,
+): ReadonlyArray<FileChange> {
+  if (files === null) return [];
+  const claude = mergeClaudeFile(files.claude);
+  return [
+    changeOf(
+      AGENTS_FILE,
+      files.agents,
+      mergeAgentsFile(files.agents, rules),
+      "plan and code rules for AI tools",
+    ),
+    ...(claude === null
+      ? []
+      : [changeOf(CLAUDE_FILE, files.claude, claude, "Claude Code reads AGENTS.md")]),
+  ];
+}
+
+/** What would make the save stop halfway, checked before anything is written. */
+export function planSaveProblems(preview: PlanSavePreview): ReadonlyArray<string> {
+  const files = preview.files.flatMap((file) =>
+    teamPathProblem(file.path) === null ? [] : [`${file.path}: ${teamPathProblem(file.path)}`],
+  );
+  const tasks = preview.tasks.flatMap((task) => [
+    ...(task.title.trim() === "" ? ["A task has no title."] : []),
+    ...task.paths.flatMap((path) => {
+      const problem = teamPathProblem(path);
+      return problem === null ? [] : [`Task "${task.title}": ${problem}`];
+    }),
+  ]);
+  return [...files, ...tasks];
 }
 
 function decisionFileName(files: ReadonlyArray<FileChange>, number: string): string {
@@ -207,6 +267,9 @@ export function describePlanSave(preview: PlanSavePreview): string {
       `- ${task.action}: ${task.title}${task.ownerMemberId === null ? "" : " (owner set)"}${task.paths.length > 0 ? ` [${task.paths.join(", ")}]` : ""} · ${task.note}`,
   );
   const kept = preview.kept.map((entry) => `- ${entry.number} ${entry.title}`);
+  const held = preview.rules.held.map(
+    (entry) => `- not written: ${entry.rule} (says the opposite of "${entry.line}")`,
+  );
   return [
     "Files:",
     ...files,
@@ -214,6 +277,7 @@ export function describePlanSave(preview: PlanSavePreview): string {
     "",
     "Rulebook Code rules:",
     ...(rules.length > 0 ? rules : ["- no change"]),
+    ...held,
     "",
     "Tasks:",
     ...tasks,

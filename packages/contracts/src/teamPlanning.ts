@@ -51,6 +51,8 @@ export const TeamPlanStartInput = Schema.Struct({
   projectId: ProjectId,
   brief: TeamPlanBrief,
   size: TeamPlanSize,
+  /** The plan page's answers as JSON, kept with the run so "Change the answers" brings them back. */
+  answers: Schema.String.check(Schema.isMaxLength(50_000)),
 });
 export type TeamPlanStartInput = typeof TeamPlanStartInput.Type;
 
@@ -58,6 +60,18 @@ export const TeamPlanRunInput = Schema.Struct({ runId: Schema.String });
 export type TeamPlanRunInput = typeof TeamPlanRunInput.Type;
 
 export const TeamPlanStartResult = TeamPlanRunInput;
+
+/** Save options: Elbo's section in AGENTS.md and the import in CLAUDE.md are on by default. */
+export const TeamPlanSaveInput = Schema.Struct({
+  runId: Schema.String,
+  tellAgents: Schema.Boolean,
+});
+export type TeamPlanSaveInput = typeof TeamPlanSaveInput.Type;
+
+export const TeamPlanLatestInput = Schema.Struct({ projectId: ProjectId });
+export type TeamPlanLatestInput = typeof TeamPlanLatestInput.Type;
+/** The project's newest plan that isn't saved yet, so the plan page opens where it was. */
+export const TeamPlanLatestResult = Schema.Struct({ runId: Schema.NullOr(Schema.String) });
 
 /** One of the person's connected AIs, as it takes part in a run. */
 export const TeamPlanAgent = Schema.Struct({
@@ -147,7 +161,7 @@ export type TeamPlanRunError = typeof TeamPlanRunError.Type;
 export const TeamPlanRunState = Schema.Struct({
   runId: Schema.String,
   projectId: ProjectId,
-  status: Schema.Literals(["running", "done", "failed", "stopped"]),
+  status: Schema.Literals(["running", "done", "failed", "stopped", "interrupted"]),
   step: Schema.NullOr(TeamPlanStep),
   round: Schema.Number,
   /** How many points the writer is fixing, during "fixing". */
@@ -164,6 +178,12 @@ export const TeamPlanRunState = Schema.Struct({
   ),
   /** Goes up on every change, so a client keeps the newest of two copies. */
   version: Schema.Number,
+  /** A restart cut off the writing ("run") or the writer's answer on one decision. */
+  interrupted: Schema.NullOr(
+    Schema.Struct({ kind: Schema.Literals(["run", "decision"]), number: Schema.String }),
+  ),
+  /** The answers the run started from (TeamPlanStartInput.answers). */
+  answers: Schema.String,
 });
 export type TeamPlanRunState = typeof TeamPlanRunState.Type;
 
@@ -191,6 +211,8 @@ export const TeamPlanSavePreview = Schema.Struct({
     removed: Schema.Array(Schema.String),
   }),
   tasks: Schema.Array(TeamPlanSaveTask),
+  /** Plan rules not written: each says the opposite of a line the person wrote. */
+  held: Schema.Array(Schema.Struct({ rule: Schema.String, line: Schema.String })),
   /** Decisions from an earlier plan that this one doesn't have; they stay active. */
   kept: Schema.Array(Schema.Struct({ number: Schema.String, title: Schema.String })),
   saved: Schema.Boolean,

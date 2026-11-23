@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import { decision, problem, teamBrief, words } from "./planFixtures.testkit.ts";
-import { writerPrompt } from "./planPrompts.ts";
+import { answerPrompt, writerPrompt } from "./planPrompts.ts";
 import { overWordLimit, suggestSize } from "./planLimits.ts";
 import { withoutApiKeys } from "./planProvider.ts";
 import { checkProblems, logAnswers, numberDecisions, pickReviewer, toFix } from "./planReview.ts";
@@ -93,6 +93,21 @@ describe("writer prompt", () => {
     const prompt = writerPrompt(teamBrief, "medium");
     assert.include(prompt, "only when an AI writing the code could break this decision");
     assert.include(prompt, "Most decisions have none");
+  });
+
+  it("asks for rules an agent can check, in the plan and in an answer", () => {
+    const answer = answerPrompt({
+      brief: teamBrief,
+      decision: decision("Front end"),
+      parts: [],
+      tasks: [],
+      ask: { kind: "push-back", message: "Why not React?" },
+    });
+    for (const prompt of [writerPrompt(teamBrief, "medium"), answer]) {
+      assert.include(prompt, "specific enough to check in the code");
+      assert.include(prompt, '"Store passwords only as Django password hashes."');
+      assert.include(prompt, 'never a goal like "Keep it secure."');
+    }
   });
 });
 

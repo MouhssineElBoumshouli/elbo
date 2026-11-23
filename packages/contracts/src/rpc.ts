@@ -426,6 +426,9 @@ import {
 } from "./teamSetup.ts"; // team-layer
 import {
   TeamPlanDecideInput,
+  TeamPlanLatestInput,
+  TeamPlanLatestResult,
+  TeamPlanSaveInput,
   TeamPlanningError,
   TeamPlanRunInput,
   TeamPlanRunState,
@@ -668,6 +671,8 @@ export const WS_METHODS = {
   teamPlanStop: "team.planStop",
   teamPlanPreviewSave: "team.planPreviewSave",
   teamPlanDecide: "team.planDecide",
+  teamPlanRetry: "team.planRetry",
+  teamPlanLatest: "team.planLatest",
   teamPlanSave: "team.planSave",
 } as const;
 
@@ -2204,8 +2209,18 @@ const WsTeamPlanStopRpc = Rpc.make(WS_METHODS.teamPlanStop, {
   error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
 });
 const WsTeamPlanPreviewSaveRpc = Rpc.make(WS_METHODS.teamPlanPreviewSave, {
-  payload: TeamPlanRunInput,
+  payload: TeamPlanSaveInput,
   success: TeamPlanSavePreview,
+  error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
+});
+const WsTeamPlanRetryRpc = Rpc.make(WS_METHODS.teamPlanRetry, {
+  payload: TeamPlanRunInput,
+  success: TeamPlanRunState,
+  error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
+});
+const WsTeamPlanLatestRpc = Rpc.make(WS_METHODS.teamPlanLatest, {
+  payload: TeamPlanLatestInput,
+  success: TeamPlanLatestResult,
   error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
 });
 const WsTeamPlanDecideRpc = Rpc.make(WS_METHODS.teamPlanDecide, {
@@ -2214,7 +2229,7 @@ const WsTeamPlanDecideRpc = Rpc.make(WS_METHODS.teamPlanDecide, {
   error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
 });
 const WsTeamPlanSaveRpc = Rpc.make(WS_METHODS.teamPlanSave, {
-  payload: TeamPlanRunInput,
+  payload: TeamPlanSaveInput,
   success: TeamPlanSavePreview,
   error: Schema.Union([TeamPlanningError, EnvironmentAuthorizationError]),
 });
@@ -2443,6 +2458,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsTeamPlanPreviewSaveRpc, // team-layer
   WsTeamPlanSaveRpc, // team-layer
   WsTeamPlanDecideRpc, // team-layer
+  WsTeamPlanRetryRpc, // team-layer
+  WsTeamPlanLatestRpc, // team-layer
   WsOrchestrationV2DispatchCommandRpc,
   WsOrchestrationV2GetWorkflowScriptRpc,
   WsOrchestrationV2GetNativeChildWorkRpc,

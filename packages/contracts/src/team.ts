@@ -224,6 +224,15 @@ export function normalizeTeamPath(path: string): string {
     .replace(/\/+$/u, "");
 }
 
+/** Why a path can't be claimed or put on a task, or null when it can. */
+export function teamPathProblem(raw: string): string | null {
+  const path = normalizeTeamPath(raw);
+  if (path === "" || path === ".")
+    return `"${raw}" names the whole repo. Name the files or folders instead.`;
+  if (path.split("/").includes("..")) return `"${raw}" leaves the repo. Use repo-relative paths.`;
+  return null;
+}
+
 /**
  * True when two claimed paths are the same, or one is a folder containing the
  * other. Case is ignored: on Windows and macOS `src/Auth` and `src/auth` are

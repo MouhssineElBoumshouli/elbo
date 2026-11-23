@@ -301,7 +301,7 @@ export type TeamSavePlanResult = typeof TeamSavePlanResult.Type;
 // team-layer: planning slice 3 (PLANNING_FEATURE_PLAN.md section 7).
 const TeamSavePlanTool = Tool.make("team_save_plan", {
   description:
-    "Save a plan from Elbo's planning (its plan.json) into this project: .team/plan.md, decision files, rulebook code rules, team tasks. Without apply it only lists what it would write; show the user first.",
+    "Save a plan from Elbo's planning (its plan.json) into this project: .team/plan.md, decision files, rulebook code rules, team tasks, and Elbo's section in AGENTS.md (with @AGENTS.md in CLAUDE.md). Without apply it only lists what it would write; show the user first.",
   parameters: Schema.Struct({
     planFile: Schema.String.annotate({ description: "Path to the plan.json." }),
     apply: Schema.optional(

@@ -74,6 +74,7 @@ export const saveToProject = Effect.fn("teamPlan.saveToProject")(function* (inpu
       teamId: opened.context.teamFile.teamId,
       member: opened.context.member,
       plan: yield* readPlanFile(input.planFile),
+      tellAgents: true,
     };
     const outcome = yield* input.dryRun ? planSave.preview(target) : planSave.save(target);
     return `${input.dryRun ? "Preview (nothing written)" : "Saved"} in ${folder}${opened.context.solo ? " (solo team)" : ""}:\n${outcome.text}`;

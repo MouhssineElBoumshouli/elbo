@@ -93,6 +93,8 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.teamPlanPreviewSave]: AuthOrchestrationReadScope,
   [WS_METHODS.teamPlanSave]: AuthOrchestrationOperateScope,
   [WS_METHODS.teamPlanDecide]: AuthOrchestrationOperateScope,
+  [WS_METHODS.teamPlanRetry]: AuthOrchestrationOperateScope,
+  [WS_METHODS.teamPlanLatest]: AuthOrchestrationReadScope,
 } as const;
 export type ClientGuardedRpcTag = keyof typeof CLIENT_GUARDED_RPC_SCOPES;
 

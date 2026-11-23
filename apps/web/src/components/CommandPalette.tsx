@@ -120,6 +120,7 @@ import { useClientSettings } from "../hooks/useSettings";
 import { useStableCallback } from "../hooks/useStableCallback";
 import { readLocalApi } from "../localApi";
 import { newProjectTarget, pickedProjectsFolder } from "./team/newProjectTarget.logic"; // team-layer
+import { teamPlanning } from "~/state/teamPlanning"; // team-layer
 import { configuredHostedAppUrl } from "../hostedPairing";
 import { desktopLocalBackendId } from "../connection/desktopLocal";
 import { filesystemEnvironment, useFilesystemReadAccess } from "../state/filesystem";
@@ -567,6 +568,7 @@ function OpenCommandPaletteDialog(props: {
   // State lags a render behind, so a repeated Enter could start a second create.
   const newProjectSubmittingRef = useRef(false);
   const createNewProject = useNewProject();
+  const planLatest = useAtomCommand(teamPlanning.latest, { reportFailure: false }); // team-layer
   const cloneLookupGeneration = useRef(0);
   const [isRemoteProjectLookingUp, setIsRemoteProjectLookingUp] = useState(false);
   const [isRemoteProjectCloning, setIsRemoteProjectCloning] = useState(false);
@@ -1741,7 +1743,13 @@ function OpenCommandPaletteDialog(props: {
       title: "Plan the next part",
       icon: <ListChecksIcon className={ITEM_ICON_CLASS} />,
       run: async () => {
-        await navigate({ to: "/plan", search: planTarget });
+        // An unsaved plan, say from before a restart or an update, opens where it was.
+        const latest = await planLatest({
+          environmentId: planTarget.environmentId!,
+          input: { projectId: planTarget.projectId! },
+        });
+        const runId = latest._tag === "Success" ? latest.value.runId : null;
+        await navigate({ to: "/plan", search: { ...planTarget, ...(runId ? { runId } : {}) } });
       },
     });
   }

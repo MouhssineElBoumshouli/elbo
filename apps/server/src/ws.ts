@@ -3576,6 +3576,8 @@ export const layerWsRpc = (
         [WS_METHODS.teamPlanStop]: (input) => teamPlanning.stop(input), // team-layer
         [WS_METHODS.teamPlanPreviewSave]: (input) => teamPlanning.previewSave(input), // team-layer
         [WS_METHODS.teamPlanDecide]: (input) => teamPlanning.decide(input), // team-layer
+        [WS_METHODS.teamPlanRetry]: (input) => teamPlanning.retry(input), // team-layer
+        [WS_METHODS.teamPlanLatest]: (input) => teamPlanning.latest(input), // team-layer
         [WS_METHODS.teamPlanSave]: (input) => teamPlanning.save(input), // team-layer
         [WS_METHODS.subscribeResourceTelemetry]: (_input) =>
           Stream.unwrap(

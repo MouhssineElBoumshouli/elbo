@@ -135,7 +135,8 @@ export const savePreviewView = (
   folder,
   saved,
   files: preview.files.map(({ path, status, detail }) => ({ path, status, detail })),
-  rules: preview.rules,
+  rules: { added: preview.rules.added, removed: preview.rules.removed },
+  held: preview.rules.held,
   tasks: preview.tasks.map(({ action, title, owner, paths, note }) => ({
     action,
     title,

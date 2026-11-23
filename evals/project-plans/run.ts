@@ -36,6 +36,8 @@ const { values } = NodeUtil.parseArgs({
     "review-effort": { type: "string" },
     effort: { type: "string", default: "medium" },
     case: { type: "string" },
+    // Skips the plain chat, for a rerun that compares the flow with an earlier round.
+    "no-baseline": { type: "boolean", default: false },
   },
 });
 const isProvider = (value: string | undefined) => value === "codex" || value === "claude";
@@ -115,6 +117,10 @@ await Effect.runPromise(
         ],
       });
       const methodText = renderPlan(plan.plan, plan.decisions);
+      if (values["no-baseline"]) {
+        // No pair to judge: compare method/plan.json and usage.json with the earlier round.
+        continue;
+      }
 
       yield* Effect.logInfo(`${planCase.id}: plain chat`);
       const baseline = yield* makeProviderAsk({

@@ -115,11 +115,18 @@ describe("decision states", () => {
       ask: pushBack,
       reply: reply({
         verdict: "change",
-        decision: { ...server, title: "Back end", picked: "Flask" },
+        decision: {
+          ...server,
+          title: "Back end",
+          picked: "Flask",
+          options: ["Flask, a small Python web framework", "FastAPI"],
+        },
       }),
       ...common,
     });
     assert.strictEqual(changed.decision.picked, "Flask");
+    // "Also looked at" keeps the old pick and never repeats the new one under a longer name.
+    assert.deepStrictEqual(changed.decision.options, ["Flask", "Django", "FastAPI"]);
     assert.strictEqual(changed.decision.title, "Server");
     assert.deepStrictEqual(changed.history[1]!.updated, ["Steps"]);
   });

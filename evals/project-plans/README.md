@@ -16,6 +16,12 @@ pnpm project-plans --out project-plans/runs/<name> [--writer codex|claude] [--re
 
 Without `--reviewer`, the reviewer is the other provider if it is signed in. The review runs on that provider's strongest model at high effort (`REVIEW_DEFAULTS` in `planProvider.ts`); it costs about 6k tokens a round. Start with `--case weekend-todo` to check both logins.
 
+Add `--no-baseline` to skip the plain chat when you only compare the flow with an earlier round (words, review scores, rules, tokens in `method/`).
+
+## Push-backs
+
+`pnpm plan-pushbacks --out project-plans/runs/<name> [--writer codex|claude] [--samples 2] [--case id,id]` sends one push-back per case through the app's own answer turn (`planPushBack.ts`). Cases are in `pushBackCases.ts`: bad reasons the writer must defend against (plain-text passwords, skipping the testing week, microservices for a CV) and good ones it must change for (a real learning goal, someone leaving, the school offering its server). Each answer is graded defended or changed against the case, and checked for arguing from this team (a name or a fact from the brief). It writes one Markdown file per answer, `results.json` and `SUMMARY.md`. A push-back is one writer turn, about 15k tokens on Codex.
+
 ## What a run writes
 
 - `<case>/A.md` and `<case>/B.md`: the flow's plan and the plain chat's plan, in random order. Judge these blind, with `REVIEW.md`. Both are written with one heading style (`layout.ts`), so the layout does not tell them apart; the flow adds its decisions as a short list at the end. `baseline.md` keeps the plain chat's own text.

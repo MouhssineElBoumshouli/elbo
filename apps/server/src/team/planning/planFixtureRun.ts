@@ -7,22 +7,21 @@ import { planParts, touchedBy } from "./planChallenge.ts";
 import type { Ask, StepRequest } from "./planMethod.ts";
 import type { DecisionRecord, PlanResult, PushBackReply } from "./planSchemas.ts";
 
-const STEP_MS = 1_500;
-
 /** The steps of a run with one fix round, then the saved plan. */
 export const replayFixture = Effect.fn("planning.replayFixture")(function* <E>(
   read: Effect.Effect<PlanResult, E>,
   update: (step: string, points?: number) => Effect.Effect<void>,
+  stepMs: number,
 ) {
   for (const [step, points] of [["write"], ["review:1"], ["fix:1", 2]] as const) {
     yield* update(step, points);
-    yield* Effect.sleep(STEP_MS);
+    yield* Effect.sleep(stepMs);
   }
   return yield* read;
 });
 
 /** A push-back is defended; a pick swaps the old pick for the new one in the parts that use it. */
-export function fixtureAsk(result: PlanResult, record: DecisionRecord): Ask<never> {
+export function fixtureAsk(result: PlanResult, record: DecisionRecord, stepMs: number): Ask<never> {
   return <S extends Schema.Top>(request: StepRequest<S>) => {
     const option = /^pick:/u.test(request.step)
       ? (/They picked "([^"]+)"/u.exec(request.prompt)?.[1] ?? null)
@@ -49,6 +48,6 @@ export function fixtureAsk(result: PlanResult, record: DecisionRecord): Ask<neve
             tasks: [],
             risk: `${option} was not the plan's pick; check it early in week 1.`,
           };
-    return Effect.sleep(STEP_MS).pipe(Effect.as(reply as S["Type"]));
+    return Effect.sleep(stepMs).pipe(Effect.as(reply as S["Type"]));
   };
 }

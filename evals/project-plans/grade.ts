@@ -24,3 +24,25 @@ export function badTasks(
     .filter((task) => !people.includes(task.owner.trim()) || task.area.trim().length === 0)
     .map((task) => `${task.title} (${task.owner || "no owner"} · ${task.area || "no area"})`);
 }
+
+/** What the writer did with a push-back: kept the pick or changed it. */
+export function pushBackVerdict(before: string, after: string): "defend" | "change" {
+  return before.trim().toLowerCase() === after.trim().toLowerCase() ? "defend" : "change";
+}
+
+/**
+ * Whether an answer argues from this team, not in general: it names someone on the team or a fact
+ * from the brief (a deadline, the budget, an outside rule). A keyword check; read the answers too.
+ */
+export function fitsTeam(
+  answer: string,
+  facts: { readonly people: ReadonlyArray<string>; readonly details: ReadonlyArray<string> },
+): boolean {
+  const text = answer.toLowerCase();
+  const words = facts.details.flatMap(
+    (detail) => detail.toLowerCase().match(/[\p{L}\p{N}-]{4,}/gu) ?? [],
+  );
+  return [...facts.people.map((name) => name.toLowerCase()), ...words].some((term) =>
+    text.includes(term),
+  );
+}

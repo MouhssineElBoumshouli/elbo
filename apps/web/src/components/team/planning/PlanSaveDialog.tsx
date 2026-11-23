@@ -3,6 +3,7 @@
 import type { TeamPlanSavePreview } from "@t3tools/contracts";
 
 import { Button } from "../../ui/button";
+import { Checkbox } from "../../ui/checkbox";
 import {
   Dialog,
   DialogDescription,
@@ -28,6 +29,8 @@ const TASK_ACTION: Record<TeamPlanSavePreview["tasks"][number]["action"], string
 export function PlanSaveDialog(props: {
   readonly preview: TeamPlanSavePreview;
   readonly saving: boolean;
+  readonly tellAgents: boolean;
+  readonly onTellAgents: (tell: boolean) => void;
   readonly onSave: () => void;
   readonly onClose: () => void;
 }) {
@@ -81,6 +84,16 @@ export function PlanSaveDialog(props: {
                   ))}
                 </ul>
               )}
+              {preview.held.length > 0 ? (
+                <ul className="mt-1 space-y-0.5 text-warning-foreground">
+                  {preview.held.map((entry) => (
+                    <li key={`held:${entry.rule}`}>
+                      Not written: {entry.rule} It says the opposite of your line "{entry.line}" in
+                      AGENTS.md or CLAUDE.md; change one of them, then save again.
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </section>
             {preview.kept.length > 0 ? (
               <section aria-label="Earlier decisions">
@@ -115,6 +128,18 @@ export function PlanSaveDialog(props: {
             </section>
           </div>
         </DialogPanel>
+        {preview.saved ? null : (
+          <div className="px-6 pb-2">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox
+                checked={props.tellAgents}
+                disabled={props.saving}
+                onCheckedChange={props.onTellAgents}
+              />
+              Tell AI tools about this plan (AGENTS.md / CLAUDE.md)
+            </label>
+          </div>
+        )}
         <DialogFooter>
           {preview.saved ? (
             <Button onClick={props.onClose}>Done</Button>

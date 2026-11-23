@@ -9,7 +9,6 @@ import type {
   ProjectId,
   TeamPlanDecideInput,
   TeamPlanRunState,
-  TeamPlanSavePreview,
   TeamPlanSize,
 } from "@t3tools/contracts";
 import { useNavigate } from "@tanstack/react-router";
@@ -32,6 +31,7 @@ import { WorkspacePageContainer } from "../../WorkspacePageContainer";
 import { WorkspacePageHeader } from "../../WorkspacePageHeader";
 import {
   briefFromAnswers,
+  answersFromJson,
   emptyAnswers,
   type PlanAnswers,
   progressText,
@@ -41,7 +41,8 @@ import { PlanDecisions } from "./PlanDecisions";
 import { newestState, saveBlocked } from "./planDecisions.logic";
 import { PlanQuestions } from "./PlanQuestions";
 import { PlanSaveDialog } from "./PlanSaveDialog";
-import { PlanError, PlanProgress, PlanResult, PlanSizeCheck } from "./PlanSteps";
+import { PlanError, PlanInterrupted, PlanProgress, PlanResult, PlanSizeCheck } from "./PlanSteps";
+import { usePlanSave } from "./usePlanSave";
 
 type Step = "start" | "questions" | "size";
 
@@ -66,7 +67,8 @@ export function PlanPage(props: {
   );
   const me = team?.members.find((member) => member.memberId === team.me);
   const members = team === undefined || team.solo ? null : team.members;
-  const [answers, setAnswers] = useState<PlanAnswers>(() =>
+  const draftKey = `elbo:plan-answers:${props.projectId}`;
+  const blank = () =>
     emptyAnswers(
       members !== null
         ? members.map((member) => ({
@@ -83,19 +85,31 @@ export function PlanPage(props: {
               hours: "",
             },
           ],
-    ),
-  );
+    );
+  // The draft is kept in this browser until "Write the plan"; the run keeps the answers after.
+  const [answers, setAnswersState] = useState<PlanAnswers>(() => {
+    try {
+      return answersFromJson(localStorage.getItem(draftKey), blank());
+    } catch {
+      return blank();
+    }
+  });
+  const setAnswers = (next: PlanAnswers) => {
+    setAnswersState(next);
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(next));
+    } catch {}
+  };
   const [step, setStep] = useState<Step>(props.fresh ? "start" : "questions");
   const brief = briefFromAnswers(answers);
   const suggested = suggestedSize(brief);
   const [size, setSize] = useState<TeamPlanSize | null>(null);
   const [busy, setBusy] = useState(false);
-  const [preview, setPreview] = useState<TeamPlanSavePreview | null>(null);
+  const saving = usePlanSave(props.environmentId, props.runId);
 
   const start = useAtomCommand(teamPlanning.start, { reportFailure: false });
   const stop = useAtomCommand(teamPlanning.stop, { reportFailure: false });
-  const previewSave = useAtomCommand(teamPlanning.previewSave, { reportFailure: false });
-  const save = useAtomCommand(teamPlanning.save, { reportFailure: false });
+  const retry = useAtomCommand(teamPlanning.retry, { reportFailure: false });
   const decide = useAtomCommand(teamPlanning.decide, { reportFailure: false });
   const [decided, setDecided] = useState<TeamPlanRunState | null>(null);
   const [pending, setPending] = useState<TeamPlanRunState["answering"]>(null);
@@ -122,7 +136,12 @@ export function PlanPage(props: {
     setBusy(true);
     const result = await start({
       environmentId: props.environmentId,
-      input: { projectId: props.projectId, brief, size: size ?? suggested },
+      input: {
+        projectId: props.projectId,
+        brief,
+        size: size ?? suggested,
+        answers: JSON.stringify(answers),
+      },
     });
     setBusy(false);
     if (result._tag === "Failure") {
@@ -143,10 +162,10 @@ export function PlanPage(props: {
     setBusy(false);
   };
 
-  const openSave = async () => {
+  const tryAgain = async () => {
     if (props.runId === undefined) return;
     setBusy(true);
-    const result = await previewSave({
+    const result = await retry({
       environmentId: props.environmentId,
       input: { runId: props.runId },
     });
@@ -154,31 +173,20 @@ export function PlanPage(props: {
     if (result._tag === "Failure") {
       toastManager.add({
         type: "error",
-        title: "Could not prepare the save",
+        title: "Could not try again",
         description: failureText(result),
       });
       return;
     }
-    setPreview(result.value);
+    setDecided(result.value);
+    // The run's stream ended when it was interrupted; follow the new turn from here.
+    query.refresh();
   };
 
-  const confirmSave = async () => {
-    if (props.runId === undefined) return;
-    setBusy(true);
-    const result = await save({
-      environmentId: props.environmentId,
-      input: { runId: props.runId },
-    });
-    setBusy(false);
-    if (result._tag === "Failure") {
-      toastManager.add({
-        type: "error",
-        title: "Could not save the plan",
-        description: failureText(result),
-      });
-      return;
-    }
-    setPreview(result.value);
+  const changeAnswers = () => {
+    if (run) setAnswers(answersFromJson(run.answers, answers));
+    setStep("questions");
+    void toRun(undefined);
   };
 
   const onDecide = async (number: string, ask: TeamPlanDecideInput["ask"]) => {
@@ -303,6 +311,20 @@ export function PlanPage(props: {
             {run?.status === "stopped" ? (
               <p className="text-sm text-muted-foreground">{progressText(run)}</p>
             ) : null}
+            {run?.status === "interrupted" ? (
+              <PlanInterrupted
+                text="This was interrupted: the app restarted while the plan was being written."
+                busy={busy}
+                onRetry={() => void tryAgain()}
+              />
+            ) : null}
+            {run?.status === "done" && run.interrupted?.kind === "decision" ? (
+              <PlanInterrupted
+                text={`This was interrupted: the app restarted while ${run.writer.name} was answering on decision ${run.interrupted.number}.`}
+                busy={busy}
+                onRetry={() => void tryAgain()}
+              />
+            ) : null}
             {run?.status === "done" && run.view ? (
               <PlanResult
                 state={run}
@@ -321,18 +343,19 @@ export function PlanPage(props: {
               <div className="flex flex-wrap items-center gap-3">
                 {run.status === "done" ? (
                   <Button
-                    disabled={busy || blocked !== null || (run.answering ?? pending) !== null}
-                    onClick={() => void openSave()}
+                    disabled={
+                      busy || saving.busy || blocked !== null || (run.answering ?? pending) !== null
+                    }
+                    onClick={() => void saving.open()}
                   >
                     Save the plan
                   </Button>
                 ) : null}
                 <Button
-                  variant={run.status === "done" ? "outline" : "default"}
-                  onClick={() => {
-                    setStep("questions");
-                    void toRun(undefined);
-                  }}
+                  variant={
+                    run.status === "done" || run.status === "interrupted" ? "outline" : "default"
+                  }
+                  onClick={changeAnswers}
                 >
                   {run.status === "done" ? "Change the answers" : "Back to the questions"}
                 </Button>
@@ -347,12 +370,14 @@ export function PlanPage(props: {
           </WorkspacePageContainer>
         </ScrollArea>
       </div>
-      {preview ? (
+      {saving.preview ? (
         <PlanSaveDialog
-          preview={preview}
-          saving={busy}
-          onSave={() => void confirmSave()}
-          onClose={() => setPreview(null)}
+          preview={saving.preview}
+          saving={saving.busy}
+          tellAgents={saving.tellAgents}
+          onTellAgents={(tell) => void saving.setTellAgents(tell)}
+          onSave={() => void saving.confirm()}
+          onClose={saving.close}
         />
       ) : null}
     </SidebarInset>

@@ -1,27 +1,26 @@
 // team-layer: planning a project from the app (team/PLANNING_FEATURE_PLAN.md slices 4 and 5). Runs
 // the writer + review method on the person's connected AIs, publishes each run's progress for the
-// plan page, stops a run by interrupting its turns, answers the team on each decision, and saves a
-// finished plan into the project once every decision is settled.
+// plan page, answers the team on each decision, and saves a finished plan once every decision is
+// settled. Every run is kept in Elbo's data folder (planRunStore.ts), so a restart loses nothing.
 import {
   EnvironmentId,
   type ProjectId,
   type TeamPlanDecideInput,
+  type TeamPlanLatestInput,
   type TeamPlanRunInput,
   type TeamPlanRunState,
+  type TeamPlanSaveInput,
   type TeamPlanSavePreview,
   type TeamPlanStartInput,
   TeamPlanningError,
-  type TextGenerationError,
   ThreadId,
 } from "@t3tools/contracts";
-import type * as Schema from "effect/Schema";
-import type * as TextGenerationOperations from "@t3tools/provider-core/server/textGenerationOperations";
-import * as Config from "effect/Config";
 import * as Context from "effect/Context";
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
-import * as FileSystem from "effect/FileSystem";
+import type * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
@@ -29,28 +28,16 @@ import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import * as SecureRandom from "effect/crypto/SecureRandom";
 
+import * as ServerConfig from "../../config.ts";
 import { openProjectTeam } from "../../mcp/toolkits/team/resolve.ts";
 import * as ProjectService from "../../project/ProjectService.ts";
-import * as ProviderInstanceRegistry from "../../provider/ProviderInstanceRegistry.ts";
 import * as ProviderRegistry from "../../provider/ProviderRegistry.ts";
 import { TeamService } from "../TeamService.ts";
-import type { PlanBrief } from "./planBrief.ts";
-import { agreed, openDecisions, withDecision } from "./planChallenge.ts";
-import { readPlanFile } from "./planFiles.ts";
-import { fixtureAsk, replayFixture } from "./planFixtureRun.ts";
-import { type Ask, runMethod, type StepRequest } from "./planMethod.ts";
-import { askFromRunner } from "./planProvider.ts";
-import { answerDecision } from "./planPushBack.ts";
-import {
-  changed,
-  type PlanSeat,
-  pickPlanSeats,
-  planView,
-  savePreviewView,
-  stepOf,
-} from "./planRun.ts";
+import { agreed, type DecisionAsk, openDecisions, withDecision } from "./planChallenge.ts";
+import { pickPlanSeats, planView, savePreviewView, stepOf } from "./planRun.ts";
+import { KEPT_RUNS, makePlanRuns, type Run } from "./planRuns.ts";
 import { TeamPlanSave } from "./planSaveService.ts";
-import type { PlanResult } from "./planSchemas.ts";
+import { makePlanTurns } from "./planTurns.ts";
 
 export class TeamPlanning extends Context.Service<
   TeamPlanning,
@@ -58,68 +45,55 @@ export class TeamPlanning extends Context.Service<
     readonly start: (
       input: TeamPlanStartInput,
     ) => Effect.Effect<TeamPlanRunInput, TeamPlanningError>;
-    /** The run's state now, then each change, ending with the finished, failed or stopped state. */
+    /** The run's state now, then each change, ending when nothing is running. */
     readonly subscribe: (
       input: TeamPlanRunInput,
     ) => Stream.Stream<TeamPlanRunState, TeamPlanningError>;
     readonly stop: (input: TeamPlanRunInput) => Effect.Effect<{}, TeamPlanningError>;
     readonly previewSave: (
-      input: TeamPlanRunInput,
+      input: TeamPlanSaveInput,
     ) => Effect.Effect<TeamPlanSavePreview, TeamPlanningError>;
     readonly save: (
-      input: TeamPlanRunInput,
+      input: TeamPlanSaveInput,
     ) => Effect.Effect<TeamPlanSavePreview, TeamPlanningError>;
     /** Agree, pick another option, or push back; a pick or push-back waits for the writer. */
     readonly decide: (
       input: TeamPlanDecideInput,
     ) => Effect.Effect<TeamPlanRunState, TeamPlanningError>;
+    /** Starts again what a restart cut off: the writing, or the answer on one decision. */
+    readonly retry: (input: TeamPlanRunInput) => Effect.Effect<TeamPlanRunState, TeamPlanningError>;
+    readonly latest: (
+      input: TeamPlanLatestInput,
+    ) => Effect.Effect<{ readonly runId: string | null }, TeamPlanningError>;
   }
 >()("t3/team/planning/TeamPlanning") {}
-
-interface Run {
-  readonly projectId: ProjectId;
-  readonly brief: PlanBrief;
-  readonly writer: PlanSeat;
-  readonly state: SubscriptionRef.SubscriptionRef<TeamPlanRunState>;
-  fiber: Fiber.Fiber<unknown, unknown> | null;
-  result: PlanResult | null;
-  /** The writer's turn on one decision; one at a time, since two could rewrite the same part. */
-  answering: Fiber.Fiber<unknown, unknown> | null;
-}
-
-/** Finished runs kept for the plan page and saving; older ones go first. */
-const KEPT_RUNS = 20;
 
 const errorText = (error: unknown) =>
   String((error as { message?: unknown } | null)?.message ?? error);
 
 const fail = (detail: string) => new TeamPlanningError({ detail });
 
-const hasRunner = (
-  generation: unknown,
-): generation is { readonly run: TextGenerationOperations.Runner } =>
-  typeof generation === "object" &&
-  generation !== null &&
-  typeof (generation as { run?: unknown }).run === "function";
-
 const make = Effect.gen(function* () {
   const scope = yield* Effect.scope;
-  const fs = yield* FileSystem.FileSystem;
   const random = yield* SecureRandom.SecureRandom;
   const projects = yield* ProjectService.ProjectService;
   const providers = yield* ProviderRegistry.ProviderRegistry;
-  const instances = yield* ProviderInstanceRegistry.ProviderInstanceRegistry;
   const teams = yield* TeamService;
   const planSave = yield* TeamPlanSave;
+  const config = yield* ServerConfig.ServerConfig;
+  const path = yield* Path.Path;
   const fileContext = yield* Effect.context<FileSystem.FileSystem | Path.Path>();
-  // Dev only: a saved plan.json replayed with short pauses, to build the screens without AI turns.
-  const fixture = yield* Config.String("ELBO_PLAN_FIXTURE").pipe(Config.option);
-  const runs = new Map<string, Run>();
+  const turns = yield* makePlanTurns;
+  const { runs, persist, setState, remember } = yield* makePlanRuns(
+    path.join(config.stateDir, "planning"),
+  );
 
   const runOf = (runId: string): Effect.Effect<Run, TeamPlanningError> => {
     const run = runs.get(runId);
     return run === undefined
-      ? Effect.fail(fail("This plan is gone; the app was restarted. Plan it again."))
+      ? Effect.fail(
+          fail(`This plan is gone: only the ${KEPT_RUNS} newest plans are kept. Plan it again.`),
+        )
       : Effect.succeed(run);
   };
 
@@ -131,12 +105,44 @@ const make = Effect.gen(function* () {
       ),
     );
 
-  const askFor = Effect.fn("TeamPlanning.askFor")(function* (seat: PlanSeat, cwd: string) {
-    const instance = yield* instances.getInstance(seat.instanceId);
-    if (instance === undefined || !hasRunner(instance.textGeneration)) {
-      return yield* fail(`${seat.agent.name} cannot write plans here.`);
-    }
-    return askFromRunner({ ...seat, run: instance.textGeneration.run, cwd });
+  /** Writes the plan in the background; the run's state tells the page how far it got. */
+  const launch = Effect.fn("TeamPlanning.launch")(function* (run: Run) {
+    const update = (step: string, points?: number) =>
+      setState(run, () => ({ ...stepOf(step), points: points ?? 0 })).pipe(Effect.asVoid);
+    const { sameProvider } = yield* SubscriptionRef.get(run.state);
+    run.fiber = yield* turns.writePlan({ ...run, sameProvider, update }).pipe(
+      Effect.onExit((exit) => {
+        if (Exit.isSuccess(exit)) {
+          run.result = exit.value;
+          return setState(run, () => ({
+            status: "done" as const,
+            step: null,
+            view: planView(exit.value),
+          }));
+        }
+        const error = Exit.findErrorOption(exit);
+        const stopped = Exit.hasInterrupts(exit) && Option.isNone(error);
+        // Shutting down (an update or a restart): keep "running" on disk, so the run comes back
+        // as interrupted with Try again instead of looking stopped by the person.
+        if (stopped && !run.stopRequested) return Effect.void;
+        return setState(run, (current) => ({
+          status: stopped ? ("stopped" as const) : ("failed" as const),
+          step: null,
+          error: stopped
+            ? null
+            : {
+                message: Option.isSome(error)
+                  ? errorText(error.value)
+                  : "The plan could not be written.",
+                failureClass: null,
+                code: null,
+                driver:
+                  current.step === "reviewing" ? current.reviewer.driver : current.writer.driver,
+              },
+        }));
+      }),
+      Effect.forkIn(scope),
+    );
   });
 
   const start = Effect.fn("TeamPlanning.start")(function* (input: TeamPlanStartInput) {
@@ -146,100 +152,40 @@ const make = Effect.gen(function* () {
       return yield* fail("Connect Codex or Claude first: open Setup and sign in to one of them.");
     }
     const runId = yield* random.uuidV4();
-    const state = yield* SubscriptionRef.make<TeamPlanRunState>({
-      runId,
-      projectId: input.projectId,
-      status: "running",
-      step: "writing",
-      round: 0,
-      points: 0,
-      writer: seats.writer.agent,
-      reviewer: seats.reviewer.agent,
-      sameProvider: seats.sameProvider,
-      view: null,
-      error: null,
-      answering: null,
-      version: 0,
-    });
     const run: Run = {
-      projectId: input.projectId,
+      runId,
       brief: input.brief,
+      size: input.size,
       writer: seats.writer,
-      state,
-      fiber: null,
+      reviewer: seats.reviewer,
+      state: yield* SubscriptionRef.make<TeamPlanRunState>({
+        runId,
+        projectId: input.projectId,
+        status: "running",
+        step: "writing",
+        round: 0,
+        points: 0,
+        writer: seats.writer.agent,
+        reviewer: seats.reviewer.agent,
+        sameProvider: seats.sameProvider,
+        view: null,
+        error: null,
+        answering: null,
+        version: 0,
+        interrupted: null,
+        answers: input.answers,
+      }),
       result: null,
+      pending: null,
+      saved: false,
+      updatedAt: DateTime.formatIso(yield* DateTime.now),
+      fiber: null,
+      stopRequested: false,
       answering: null,
     };
-    runs.set(runId, run);
-    for (const old of [...runs.keys()].slice(0, Math.max(0, runs.size - KEPT_RUNS))) {
-      runs.delete(old);
-    }
-
-    const update = (step: string, points?: number) =>
-      SubscriptionRef.update(
-        state,
-        changed(() => ({ ...stepOf(step), points: points ?? 0 })),
-      );
-    const tracked =
-      (ask: Ask<TextGenerationError>): Ask<TextGenerationError> =>
-      <S extends Schema.Top>(request: StepRequest<S>) =>
-        update(request.step, request.points).pipe(Effect.andThen(ask(request)));
-
-    const work = Option.isSome(fixture)
-      ? replayFixture(
-          readPlanFile(fixture.value).pipe(Effect.provide(fileContext), Effect.orDie),
-          update,
-        )
-      : Effect.scoped(
-          Effect.gen(function* () {
-            // Outside any repo, so the provider reads no project's CLAUDE.md or AGENTS.md.
-            const cwd = yield* fs.makeTempDirectoryScoped({ prefix: "elbo-plan-" });
-            const write = (yield* askFor(seats.writer, cwd)).ask;
-            const review = (yield* askFor(seats.reviewer, cwd)).ask;
-            return yield* runMethod({
-              brief: input.brief,
-              size: input.size,
-              write: tracked(write),
-              review: tracked(review),
-              writer: `${seats.writer.agent.name} ${seats.writer.model}`,
-              reviewer: `${seats.reviewer.agent.name} ${seats.reviewer.model}`,
-              sameProvider: seats.sameProvider,
-            });
-          }),
-        );
-
-    run.fiber = yield* work.pipe(
-      Effect.onExit((exit) => {
-        if (Exit.isSuccess(exit)) {
-          run.result = exit.value;
-          return SubscriptionRef.update(
-            state,
-            changed(() => ({ status: "done" as const, step: null, view: planView(exit.value) })),
-          );
-        }
-        const stopped = Exit.hasInterrupts(exit) && Exit.findErrorOption(exit)._tag === "None";
-        const error = Exit.findErrorOption(exit);
-        return SubscriptionRef.update(
-          state,
-          changed((current) => ({
-            status: stopped ? ("stopped" as const) : ("failed" as const),
-            step: null,
-            error: stopped
-              ? null
-              : {
-                  message: Option.isSome(error)
-                    ? String((error.value as { message?: unknown }).message ?? error.value)
-                    : "The plan could not be written.",
-                  failureClass: null,
-                  code: null,
-                  driver:
-                    current.step === "reviewing" ? current.reviewer.driver : current.writer.driver,
-                },
-          })),
-        );
-      }),
-      Effect.forkIn(scope),
-    );
+    yield* remember(run);
+    yield* persist(run);
+    yield* launch(run);
     return { runId };
   });
 
@@ -256,12 +202,13 @@ const make = Effect.gen(function* () {
 
   const stop = Effect.fn("TeamPlanning.stop")(function* (input: TeamPlanRunInput) {
     const run = yield* runOf(input.runId);
+    run.stopRequested = true;
     if (run.fiber !== null) yield* Fiber.interrupt(run.fiber);
     return {};
   });
 
-  const teamOf = Effect.fn("TeamPlanning.teamOf")(function* (run: Run) {
-    const project = yield* projectOf(run.projectId);
+  const teamOf = Effect.fn("TeamPlanning.teamOf")(function* (projectId: ProjectId) {
+    const project = yield* projectOf(projectId);
     return yield* openProjectTeam({
       workingFolder: project.workspaceRoot,
       projectRoot: project.workspaceRoot,
@@ -275,7 +222,7 @@ const make = Effect.gen(function* () {
     );
   });
 
-  const saveTarget = Effect.fn("TeamPlanning.saveTarget")(function* (input: TeamPlanRunInput) {
+  const saveTarget = Effect.fn("TeamPlanning.saveTarget")(function* (input: TeamPlanSaveInput) {
     const run = yield* runOf(input.runId);
     if (run.result === null) return yield* fail("This plan is not finished yet.");
     const open = openDecisions(run.result.decisions).length;
@@ -284,47 +231,91 @@ const make = Effect.gen(function* () {
         `${open === 1 ? "1 decision still needs" : `${open} decisions still need`} your answer.`,
       );
     }
-    const opened = yield* teamOf(run);
+    const opened = yield* teamOf((yield* SubscriptionRef.get(run.state)).projectId);
     if (opened._tag === "NotInTeam") return yield* fail(opened.result.message);
     return {
-      teamRoot: opened.context.teamRoot,
-      teamId: opened.context.teamFile.teamId,
-      member: opened.context.member,
-      plan: run.result,
+      run,
+      target: {
+        teamRoot: opened.context.teamRoot,
+        teamId: opened.context.teamFile.teamId,
+        member: opened.context.member,
+        plan: run.result,
+        tellAgents: input.tellAgents,
+      },
     };
   });
 
-  const previewSave = Effect.fn("TeamPlanning.previewSave")(function* (input: TeamPlanRunInput) {
-    const target = yield* saveTarget(input);
+  const previewSave = Effect.fn("TeamPlanning.previewSave")(function* (input: TeamPlanSaveInput) {
+    const { target } = yield* saveTarget(input);
     const outcome = yield* planSave.preview(target).pipe(Effect.mapError((e) => fail(e.detail)));
     return savePreviewView(target.teamRoot, false, outcome.preview);
   });
 
-  const save = Effect.fn("TeamPlanning.save")(function* (input: TeamPlanRunInput) {
-    const target = yield* saveTarget(input);
+  const save = Effect.fn("TeamPlanning.save")(function* (input: TeamPlanSaveInput) {
+    const { run, target } = yield* saveTarget(input);
     const outcome = yield* planSave.save(target).pipe(Effect.mapError((e) => fail(e.detail)));
+    run.saved = true;
+    yield* persist(run);
     return savePreviewView(target.teamRoot, true, outcome.preview);
   });
 
-  const showResult = (run: Run, result: PlanResult) => {
-    run.result = result;
-    return SubscriptionRef.updateAndGet(
-      run.state,
-      changed(() => ({ view: planView(result), answering: null })),
-    );
-  };
+  /** The writer's answer on one decision, kept even if the page that asked goes away. */
+  const answerOn = Effect.fn("TeamPlanning.answerOn")(function* (
+    run: Run,
+    number: string,
+    ask: DecisionAsk,
+  ) {
+    const result = run.result;
+    const record = result?.decisions.find((candidate) => candidate.number === number);
+    if (result == null || record === undefined) {
+      return yield* fail("This decision is not in a finished plan.");
+    }
+    if (run.answering !== null) {
+      return yield* fail("Wait for the answer on the other decision first.");
+    }
+    const projectId = (yield* SubscriptionRef.get(run.state)).projectId;
+    const opened = yield* teamOf(projectId).pipe(Effect.orElseSucceed(() => null));
+    run.pending = { number, ask };
+    yield* setState(run, () => ({ answering: { number, kind: ask.kind }, interrupted: null }));
+    // In the layer's scope, so a reload or a dropped connection doesn't lose the answer.
+    const fiber = yield* turns
+      .answer({
+        brief: run.brief,
+        result,
+        record,
+        ask,
+        by: opened?._tag === "InTeam" ? opened.context.member.displayName : "You",
+        writer: run.writer,
+      })
+      .pipe(
+        Effect.onExit((exit) => {
+          run.answering = null;
+          // Shutting down: keep the pending answer on disk, so it comes back with Try again.
+          if (Exit.isFailure(exit) && Exit.hasInterrupts(exit)) return Effect.void;
+          run.pending = null;
+          if (Exit.isFailure(exit)) return setState(run, () => ({ answering: null }));
+          run.result = exit.value.result;
+          return setState(run, () => ({ view: planView(exit.value.result), answering: null }));
+        }),
+        Effect.forkIn(scope),
+      );
+    run.answering = fiber;
+    yield* Fiber.join(fiber).pipe(Effect.mapError((error) => fail(errorText(error))));
+    return yield* SubscriptionRef.get(run.state);
+  });
 
   const decide = Effect.fn("TeamPlanning.decide")(function* (input: TeamPlanDecideInput) {
     const run = yield* runOf(input.runId);
     const result = run.result;
+    const { ask } = input;
     const record = result?.decisions.find((candidate) => candidate.number === input.number);
     if (result == null || record === undefined) {
       return yield* fail("This decision is not in a finished plan.");
     }
-    const { ask } = input;
-    if (ask.kind === "agree") return yield* showResult(run, withDecision(result, agreed(record)));
-    if (run.answering !== null) {
-      return yield* fail("Wait for the answer on the other decision first.");
+    if (ask.kind === "agree") {
+      const next = withDecision(result, agreed(record));
+      run.result = next;
+      return yield* setState(run, () => ({ view: planView(next) }));
     }
     if (
       ask.kind === "pick" &&
@@ -332,58 +323,43 @@ const make = Effect.gen(function* () {
     ) {
       return yield* fail("Pick one of the other options the plan looked at.");
     }
-    const opened = yield* teamOf(run).pipe(Effect.orElseSucceed(() => null));
-    const by = opened?._tag === "InTeam" ? opened.context.member.displayName : "You";
-    const answer = (askWriter: Ask<TextGenerationError>) =>
-      answerDecision({
-        brief: run.brief,
-        result,
-        number: record.number,
-        ask: ask.kind === "pick" ? ask : { kind: "push-back", message: ask.message.trim() },
-        by,
-        writer: run.writer.agent.name,
-        askWriter,
-      });
-    const work = Option.isSome(fixture)
-      ? answer(fixtureAsk(result, record))
-      : Effect.scoped(
-          Effect.gen(function* () {
-            const cwd = yield* fs.makeTempDirectoryScoped({ prefix: "elbo-plan-" });
-            const writer = yield* askFor(run.writer, cwd);
-            const answered = yield* answer(writer.ask);
-            yield* Effect.logInfo("planning: decision answered", {
-              number: record.number,
-              kind: ask.kind,
-              sentParts: answered.sent.parts.length,
-              sentTasks: answered.sent.tasks.length,
-              usage: writer.usage,
-            });
-            return answered;
-          }),
-        );
-    yield* SubscriptionRef.update(
-      run.state,
-      changed(() => ({ answering: { number: record.number, kind: ask.kind } })),
+    return yield* answerOn(
+      run,
+      record.number,
+      ask.kind === "pick" ? ask : { kind: "push-back", message: ask.message.trim() },
     );
-    // In the layer's scope, so a reload or a dropped connection doesn't lose the answer.
-    const fiber = yield* work.pipe(
-      Effect.onExit((exit) => {
-        run.answering = null;
-        return Exit.isSuccess(exit)
-          ? showResult(run, exit.value.result)
-          : SubscriptionRef.update(
-              run.state,
-              changed(() => ({ answering: null })),
-            );
-      }),
-      Effect.forkIn(scope),
-    );
-    run.answering = fiber;
-    yield* Fiber.join(fiber).pipe(Effect.mapError((error) => fail(errorText(error))));
+  });
+
+  const retry = Effect.fn("TeamPlanning.retry")(function* (input: TeamPlanRunInput) {
+    const run = yield* runOf(input.runId);
+    const { interrupted } = yield* SubscriptionRef.get(run.state);
+    if (interrupted?.kind === "decision" && run.pending !== null) {
+      return yield* answerOn(run, run.pending.number, run.pending.ask);
+    }
+    if (interrupted?.kind !== "run") return yield* fail("Nothing here was interrupted.");
+    run.stopRequested = false;
+    yield* setState(run, () => ({
+      status: "running" as const,
+      step: "writing" as const,
+      error: null,
+      view: null,
+      interrupted: null,
+    }));
+    yield* launch(run);
     return yield* SubscriptionRef.get(run.state);
   });
 
-  return TeamPlanning.of({ start, subscribe, stop, previewSave, save, decide });
+  const latest = Effect.fn("TeamPlanning.latest")(function* (input: TeamPlanLatestInput) {
+    const own = yield* Effect.forEach([...runs.values()], (run) =>
+      SubscriptionRef.get(run.state).pipe(
+        Effect.map((state) => (state.projectId === input.projectId && !run.saved ? [run] : [])),
+      ),
+    );
+    const newest = own.flat().toSorted((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    return { runId: newest?.runId ?? null };
+  });
+
+  return TeamPlanning.of({ start, subscribe, stop, previewSave, save, decide, retry, latest });
 });
 
 export const layer = Layer.effect(TeamPlanning, make);

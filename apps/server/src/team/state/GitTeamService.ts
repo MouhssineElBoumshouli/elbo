@@ -36,6 +36,7 @@ import {
   countTeamWords,
   type EnvironmentId,
   normalizeTeamPath,
+  teamPathProblem,
   type Team,
   TeamActivityId,
   type TeamClaim,
@@ -170,17 +171,9 @@ const normalizeClaimPaths = (paths: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const normalized: Array<string> = [];
     for (const raw of paths) {
+      const problem = teamPathProblem(raw);
+      if (problem !== null) return yield* new TeamClaimPathsInvalidError({ detail: problem });
       const path = normalizeTeamPath(raw);
-      if (path === "" || path === ".") {
-        return yield* new TeamClaimPathsInvalidError({
-          detail: `"${raw}" names the whole repo. Name the files or folders instead.`,
-        });
-      }
-      if (path.split("/").includes("..")) {
-        return yield* new TeamClaimPathsInvalidError({
-          detail: `"${raw}" leaves the repo. Use repo-relative paths.`,
-        });
-      }
       if (!normalized.includes(path)) normalized.push(path);
     }
     return normalized;

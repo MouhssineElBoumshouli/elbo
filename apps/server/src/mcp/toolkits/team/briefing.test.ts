@@ -98,6 +98,8 @@ const makeFolder = (options: { readonly team: boolean }) =>
         path.join(root, ".team", "team.json"),
         `{ "teamId": "${TEAM_ID}", "name": "Core" }`,
       );
+      // Team setup writes the rulebook; the briefing points only to files that exist.
+      yield* fs.writeFileString(path.join(root, ".team", "rulebook.md"), "# Rulebook\n");
       useTeamOrigin(root, originUrl);
     }
     return root;
@@ -162,6 +164,7 @@ const EXPECTED = renderTeamBriefing({
   teamName: "Core",
   memberName: TEST_TEAM_LOGIN,
   rulebookPath: ".team/rulebook.md",
+  planPath: null,
 });
 
 describe("team briefing resolver", () => {
@@ -170,7 +173,7 @@ describe("team briefing resolver", () => {
       attachMcp();
       const root = yield* makeFolder({ team: false });
       const briefing = yield* briefingIn(root, null, { startsTeam: false });
-      assert.equal(briefing, renderSoloBriefing());
+      assert.equal(briefing, renderSoloBriefing({ rulebookPath: null, planPath: null }));
       assert.notInclude(briefing ?? "", "rulebook");
     }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
@@ -199,6 +202,27 @@ describe("team briefing resolver", () => {
       assert.isUndefined(briefing);
       assert.isTrue(Option.isNone(team));
       assert.equal(git(NodePath.join(testRoot, "origin.git"), "for-each-ref"), "");
+    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
+  );
+
+  it.effect("points a solo project to its saved plan and rules", () =>
+    Effect.gen(function* () {
+      attachMcp();
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const root = yield* makeFolder({ team: false });
+      yield* fs.makeDirectory(path.join(root, ".team"), { recursive: true });
+      yield* fs.writeFileString(path.join(root, ".team", "plan.md"), "# Plan\n");
+      yield* fs.writeFileString(path.join(root, ".team", "rulebook.md"), "# Rulebook\n");
+      const briefing = yield* briefingIn(root, null, { startsTeam: false });
+      assert.equal(
+        briefing,
+        renderSoloBriefing({ rulebookPath: ".team/rulebook.md", planPath: ".team/plan.md" }),
+      );
+      assert.include(
+        briefing,
+        "Read .team/rulebook.md first, and plan.md beside it before big changes.",
+      );
     }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 

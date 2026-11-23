@@ -123,6 +123,24 @@ export type DecisionAsk =
   | { readonly kind: "push-back"; readonly message: string }
   | { readonly kind: "pick"; readonly option: string };
 
+/** "React" and "React, a JavaScript library for screens" name the same option. */
+function sameOption(a: string, b: string): boolean {
+  const [x, y] = [a.trim().toLowerCase(), b.trim().toLowerCase()];
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  return (
+    long === short || (long.startsWith(short) && /^\s*[,(:;—–-]/u.test(long.slice(short.length)))
+  );
+}
+
+/** The pick first, then every other option once: "Also looked at" never repeats the pick. */
+function optionsAround(picked: string, ...lists: ReadonlyArray<ReadonlyArray<string>>) {
+  const options = [picked];
+  for (const option of lists.flat()) {
+    if (!options.some((kept) => sameOption(kept, option))) options.push(option);
+  }
+  return options;
+}
+
 export const agreed = (record: DecisionRecord): DecisionRecord =>
   record.status === "against-advice" ? record : { ...record, status: "agreed" };
 
@@ -138,11 +156,13 @@ export function answered(input: {
   const { record, ask, reply } = input;
   // The decision keeps its title, so a saved decision file is found again by it.
   const decision = { ...reply.decision, title: record.decision.title };
+  const options = (picked: string) =>
+    optionsAround(picked, record.decision.options, reply.decision.options);
   if (ask.kind === "push-back") {
     const changed = reply.verdict === "change" && decision.picked !== record.decision.picked;
     return {
       ...record,
-      decision: changed ? decision : record.decision,
+      decision: changed ? { ...decision, options: options(decision.picked) } : record.decision,
       status: "answered",
       advice: changed ? "" : record.advice,
       risk: changed ? "" : record.risk,
@@ -162,7 +182,7 @@ export function answered(input: {
   const backToAdvice = ask.option === advice;
   return {
     ...record,
-    decision: { ...decision, picked: ask.option },
+    decision: { ...decision, picked: ask.option, options: options(ask.option) },
     status: backToAdvice ? "agreed" : "against-advice",
     advice: backToAdvice ? "" : advice,
     risk: backToAdvice ? "" : reply.risk.trim(),

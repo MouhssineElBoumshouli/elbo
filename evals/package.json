@@ -12,6 +12,7 @@
     "test-signal": "node --env-file-if-exists=../.env test-signal/run.ts",
     "project-plans": "node project-plans/run.ts",
     "project-plans:regrade": "node project-plans/regrade.ts",
+    "plan-pushbacks": "node project-plans/pushBack.ts",
     "typecheck": "effect-tsgo tsrs --noEmit",
     "test": "vp test run --config ../vite.config.ts --dir ."
   },

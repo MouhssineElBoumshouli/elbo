@@ -31,6 +31,7 @@ export const savePlanFor =
           teamId: context.teamFile.teamId,
           member: context.member,
           plan,
+          tellAgents: true,
         }),
       ),
       Effect.map((outcome): TeamSavePlanResult => ({

@@ -8,6 +8,10 @@ const RULES = `- Write it like you'd explain it to a classmate: short sentences,
 - Never accept a bad idea because the brief asks for it. If an idea is unsafe, too big for the time, cannot work on the budget, or breaks an outside rule, say so plainly and give a better option.
 - Do not invent facts about the team. If something important is missing, say what you assumed.`;
 
+/** Agents follow a rule they can check (https://code.claude.com/docs/en/memory). */
+const RULE_SHAPE =
+  'Make it specific enough to check in the code: name the exact thing, like "Store passwords only as Django password hashes." or "Use plain HTML, CSS and JavaScript; add no front-end framework.", never a goal like "Keep it secure." or "Write clean code."';
+
 const brief = (input: PlanBrief) => `## The brief\n${briefText(input)}`;
 
 const people = (input: PlanBrief) => input.people.map((person) => person.name).join(", ");
@@ -22,7 +26,7 @@ const shape = (input: PlanBrief, size: PlanSize) => {
   return `## What to return
 - title: the project's name in a few words.
 - plan: the plan in Markdown, the way you'd answer "make me a project plan for this" in a chat: a short opening, then short sections with plain titles. It must have: the steps with who does what and when (${schedule(input)}); for each must-have, how the team knows it is done; what to cut first if time runs out; and your push-back on any bad idea in the brief. Under ${limits.words} words. No list or table of decisions: the app adds the decisions at the end.
-- decisions: at most ${limits.decisions} real choices that matter to this team: what you picked, every option you looked at (the picked one included), and why in a sentence or two. rule: one short line, only when an AI writing the code could break this decision without noticing (for example "Use Django for the server." or "Never put secrets in the repo."). Most decisions have none: leave it "" for hosting, schedules, testing, who does what, and anything people do rather than code.
+- decisions: at most ${limits.decisions} real choices that matter to this team: what you picked, every option you looked at (the picked one included), and why in a sentence or two. rule: one short line, only when an AI writing the code could break this decision without noticing. ${RULE_SHAPE} Most decisions have none: leave it "" for hosting, schedules, testing, who does what, and anything people do rather than code.
 - tasks: every task in the plan. owner is exactly one of: ${people(input)}. hours is your estimate, area the part of the work in a few words, folders the code folders it changes (for example "app/attendance/"), when its slot in the schedule. folders is [] for work that is not code: planning, testing, design, talks with people, hosting set-up. The hours must fit the team's time with room to spare.
 - doneChecks, pushBacks and cutFirst: the same as in the plan text, as data.`;
 };
@@ -171,7 +175,7 @@ ${RULES}
   return `${task}
 - "answer" is two or three sentences, addressed to the team.
 - parts and tasks: only the ones you changed, each with its [index] and the whole new text or task. Keep each part's Markdown style and about its length.
-- rule: one short line only when an AI writing the code could break the decision without noticing; otherwise "".
+- rule: one short line only when an AI writing the code could break the decision without noticing; otherwise "". ${RULE_SHAPE}
 
 ${brief(input.brief)}
 

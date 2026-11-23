@@ -246,6 +246,8 @@ const RPC_AGGREGATES = {
   [WS_METHODS.teamPlanStop]: "team", // team-layer
   [WS_METHODS.teamPlanPreviewSave]: "team", // team-layer
   [WS_METHODS.teamPlanDecide]: "team", // team-layer
+  [WS_METHODS.teamPlanRetry]: "team", // team-layer
+  [WS_METHODS.teamPlanLatest]: "team", // team-layer
   [WS_METHODS.teamPlanSave]: "team", // team-layer
 } as const satisfies Readonly<Record<WsRpcMethod, string>>;
 

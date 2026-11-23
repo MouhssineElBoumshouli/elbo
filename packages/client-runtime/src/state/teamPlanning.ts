@@ -41,5 +41,14 @@ export function createTeamPlanningAtoms<R, E>(
       label: "environment-data:team:plan-decide",
       tag: WS_METHODS.teamPlanDecide,
     }),
+    /** Starts an interrupted run or decision answer again. */
+    retry: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:team:plan-retry",
+      tag: WS_METHODS.teamPlanRetry,
+    }),
+    latest: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:team:plan-latest",
+      tag: WS_METHODS.teamPlanLatest,
+    }),
   };
 }

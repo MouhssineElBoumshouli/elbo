@@ -20,6 +20,7 @@ import {
 } from "@t3tools/contracts";
 import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
 import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
@@ -37,6 +38,7 @@ export const makeTeamBriefingResolver = Effect.gen(function* () {
   const { resolve } = yield* makeTeamResolver;
   const mcpSessions = yield* McpProviderSessions.McpProviderSessions;
   const path = yield* Path.Path;
+  const fs = yield* FileSystem.FileSystem;
   /** The last briefing each thread got; only "not in a team" removes it. */
   const lastBriefing = new Map<ThreadId, string>();
   const reuseLast = (threadId: ThreadId) => Effect.sync(() => lastBriefing.get(threadId));
@@ -50,17 +52,32 @@ export const makeTeamBriefingResolver = Effect.gen(function* () {
 
   function briefingOf(environmentId: EnvironmentId, threadId: ThreadId) {
     return resolve({ environmentId, threadId }).pipe(
-      Effect.map((resolved) => {
-        if (resolved._tag === "NotInTeam") return undefined;
-        if (resolved.context.solo) return renderSoloBriefing();
-        const { teamFile, member, teamRoot, workingFolder } = resolved.context;
-        const rulebook = path.join(teamRoot, TEAM_DIRECTORY_NAME, TEAM_RULEBOOK_FILE_NAME);
-        return renderTeamBriefing({
-          teamName: teamFile.name,
-          memberName: member.displayName,
-          rulebookPath: path.relative(workingFolder, rulebook),
-        });
-      }),
+      Effect.flatMap((resolved) =>
+        Effect.gen(function* () {
+          if (resolved._tag === "NotInTeam") return undefined;
+          const { teamFile, member, teamRoot, workingFolder, solo } = resolved.context;
+          // A pointer only to a file that is there: an agent sent to a missing file wastes a turn.
+          const pointer = (file: string) =>
+            fs.exists(path.join(teamRoot, TEAM_DIRECTORY_NAME, file)).pipe(
+              Effect.orElseSucceed(() => false),
+              Effect.map((exists) =>
+                exists
+                  ? path.relative(workingFolder, path.join(teamRoot, TEAM_DIRECTORY_NAME, file))
+                  : null,
+              ),
+            );
+          const pointers = {
+            rulebookPath: yield* pointer(TEAM_RULEBOOK_FILE_NAME),
+            planPath: yield* pointer("plan.md"),
+          };
+          if (solo) return renderSoloBriefing(pointers);
+          return renderTeamBriefing({
+            teamName: teamFile.name,
+            memberName: member.displayName,
+            ...pointers,
+          });
+        }),
+      ),
       Effect.timeoutOption(BRIEFING_TIMEOUT),
       Effect.flatMap((briefing) => {
         if (Option.isNone(briefing)) {
